@@ -19,7 +19,7 @@ const metrics = [
     key: 'cobbAngle', 
     label: 'Cobb Angle', 
     unit: '°', 
-    color: '#3b82f6',
+    color: '#14b8a6',
     description: 'Lower is better. Measures spinal curvature.',
     lowerIsBetter: true,
   },
@@ -27,7 +27,7 @@ const metrics = [
     key: 'painLevel', 
     label: 'Pain Level', 
     unit: '/10', 
-    color: '#ef4444',
+    color: '#f97316',
     description: 'Lower is better. Daily pain rating.',
     lowerIsBetter: true,
   },
@@ -93,7 +93,7 @@ export default function ProgressCharts() {
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving') return <TrendingUp className="text-green-500" size={20} />;
     if (trend === 'declining') return <TrendingDown className="text-red-500" size={20} />;
-    return <Minus className="text-gray-500" size={20} />;
+    return <Minus className="text-slate-500" size={20} />;
   };
 
   useEffect(() => {
@@ -141,11 +141,11 @@ export default function ProgressCharts() {
   }, [pushToast]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-white">Progress Charts</h2>
-        <p className="text-gray-400">Visualize your improvement over time</p>
+        <h2 className="text-2xl font-semibold text-white">Progress Charts</h2>
+        <p className="text-slate-400">Visualize your improvement over time</p>
       </div>
 
       {/* Metric cards */}
@@ -161,14 +161,14 @@ export default function ProgressCharts() {
             <button
               key={metric.key}
               onClick={() => setSelectedMetric(metric.key)}
-              className={`bg-gray-900 rounded-xl p-4 border text-left transition-all ${
+              className={`bg-slate-900/70 rounded-2xl p-4 border text-left transition-all shadow-lg shadow-black/20 ${
                 selectedMetric === metric.key 
-                  ? 'border-blue-500 ring-1 ring-blue-500' 
-                  : 'border-gray-800 hover:border-gray-700'
+                  ? 'border-teal-400 ring-1 ring-teal-400/60' 
+                  : 'border-slate-800/70 hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400">{metric.label}</span>
+                <span className="text-slate-300">{metric.label}</span>
                 <TrendIcon trend={trend} />
               </div>
               <div className="text-3xl font-bold" style={{ color: metric.color }}>
@@ -177,7 +177,7 @@ export default function ProgressCharts() {
               <div className={`text-sm mt-1 ${
                 trend === 'improving' ? 'text-green-400' : 
                 trend === 'declining' ? 'text-red-400' : 
-                'text-gray-500'
+                'text-slate-500'
               }`}>
                 {value > 0 ? '+' : ''}{value.toFixed(1)} since start
               </div>
@@ -187,11 +187,11 @@ export default function ProgressCharts() {
       </div>
 
       {/* Main chart */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-semibold text-white">{selectedMetricConfig.label} Over Time</h3>
-            <p className="text-sm text-gray-400 flex items-center gap-1">
+            <p className="text-sm text-slate-400 flex items-center gap-1">
               <Info size={14} />
               {selectedMetricConfig.description}
             </p>
@@ -199,12 +199,12 @@ export default function ProgressCharts() {
         </div>
         
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center gap-2 text-gray-400">
+          <div className="h-64 flex items-center justify-center gap-2 text-slate-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading chart data...</span>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
+          <div className="h-64 flex items-center justify-center text-slate-400">
             No data yet. Add metrics to see your progress chart.
           </div>
         ) : (
@@ -217,22 +217,22 @@ export default function ProgressCharts() {
                     <stop offset="95%" stopColor={selectedMetricConfig.color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatDate}
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <YAxis 
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                   domain={['auto', 'auto']}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: '#0f172a', 
+                    border: '1px solid #334155',
                     borderRadius: '8px',
                     color: '#fff'
                   }}
@@ -253,37 +253,37 @@ export default function ProgressCharts() {
       </div>
 
       {/* All metrics chart */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
         <h3 className="text-lg font-semibold text-white mb-6">All Metrics Comparison</h3>
         
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center gap-2 text-gray-400">
+          <div className="h-64 flex items-center justify-center gap-2 text-slate-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading chart data...</span>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
+          <div className="h-64 flex items-center justify-center text-slate-400">
             No data yet. Add metrics to see comparison chart.
           </div>
         ) : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatDate}
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <YAxis 
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: '#0f172a', 
+                    border: '1px solid #334155',
                     borderRadius: '8px',
                     color: '#fff'
                   }}
@@ -310,7 +310,7 @@ export default function ProgressCharts() {
           {metrics.map((metric) => (
             <div key={metric.key} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric.color }} />
-              <span className="text-sm text-gray-400">{metric.label}</span>
+              <span className="text-sm text-slate-400">{metric.label}</span>
             </div>
           ))}
         </div>

@@ -19,10 +19,10 @@ interface Todo {
 }
 
 const categoryConfig = {
-  exercise: { icon: Dumbbell, color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  appointment: { icon: Stethoscope, color: 'text-green-400', bg: 'bg-green-500/20' },
-  supplement: { icon: Pill, color: 'text-purple-400', bg: 'bg-purple-500/20' },
-  other: { icon: Circle, color: 'text-gray-400', bg: 'bg-gray-500/20' },
+  exercise: { icon: Dumbbell, color: 'text-sky-300', bg: 'bg-sky-500/20' },
+  appointment: { icon: Stethoscope, color: 'text-emerald-300', bg: 'bg-emerald-500/20' },
+  supplement: { icon: Pill, color: 'text-amber-300', bg: 'bg-amber-500/20' },
+  other: { icon: Circle, color: 'text-slate-400', bg: 'bg-slate-500/20' },
 };
 
 export default function TodoTracker() {
@@ -173,17 +173,17 @@ export default function TodoTracker() {
   ).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Protocol & Tasks</h2>
-          <p className="text-gray-400">Exercises, appointments, and daily routine</p>
+          <h2 className="text-2xl font-semibold text-white">Protocol & Tasks</h2>
+          <p className="text-slate-400">Exercises, appointments, and daily routine</p>
         </div>
         
         <button
           onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/20"
         >
           <Plus size={18} />
           <span>Add Task</span>
@@ -192,37 +192,37 @@ export default function TodoTracker() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
           <div className="text-2xl font-bold text-white">{todos.length}</div>
-          <div className="text-gray-400 text-sm">Total Tasks</div>
+          <div className="text-slate-400 text-sm">Total Tasks</div>
         </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <div className="text-2xl font-bold text-yellow-400">{pendingCount}</div>
-          <div className="text-gray-400 text-sm">Pending</div>
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
+          <div className="text-2xl font-bold text-amber-300">{pendingCount}</div>
+          <div className="text-slate-400 text-sm">Pending</div>
         </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <div className="text-2xl font-bold text-green-400">{completedToday}</div>
-          <div className="text-gray-400 text-sm">Completed Today</div>
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
+          <div className="text-2xl font-bold text-emerald-300">{completedToday}</div>
+          <div className="text-slate-400 text-sm">Completed Today</div>
         </div>
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-          <div className="text-2xl font-bold text-blue-400">
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
+          <div className="text-2xl font-bold text-sky-300">
             {todos.length > 0 ? Math.round((todos.filter(t => t.completed).length / todos.length) * 100) : 0}%
           </div>
-          <div className="text-gray-400 text-sm">Completion Rate</div>
+          <div className="text-slate-400 text-sm">Completion Rate</div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <div className="flex gap-1 bg-gray-900 p-1 rounded-lg">
+        <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl border border-slate-800/70">
           {['all', 'pending', 'completed'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f as typeof filter)}
-              className={`px-3 py-1.5 rounded-md capitalize text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg capitalize text-sm transition-all ${
                 filter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-teal-500 text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               {f}
@@ -230,15 +230,15 @@ export default function TodoTracker() {
           ))}
         </div>
         
-        <div className="flex gap-1 bg-gray-900 p-1 rounded-lg">
+        <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl border border-slate-800/70">
           {['all', 'exercise', 'appointment', 'supplement', 'other'].map((c) => (
             <button
               key={c}
               onClick={() => setCategoryFilter(c as typeof categoryFilter)}
-              className={`px-3 py-1.5 rounded-md capitalize text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg capitalize text-sm transition-all ${
                 categoryFilter === c
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-teal-500 text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               {c}
@@ -249,27 +249,27 @@ export default function TodoTracker() {
 
       {/* Add form */}
       {showAddForm && (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
           <h3 className="text-lg font-semibold text-white mb-4">Add New Task</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="md:col-span-2">
-              <label className="block text-sm text-gray-400 mb-1">Task Title</label>
+              <label className="block text-sm text-slate-300 mb-1">Task Title</label>
               <input
                 type="text"
                 value={newTodo.title || ''}
                 onChange={(e) => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Schroth breathing exercises"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               />
             </div>
             
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Category</label>
+              <label className="block text-sm text-slate-300 mb-1">Category</label>
               <select
                 value={newTodo.category}
                 onChange={(e) => setNewTodo(prev => ({ ...prev, category: e.target.value as Todo['category'] }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               >
                 <option value="exercise">Exercise</option>
                 <option value="appointment">Appointment</option>
@@ -279,11 +279,11 @@ export default function TodoTracker() {
             </div>
             
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Frequency</label>
+              <label className="block text-sm text-slate-300 mb-1">Frequency</label>
               <select
                 value={newTodo.frequency}
                 onChange={(e) => setNewTodo(prev => ({ ...prev, frequency: e.target.value as Todo['frequency'] }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -292,36 +292,36 @@ export default function TodoTracker() {
             </div>
             
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Due Date (optional)</label>
+              <label className="block text-sm text-slate-300 mb-1">Due Date (optional)</label>
               <input
                 type="date"
                 value={newTodo.dueDate || ''}
                 onChange={(e) => setNewTodo(prev => ({ ...prev, dueDate: e.target.value }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               />
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Description (optional)</label>
+            <label className="block text-sm text-slate-300 mb-1">Description (optional)</label>
             <textarea
               value={newTodo.description || ''}
               onChange={(e) => setNewTodo(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Additional details, instructions, etc."
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none resize-none h-20"
+              className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-none h-20"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={addTodo}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors"
             >
               Add Task
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-slate-800/70 text-slate-300 rounded-xl hover:bg-slate-700/70 transition-colors"
             >
               Cancel
             </button>
@@ -334,8 +334,8 @@ export default function TodoTracker() {
         {isLoading ? (
           <LoadingState label="Loading tasks..." />
         ) : filteredTodos.length === 0 ? (
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
-            <p className="text-gray-400">No tasks yet. Add exercises, appointments, or daily routines to track.</p>
+          <div className="bg-slate-900/70 rounded-2xl p-8 border border-slate-800/70 border-dashed text-center">
+            <p className="text-slate-300">No tasks yet. Add exercises, appointments, or daily routines to track.</p>
           </div>
         ) : (
           filteredTodos.map((todo) => {
@@ -345,17 +345,17 @@ export default function TodoTracker() {
             return (
               <div 
                 key={todo.id} 
-                className={`bg-gray-900 rounded-xl p-4 border border-gray-800 transition-opacity ${
+                className={`bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 transition-opacity shadow-lg shadow-black/20 ${
                   todo.completed ? 'opacity-60' : ''
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <button
                     onClick={() => toggleComplete(todo.id)}
                     className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                       todo.completed 
-                        ? 'bg-green-500 border-green-500' 
-                        : 'border-gray-600 hover:border-gray-500'
+                        ? 'bg-emerald-500 border-emerald-500' 
+                        : 'border-slate-600 hover:border-slate-500'
                     }`}
                   >
                     {todo.completed && <Check size={14} className="text-white" />}
@@ -366,13 +366,13 @@ export default function TodoTracker() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className={`font-medium ${todo.completed ? 'line-through text-gray-500' : 'text-white'}`}>
+                    <div className={`font-medium ${todo.completed ? 'line-through text-slate-500' : 'text-white'}`}>
                       {todo.title}
                     </div>
                     {todo.description && (
-                      <p className="text-sm text-gray-400 truncate">{todo.description}</p>
+                      <p className="text-sm text-slate-400 truncate">{todo.description}</p>
                     )}
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
                       {todo.frequency && (
                         <span className="flex items-center gap-1">
                           <Clock size={12} />
@@ -390,7 +390,7 @@ export default function TodoTracker() {
                   
                   <button
                     onClick={() => deleteTodo(todo.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-800 rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/70 rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>

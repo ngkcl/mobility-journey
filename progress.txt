@@ -159,3 +159,36 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None beyond the pattern noted above.
 ---
+---
+## 2026-02-06 19:40 - Story 7: Polish UI and mobile responsiveness
+
+### Completed
+- Refined global styling with new fonts, aurora gradient background, grid texture, and fade-up animation utilities.
+- Polished headers, cards, buttons, and empty states across all tabs with consistent teal/amber palette and softer surfaces.
+- Improved mobile layout spacing, responsive grids, and task list stacking for smaller screens.
+
+### Next Up (for next iteration)
+- [ ] Story 8: Add data export feature.
+- [ ] Decide on export scope and UI placement (header action vs settings panel).
+
+### Blockers/Warnings
+- `pnpm lint` still reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/app/layout.tsx
+- src/app/globals.css
+- src/app/page.tsx
+- src/components/LoadingState.tsx
+- src/components/PhotoTimeline.tsx
+- src/components/MetricsTracker.tsx
+- src/components/AnalysisLog.tsx
+- src/components/TodoTracker.tsx
+- src/components/ProgressCharts.tsx
+- src/components/ToastProvider.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

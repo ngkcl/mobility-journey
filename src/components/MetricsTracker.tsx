@@ -158,21 +158,21 @@ export default function MetricsTracker() {
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving') return <TrendingUp className="text-green-500" size={18} />;
     if (trend === 'declining') return <TrendingDown className="text-red-500" size={18} />;
-    return <Minus className="text-gray-500" size={18} />;
+    return <Minus className="text-slate-500" size={18} />;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Metrics Tracker</h2>
-          <p className="text-gray-400">Monitor your measurements over time</p>
+          <h2 className="text-2xl font-semibold text-white">Metrics Tracker</h2>
+          <p className="text-slate-400">Monitor your measurements over time</p>
         </div>
         
         <button
           onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/20"
         >
           <Plus size={18} />
           <span>Add Entry</span>
@@ -180,21 +180,21 @@ export default function MetricsTracker() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metricDefinitions.map((metric) => {
           const value = getLatestValue(metric.key as keyof MetricEntry);
           const trend = getTrend(metric.key as keyof MetricEntry);
           
           return (
-            <div key={metric.key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div key={metric.key} className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">{metric.label}</span>
+                <span className="text-slate-300 text-sm">{metric.label}</span>
                 <TrendIcon trend={trend} />
               </div>
               <div className="text-2xl font-bold text-white">
                 {value !== null ? `${value}${metric.unit}` : '—'}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{metric.description}</p>
+              <p className="text-xs text-slate-400 mt-1">{metric.description}</p>
             </div>
           );
         })}
@@ -202,23 +202,23 @@ export default function MetricsTracker() {
 
       {/* Add entry form */}
       {showAddForm && (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
           <h3 className="text-lg font-semibold text-white mb-4">Add New Entry</h3>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date</label>
+              <label className="block text-sm text-slate-300 mb-1">Date</label>
               <input
                 type="date"
                 value={newEntry.date}
                 onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               />
             </div>
             
             {metricDefinitions.map((metric) => (
               <div key={metric.key}>
-                <label className="block text-sm text-gray-400 mb-1">
+                <label className="block text-sm text-slate-300 mb-1">
                   {metric.label} ({metric.unit})
                 </label>
                 <input
@@ -230,32 +230,32 @@ export default function MetricsTracker() {
                     ...prev, 
                     [metric.key]: e.target.value ? parseFloat(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             ))}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Notes</label>
+            <label className="block text-sm text-slate-300 mb-1">Notes</label>
             <textarea
               value={newEntry.notes || ''}
               onChange={(e) => setNewEntry(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any observations, how you feel, etc."
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none resize-none h-20"
+              className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-none h-20"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={addEntry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors"
             >
               Save Entry
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-slate-800/70 text-slate-300 rounded-xl hover:bg-slate-700/70 transition-colors"
             >
               Cancel
             </button>
@@ -270,19 +270,19 @@ export default function MetricsTracker() {
         {isLoading ? (
           <LoadingState label="Loading metrics..." />
         ) : entries.length === 0 ? (
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
-            <p className="text-gray-400">No entries yet. Add your first measurement to start tracking.</p>
+          <div className="bg-slate-900/70 rounded-2xl p-8 border border-slate-800/70 border-dashed text-center">
+            <p className="text-slate-300">No entries yet. Add your first measurement to start tracking.</p>
           </div>
         ) : (
           entries.map((entry) => (
-            <div key={entry.id} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div key={entry.id} className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white font-medium">
                   {format(new Date(entry.date), 'MMMM d, yyyy')}
                 </span>
                 <button
                   onClick={() => deleteEntry(entry.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-800 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/70 rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -294,7 +294,7 @@ export default function MetricsTracker() {
                   if (value === undefined) return null;
                   return (
                     <div key={metric.key}>
-                      <span className="text-gray-400">{metric.label}:</span>{' '}
+                      <span className="text-slate-400">{metric.label}:</span>{' '}
                       <span className="text-white font-medium">{value}{metric.unit}</span>
                     </div>
                   );
@@ -302,7 +302,7 @@ export default function MetricsTracker() {
               </div>
               
               {entry.notes && (
-                <p className="text-gray-400 text-sm mt-2 italic">&ldquo;{entry.notes}&rdquo;</p>
+                <p className="text-slate-400 text-sm mt-2 italic">&ldquo;{entry.notes}&rdquo;</p>
               )}
             </div>
           ))

@@ -181,19 +181,19 @@ export default function PhotoTimeline() {
   const views = ['all', 'front', 'back', 'left', 'right'] as const;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Progress Photos</h2>
-          <p className="text-gray-400">Track visual changes over time</p>
+          <h2 className="text-2xl font-semibold text-white">Progress Photos</h2>
+          <p className="text-slate-400">Track visual changes over time</p>
         </div>
         
         <div className="flex flex-wrap gap-2">
           <select
             value={uploadView}
             onChange={(e) => setUploadView(e.target.value as 'front' | 'back' | 'left' | 'right')}
-            className="px-3 py-2 rounded-lg bg-gray-900 text-gray-200 border border-gray-700"
+            className="min-w-[140px] px-3 py-2 rounded-xl bg-slate-900/70 text-slate-200 border border-slate-800/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
             aria-label="Photo view"
           >
             <option value="front">Front</option>
@@ -203,19 +203,19 @@ export default function PhotoTimeline() {
           </select>
           <button
             onClick={() => setCompareMode(!compareMode)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-xl transition-all ${
               compareMode 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
+                : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700/70'
             }`}
           >
             {compareMode ? 'Exit Compare' : 'Compare'}
           </button>
           
-          <label className={`px-4 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 ${
+          <label className={`px-4 py-2 rounded-xl cursor-pointer transition-colors flex items-center gap-2 ${
             isUploading
-              ? 'bg-blue-600/70 text-white'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-teal-500/70 text-white'
+              : 'bg-teal-500 text-white hover:bg-teal-400'
           }`}>
             <Upload size={18} />
             <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
@@ -237,10 +237,10 @@ export default function PhotoTimeline() {
           <button
             key={view}
             onClick={() => setSelectedView(view)}
-            className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-full capitalize whitespace-nowrap transition-all ${
               selectedView === view
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                : 'bg-slate-900/70 text-slate-300 hover:bg-slate-800/70'
             }`}
           >
             {view}
@@ -250,7 +250,7 @@ export default function PhotoTimeline() {
 
       {/* Compare view */}
       {compareMode && selectedPhotos.length === 2 && (
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
           <h3 className="text-lg font-semibold mb-4 text-white">Comparison</h3>
           <div className="grid grid-cols-2 gap-4">
             {selectedPhotos.map((id) => {
@@ -261,9 +261,9 @@ export default function PhotoTimeline() {
                   <img
                     src={photo.url}
                     alt={`${photo.view} view`}
-                    className="w-full aspect-[3/4] object-cover rounded-lg"
+                    className="w-full aspect-[3/4] object-cover rounded-xl"
                   />
-                  <p className="text-sm text-gray-400 text-center">
+                  <p className="text-sm text-slate-400 text-center">
                     {format(new Date(photo.date), 'MMM d, yyyy')}
                   </p>
                 </div>
@@ -277,11 +277,11 @@ export default function PhotoTimeline() {
       {isLoading ? (
         <LoadingState label="Loading photos..." className="p-12" />
       ) : filteredPhotos.length === 0 ? (
-        <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 border-dashed text-center">
-          <Upload size={48} className="mx-auto text-gray-600 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-400 mb-2">No photos yet</h3>
-          <p className="text-gray-500 mb-4">Upload your first progress photos to start tracking</p>
-          <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+        <div className="bg-slate-900/70 rounded-2xl p-12 border border-slate-800/70 border-dashed text-center">
+          <Upload size={48} className="mx-auto text-slate-500 mb-4" />
+          <h3 className="text-lg font-semibold text-slate-200 mb-2">No photos yet</h3>
+          <p className="text-slate-400 mb-4">Upload your first progress photos to start tracking</p>
+          <label className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-xl cursor-pointer hover:bg-teal-400 transition-colors">
             <Upload size={18} />
             <span>Upload Photos</span>
             <input
@@ -299,27 +299,27 @@ export default function PhotoTimeline() {
             <div
               key={photo.id}
               onClick={() => compareMode && togglePhotoSelection(photo.id)}
-              className={`relative group rounded-xl overflow-hidden bg-gray-900 border transition-all ${
+              className={`relative group rounded-2xl overflow-hidden bg-slate-900/70 border transition-all ${
                 compareMode
                   ? selectedPhotos.includes(photo.id)
-                    ? 'border-purple-500 ring-2 ring-purple-500'
-                    : 'border-gray-800 cursor-pointer hover:border-gray-700'
-                  : 'border-gray-800'
+                    ? 'border-amber-400 ring-2 ring-amber-400/80'
+                    : 'border-slate-800/70 cursor-pointer hover:border-slate-700'
+                  : 'border-slate-800/70'
               }`}
             >
               <img
                 src={photo.url}
                 alt={`${photo.view} view`}
-                className="w-full aspect-[3/4] object-cover"
+                className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
               
               {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-white text-sm font-medium capitalize">{photo.view}</p>
-                      <p className="text-gray-300 text-xs flex items-center gap-1">
+                      <p className="text-slate-200 text-xs flex items-center gap-1">
                         <Calendar size={12} />
                         {format(new Date(photo.date), 'MMM d, yyyy')}
                       </p>
@@ -330,7 +330,7 @@ export default function PhotoTimeline() {
                           e.stopPropagation();
                           deletePhoto(photo.id);
                         }}
-                        className="p-2 bg-red-600/80 rounded-lg hover:bg-red-600 transition-colors"
+                        className="p-2 bg-rose-500/80 rounded-lg hover:bg-rose-500 transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -340,7 +340,7 @@ export default function PhotoTimeline() {
               </div>
 
               {/* View badge */}
-              <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded text-xs capitalize text-white">
+              <div className="absolute top-2 left-2 px-2 py-1 bg-slate-950/60 rounded text-xs capitalize text-white">
                 {photo.view}
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function PhotoTimeline() {
       )}
 
       {compareMode && selectedPhotos.length < 2 && (
-        <p className="text-center text-gray-400">
+        <p className="text-center text-slate-400">
           Select {2 - selectedPhotos.length} more photo{selectedPhotos.length === 1 ? '' : 's'} to compare
         </p>
       )}

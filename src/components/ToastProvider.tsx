@@ -28,7 +28,7 @@ const toneStyles: Record<ToastTone, { icon: typeof AlertTriangle; className: str
   },
   info: {
     icon: Info,
-    className: 'border-blue-500/40 bg-blue-500/15 text-blue-100',
+    className: 'border-teal-500/40 bg-teal-500/15 text-teal-100',
   },
 };
 
