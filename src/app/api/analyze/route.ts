@@ -2,33 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 
-const ANALYSIS_PROMPT = `You are an expert physiotherapist and posture analysis specialist. You're reviewing a progress photo for a patient with scoliosis (right thoracic curve) and right-side muscular imbalance.
+const ANALYSIS_PROMPT = `You are an expert physiotherapist analyzing a progress photo for a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
-Analyze this photo with clinical precision. Provide your response in TWO parts:
+Focus on RELATIVE observations — what you see compared to ideal alignment. Don't pretend to measure millimeters from a photo.
+
+Provide your response in TWO parts:
 
 ## PART 1: STRUCTURED DATA (JSON)
-Output a JSON block with these fields (use null if not determinable):
 \`\`\`json
 {
-  "shoulder_diff_mm": <number or null>,
-  "hip_diff_mm": <number or null>,
-  "head_tilt_degrees": <number or null>,
-  "lateral_deviation": "<mild|moderate|severe|null>",
-  "overall_posture_score": <1-10>,
-  "muscle_asymmetry": "<none|mild|moderate|severe>",
+  "posture_score": <1-10, 10 = perfect posture>,
+  "symmetry_score": <1-10, 10 = perfectly symmetric>,
   "view_type": "<front|back|left|right|other>",
+  "rib_hump": "<none|mild|moderate|severe>",
+  "muscle_asymmetry": "<none|mild|moderate|severe>",
+  "shoulder_level": "<level|left_high|right_high>",
+  "hip_level": "<level|left_high|right_high>",
+  "head_position": "<centered|left_tilt|right_tilt>",
   "confidence": "<low|medium|high>"
 }
 \`\`\`
 
 ## PART 2: CLINICAL NOTES
-1. **What I See**: Describe shoulder alignment, hip alignment, spinal curve indicators, head position, rib cage, muscle bulk differences
-2. **Key Asymmetries**: Specific left/right differences with estimated measurements
-3. **Scoliosis Indicators**: How this relates to right-thoracic scoliosis patterns
-4. **Progress Markers**: Things to watch for improvement in future photos
-5. **Top 3 Exercises**: Specific exercises for what you observe (name, sets, reps)
 
-Be direct and specific. Avoid disclaimers about not being a real doctor — this is a tracking tool. Give your best clinical assessment.`;
+### What I See
+Describe posture, alignment, muscle development differences. Be specific about left vs right.
+
+### Scoliosis Indicators
+How does this relate to right-thoracic scoliosis? What compensatory patterns are visible?
+
+### Progress Markers
+What specific things should we watch for in future photos to track improvement? (e.g., "right trapezius bulk relative to left", "waistline crease asymmetry")
+
+### Top 3 Exercises
+Based on what you see, recommend 3 specific exercises with sets/reps. Target the observed imbalances.
+
+Be direct and clinical. This is a tracking tool — give your best assessment.`;
 
 async function fetchImageAsBase64(url: string): Promise<{ data: string; mediaType: string }> {
   const res = await fetch(url);
@@ -87,14 +96,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No analysis generated' }, { status: 500 });
     }
 
-    // Extract structured data from the analysis
+    // Extract structured data
     let structuredData = null;
     const jsonMatch = analysis.match(/```json\n([\s\S]*?)\n```/);
     if (jsonMatch) {
       try {
         structuredData = JSON.parse(jsonMatch[1]);
       } catch {
-        // JSON parsing failed, continue with just the text
+        // continue with text only
       }
     }
 
@@ -106,23 +115,28 @@ export async function POST(request: NextRequest) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Save analysis log
+      const title = [
+        'AI Posture Analysis (Opus)',
+        structuredData?.view_type ? `${structuredData.view_type} view` : null,
+        structuredData?.posture_score ? `Posture: ${structuredData.posture_score}/10` : null,
+        structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
+      ].filter(Boolean).join(' — ');
+
       await supabase.from('analysis_logs').insert({
         entry_date: new Date().toISOString().split('T')[0],
         category: 'ai',
-        title: `AI Posture Analysis (Opus)${structuredData?.view_type ? ` — ${structuredData.view_type} view` : ''}${structuredData?.overall_posture_score ? ` — Score: ${structuredData.overall_posture_score}/10` : ''}`,
+        title,
         content: analysis,
       });
 
-      // If we got structured data, also save as a metric entry
-      if (structuredData && (structuredData.shoulder_diff_mm !== null || structuredData.hip_diff_mm !== null)) {
+      // Save scores as metrics
+      if (structuredData) {
         await supabase.from('metrics').insert({
           entry_date: new Date().toISOString().split('T')[0],
-          shoulder_diff: structuredData.shoulder_diff_mm,
-          hip_diff: structuredData.hip_diff_mm,
-          pain_level: null,
-          cobb_angle: null,
-          flexibility: null,
-          notes: `Auto-extracted from AI photo analysis — Opus (confidence: ${structuredData.confidence || 'unknown'})`,
+          posture_score: structuredData.posture_score ?? null,
+          symmetry_score: structuredData.symmetry_score ?? null,
+          rib_hump: structuredData.rib_hump ?? null,
+          notes: `Auto-extracted from AI photo analysis (confidence: ${structuredData.confidence || 'unknown'})`,
         });
       }
     }
