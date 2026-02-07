@@ -47,3 +47,25 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - Use a local date-only parser for `YYYY-MM-DD` strings before comparisons/formatting.
 ---
+---
+## 2026-02-07 01:35 - Story 3: Review database schema and queries
+
+### Completed
+- Added indexes for exercise library ordering queries on `created_at` and `name`.
+- Verified appointments and exercises tables already had RLS policies and necessary date indexes.
+
+### Next Up (for next iteration)
+- [ ] Verify migrations against Supabase deployment (if CI or manual check is available).
+- [ ] Review any future schema changes for additional query patterns before release.
+
+### Blockers/Warnings
+- `pnpm test` reports no tests specified; no automated test suite currently configured.
+
+### Files Changed
+- supabase/migrations/20260207201500_add_exercise_indexes.sql
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
