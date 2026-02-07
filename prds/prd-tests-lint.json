@@ -1,0 +1,49 @@
+{
+  "branchName": "ralph/tests-and-lint",
+  "projectName": "Mobility Journey - Tests & Code Quality",
+  "description": "Add comprehensive test coverage and fix all lint warnings. Currently zero tests exist and there are @next/next/no-img-element warnings.",
+  "userStories": [
+    {
+      "id": "1",
+      "title": "Set up testing infrastructure",
+      "description": "Install vitest + @testing-library/react. Configure vitest.config.ts for Next.js 16 + React 19. Add test script to package.json. Create a sample test that passes.",
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "2",
+      "title": "Test Supabase client and data layer",
+      "description": "Write unit tests for supabaseClient.ts. Mock Supabase calls. Test CRUD operations for photos, metrics, analysis_logs, todos, videos tables.",
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "3",
+      "title": "Test API routes",
+      "description": "Write tests for /api/analyze and /api/analyze-video routes. Mock Claude/OpenAI calls. Test error handling, auth middleware, response formats.",
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "4",
+      "title": "Test UI components",
+      "description": "Write component tests for PhotoTimeline, MetricsTracker, AnalysisLog, TodoTracker, ProgressCharts, VideoGallery. Test rendering, user interactions, loading/error states.",
+      "passes": false,
+      "priority": 4
+    },
+    {
+      "id": "5",
+      "title": "Fix all lint warnings",
+      "description": "Replace <img> with next/image in PhotoTimeline.tsx and any other files. Fix all ESLint warnings. Ensure `pnpm lint` passes clean.",
+      "passes": false,
+      "priority": 5
+    },
+    {
+      "id": "6",
+      "title": "Add CI check script",
+      "description": "Create a `check` npm script that runs typecheck + lint + test in sequence. Ensure all pass. Update README with testing docs.",
+      "passes": false,
+      "priority": 6
+    }
+  ]
+}
