@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, Bot, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 
 interface AnalysisEntry {
   id: string;
@@ -22,19 +23,69 @@ export default function AnalysisLog() {
     type: 'personal',
   });
 
-  const addEntry = () => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntries = async () => {
+      const { data, error } = await supabase
+        .from('analysis_logs')
+        .select('id, entry_date, category, title, content')
+        .order('entry_date', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load analysis logs', error);
+        return;
+      }
+
+      const normalized = (data ?? []).map((row) => ({
+        id: row.id,
+        date: row.entry_date,
+        type: row.category as AnalysisEntry['type'],
+        title: row.title ?? '',
+        content: row.content,
+      }));
+
+      if (isMounted) {
+        setEntries(normalized);
+      }
+    };
+
+    loadEntries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const addEntry = async () => {
     if (!newEntry.date || !newEntry.title || !newEntry.content) return;
-    
+
+    const { data, error } = await supabase
+      .from('analysis_logs')
+      .insert({
+        entry_date: newEntry.date,
+        category: newEntry.type || 'personal',
+        title: newEntry.title ?? null,
+        content: newEntry.content,
+      })
+      .select('id, entry_date, category, title, content')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to save analysis entry', error);
+      return;
+    }
+
     const entry: AnalysisEntry = {
-      id: Date.now().toString(),
-      date: newEntry.date,
-      type: newEntry.type || 'personal',
-      title: newEntry.title,
-      content: newEntry.content,
+      id: data.id,
+      date: data.entry_date,
+      type: data.category as AnalysisEntry['type'],
+      title: data.title ?? '',
+      content: data.content,
       tags: newEntry.tags,
     };
-    
-    setEntries(prev => [entry, ...prev].sort((a, b) => 
+
+    setEntries(prev => [entry, ...prev].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     ));
     setNewEntry({ 
@@ -44,8 +95,12 @@ export default function AnalysisLog() {
     setShowAddForm(false);
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
+    const { error } = await supabase.from('analysis_logs').delete().eq('id', id);
+    if (error) {
+      console.error('Failed to delete analysis entry', error);
+    }
   };
 
   const filteredEntries = filter === 'all' 

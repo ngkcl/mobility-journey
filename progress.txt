@@ -77,3 +77,26 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 05:28 - Story 4: Persist analysis log entries
+
+### Completed
+- Loaded analysis log entries from Supabase on mount and normalized rows.
+- Persisted new analysis entries to Supabase and wired deletions to remove rows.
+
+### Next Up (for next iteration)
+- [ ] Story 5: Persist todos/protocol items to Supabase.
+- [ ] Story 6: Add loading states and error handling.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/AnalysisLog.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

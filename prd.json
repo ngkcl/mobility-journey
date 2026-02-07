@@ -28,7 +28,7 @@
       "id": "4",
       "title": "Persist analysis log entries",
       "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
-      "passes": false,
+      "passes": true,
       "priority": 4
     },
     {
