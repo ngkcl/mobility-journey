@@ -15,15 +15,3 @@ export function getSupabase(): SupabaseClient {
   }
   return _client;
 }
-
-/**
- * Convenience re-export that is safe to import at module scope.
- * On the server (during static pre-rendering) this evaluates to `null`
- * so that `next build` doesn't crash when env vars are absent.
- * Every runtime call-site that actually needs the client should call
- * `getSupabase()` instead.
- */
-export const supabase: SupabaseClient =
-  typeof window !== 'undefined'
-    ? getSupabase()
-    : (null as unknown as SupabaseClient);
