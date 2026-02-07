@@ -14,7 +14,7 @@
 - [ ] Wire slouch detection into a new posture monitor screen.
 
 ### Blockers/Warnings
-- None.
+- `git push` failed because no `origin` remote is configured.
 
 ### Files Changed
 - lib/useHeadphoneMotion.ts
