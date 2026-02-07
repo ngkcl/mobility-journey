@@ -74,7 +74,7 @@
 - [ ] Decide on workout history drill-down design for WK-005.
 
 ### Blockers/Warnings
-- None.
+- `git push origin ralph/workout-tracker` failed: no `origin` remote configured.
 
 ### Files Changed
 - supabase/migrations/20260207_workout_templates.sql
