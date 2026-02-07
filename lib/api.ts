@@ -20,6 +20,23 @@ export interface VideoAnalysisResponse {
   model: string;
 }
 
+export interface DailyPlanRequest {
+  date: string;
+  context: unknown;
+  metrics: unknown;
+  postureTrend: unknown;
+  workouts: unknown;
+  correctiveSessions: unknown;
+  gymDay: boolean;
+  gymFocus?: string | null;
+}
+
+export interface DailyPlanResponse {
+  plan: unknown;
+  reasoning: string[];
+  model: string;
+}
+
 export async function analyzePhoto(
   photoUrl: string,
   photoId: string,
@@ -54,6 +71,23 @@ export async function analyzeVideo(params: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(err.error || `Video analysis failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function generateDailyPlan(
+  params: DailyPlanRequest,
+): Promise<DailyPlanResponse> {
+  const res = await fetch(`${API_URL}/api/daily-plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(err.error || `Daily plan failed (${res.status})`);
   }
 
   return res.json();

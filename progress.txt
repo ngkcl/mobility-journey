@@ -88,3 +88,33 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 13:31 - Story WK-004: AI daily plan generator
+
+### Completed
+- Added daily plan Supabase table for generated plans with status tracking.
+- Built Daily Plan tab with AI generation flow, plan editing, accept/regenerate actions, and plan history.
+- Added daily plan normalization helpers and tests plus API client call.
+
+### Next Up (for next iteration)
+- [ ] Start WK-005: workout history list + analytics views.
+- [ ] Confirm the daily plan API endpoint format matches the server implementation.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- supabase/migrations/20260207_daily_plans.sql
+- lib/api.ts
+- lib/dailyPlan.ts
+- lib/dailyPlan.test.js
+- lib/types.ts
+- app/(tabs)/plan.tsx
+- app/(tabs)/_layout.tsx
+- .expo/types/router.d.ts
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

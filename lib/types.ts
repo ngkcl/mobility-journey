@@ -125,6 +125,42 @@ export interface WorkoutTemplate {
   created_at: string;
 }
 
+// ─── Daily Plans ─────────────────────────────────────
+export type DailyPlanStatus = 'generated' | 'accepted' | 'modified';
+
+export interface DailyPlanExercise {
+  name: string;
+  sets: number | null;
+  reps: number | null;
+  duration_seconds: number | null;
+  side: WorkoutSetSide | null;
+  notes: string | null;
+  reason: string | null;
+}
+
+export interface DailyPlanSection {
+  title: string;
+  focus: string | null;
+  exercises: DailyPlanExercise[];
+}
+
+export interface DailyPlanPayload {
+  morning: DailyPlanSection;
+  afternoon: DailyPlanSection;
+  evening: DailyPlanSection;
+  gym: DailyPlanSection | null;
+}
+
+export interface DailyPlan {
+  id: string;
+  plan_date: string;
+  plan: DailyPlanPayload;
+  reasoning: string[] | null;
+  status: DailyPlanStatus;
+  model: string | null;
+  created_at: string;
+}
+
 // ─── Metrics ──────────────────────────────────────────
 export interface MetricEntry {
   id: string;

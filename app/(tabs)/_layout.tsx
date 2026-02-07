@@ -12,6 +12,7 @@ const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }
   { name: 'photos', title: 'Photos', icon: 'camera-outline', iconFocused: 'camera' },
   { name: 'videos', title: 'Videos', icon: 'videocam-outline', iconFocused: 'videocam' },
   { name: 'metrics', title: 'Metrics', icon: 'pulse-outline', iconFocused: 'pulse' },
+  { name: 'plan', title: 'Plan', icon: 'sparkles-outline', iconFocused: 'sparkles' },
   { name: 'posture', title: 'Posture', icon: 'body-outline', iconFocused: 'body' },
   { name: 'posture-camera', title: 'Camera', icon: 'aperture-outline', iconFocused: 'aperture' },
   { name: 'analysis', title: 'Analysis', icon: 'document-text-outline', iconFocused: 'document-text' },
