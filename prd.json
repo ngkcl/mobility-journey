@@ -43,7 +43,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "The left/right tracking is key — for unilateral exercises (single arm rows, clamshells, etc.), we want to see if the imbalance is improving over time. RPE (rate of perceived exertion) per set helps track fatigue."
     },
     {

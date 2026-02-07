@@ -17,6 +17,7 @@ const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }
   { name: 'analysis', title: 'Analysis', icon: 'document-text-outline', iconFocused: 'document-text' },
   { name: 'todos', title: 'Protocol', icon: 'checkbox-outline', iconFocused: 'checkbox' },
   { name: 'exercises', title: 'Exercises', icon: 'barbell-outline', iconFocused: 'barbell' },
+  { name: 'workouts', title: 'Workouts', icon: 'fitness-outline', iconFocused: 'fitness' },
   { name: 'charts', title: 'Progress', icon: 'trending-up-outline', iconFocused: 'trending-up' },
 ];
 

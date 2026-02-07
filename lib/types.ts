@@ -72,6 +72,41 @@ export interface Exercise {
   image_url: string | null;
 }
 
+// ─── Workouts ────────────────────────────────────────
+export type WorkoutType = 'corrective' | 'gym' | 'cardio' | 'other';
+export type WorkoutSetSide = 'left' | 'right' | 'bilateral';
+
+export interface WorkoutSet {
+  reps: number | null;
+  weight_kg: number | null;
+  duration_seconds: number | null;
+  side: WorkoutSetSide | null;
+  rpe: number | null;
+  notes: string | null;
+}
+
+export interface Workout {
+  id: string;
+  date: string;
+  type: WorkoutType;
+  started_at: string | null;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  notes: string | null;
+  energy_level_before: number | null;
+  energy_level_after: number | null;
+  pain_level_before: number | null;
+  pain_level_after: number | null;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  workout_id: string;
+  exercise_id: string | null;
+  order_index: number;
+  sets: WorkoutSet[];
+}
+
 // ─── Metrics ──────────────────────────────────────────
 export interface MetricEntry {
   id: string;

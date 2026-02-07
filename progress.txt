@@ -32,3 +32,32 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - Added route typing update for new screens to keep `router.push` typecheck happy.
 ---
+---
+## 2026-02-07 13:14 - Story WK-002: Workout logging with sets, reps, weight
+
+### Completed
+- Added workouts/workout_exercises Supabase migration and new workout types.
+- Built Workouts tab with start flow, exercise picker, per-set logging (side-specific), rest timer, and completion summary.
+- Added workout summary utilities and tests for volume/left-right splits.
+
+### Next Up (for next iteration)
+- [ ] Start WK-003: corrective protocol templates and guided workout flow.
+- [ ] Decide if workout history should include detail drill-down view.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- supabase/migrations/20260207_workouts.sql
+- lib/types.ts
+- lib/workouts.ts
+- lib/workouts.test.js
+- app/(tabs)/workouts.tsx
+- app/(tabs)/_layout.tsx
+- .expo/types/router.d.ts
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
