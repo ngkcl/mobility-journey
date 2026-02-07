@@ -101,7 +101,7 @@
 - [ ] Confirm the daily plan API endpoint format matches the server implementation.
 
 ### Blockers/Warnings
-- None.
+- `git push origin ralph/workout-tracker` failed: no `origin` remote configured.
 
 ### Files Changed
 - supabase/migrations/20260207_daily_plans.sql
