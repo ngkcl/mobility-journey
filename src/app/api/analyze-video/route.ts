@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 
-const VIDEO_ANALYSIS_PROMPT = `You are an expert physiotherapist and movement specialist analyzing frames extracted from a movement/exercise video for a patient with right-thoracic scoliosis and right-side muscular imbalance.
+const VIDEO_ANALYSIS_PROMPT = `You are an expert physiotherapist and movement specialist analyzing a sequence of timestamped frames from a video of a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
-These frames are sampled across the video duration to capture the full movement sequence.
+The frames are evenly spaced to show the FULL movement sequence with continuity. Each frame is labeled with its timestamp. Treat this like watching the video — track how the body moves through the entire sequence.
 
-Focus on RELATIVE observations — what you see compared to ideal form and alignment.
+Key things to track ACROSS frames (continuity):
+- Does posture deteriorate over time? (fatigue)
+- Is the movement pattern consistent or does it break down?
+- Are compensations getting worse as the video progresses?
+- How does range of motion change from rep to rep?
+- Is there a difference in form between the start and end?
 
 Provide your response in TWO parts:
 
@@ -16,11 +21,13 @@ Provide your response in TWO parts:
   "movement_quality_score": <1-10, 10 = perfect form>,
   "posture_score": <1-10, 10 = perfect posture during movement>,
   "symmetry_score": <1-10, 10 = perfectly symmetric movement>,
-  "movement_type": "<exercise|walking|stretching|functional|posture_check|other>",
+  "movement_type": "<exercise|walking|stretching|functional|posture_check|sitting|standing|other>",
+  "detected_exercise": "<name of exercise if identifiable, or null>",
   "compensation_patterns": ["<list of observed compensations>"],
   "asymmetries": ["<list of left/right or rotational asymmetries>"],
   "form_issues": ["<list of form concerns>"],
   "strengths": ["<list of things done well>"],
+  "fatigue_pattern": "<none|mild|moderate|severe>",
   "risk_level": "<low|moderate|high>",
   "confidence": "<low|medium|high>"
 }
@@ -29,28 +36,28 @@ Provide your response in TWO parts:
 ## PART 2: CLINICAL NOTES
 
 ### Movement Analysis
-Describe the movement pattern, quality, and control across the sequence. Note any changes from start to end (fatigue patterns).
+Describe the movement pattern, quality, and control across the full sequence. Note changes from start to end.
+
+### Temporal Progression
+What changes between early frames and late frames? Fatigue? Compensation? Improvement?
 
 ### Posture During Activity
-How is posture maintained during the movement? Any deviations related to scoliosis?
+How is posture maintained? Any scoliosis-related deviations?
 
 ### Compensation Patterns
-What compensatory strategies are visible? Are they related to the right-thoracic curve?
+Compensatory strategies visible? Related to right-thoracic curve?
 
 ### Asymmetries
-Detail any left-right differences in range of motion, muscle activation, or movement quality.
-
-### Exercise Form Assessment
-If this is an exercise, rate the form and provide specific corrections.
+Left-right differences in ROM, muscle activation, or movement quality.
 
 ### Top 3 Recommendations
-Based on what you observe, give 3 specific, actionable recommendations to improve movement quality. Include exercise modifications if relevant.
+Specific, actionable corrections with cues. If exercise: include form fixes with sets/reps.
 
-Be direct and clinical. This is a tracking tool for rehabilitation progress.`;
+Be direct and clinical. This is a rehabilitation tracking tool.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const { frames, videoId, duration } = await request.json();
+    const { frames, timestamps, videoId, duration, frameInterval } = await request.json();
 
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
       return NextResponse.json({ error: 'frames array is required' }, { status: 400 });
@@ -67,33 +74,44 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    // Build content array with all frames + prompt
+    // Build content array with timestamped frames
     const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
 
+    // Context header
+    const durationStr = duration ? `${Math.floor(duration / 60)}m ${Math.round(duration % 60)}s` : 'unknown';
+    content.push({
+      type: 'text',
+      text: `Video: ${durationStr} duration | ${frames.length} frames | ~${frameInterval || '?'}s between frames`,
+    });
+
     for (let i = 0; i < frames.length; i++) {
+      const ts = timestamps?.[i];
+      const label = ts?.label || `Frame ${i + 1}`;
+      const time = ts?.timestamp != null ? `${Math.round(ts.timestamp)}s` : '';
+
       content.push({
         type: 'image',
         source: {
           type: 'base64',
-          media_type: 'image/png',
+          media_type: 'image/jpeg',
           data: frames[i],
         },
       });
       content.push({
         type: 'text',
-        text: `Frame ${i + 1} of ${frames.length}`,
+        text: `[${label}${time ? ` — ${time} into video` : ''}] (${i + 1}/${frames.length})`,
       });
     }
 
     content.push({
       type: 'text',
-      text: `Video duration: ${duration ? `${Math.round(duration)}s` : 'unknown'}\n\n${VIDEO_ANALYSIS_PROMPT}`,
+      text: VIDEO_ANALYSIS_PROMPT,
     });
 
     // Run vision analysis with Claude Opus
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-0520',
-      max_tokens: 3000,
+      max_tokens: 3500,
       messages: [{ role: 'user', content }],
     });
 
@@ -124,19 +142,13 @@ export async function POST(request: NextRequest) {
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Save analysis log
       const title = [
         'AI Video Analysis (Opus)',
-        structuredData?.movement_type ? `${structuredData.movement_type}` : null,
-        structuredData?.movement_quality_score
-          ? `Quality: ${structuredData.movement_quality_score}/10`
-          : null,
-        structuredData?.symmetry_score
-          ? `Symmetry: ${structuredData.symmetry_score}/10`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' — ');
+        structuredData?.detected_exercise || structuredData?.movement_type || null,
+        structuredData?.movement_quality_score ? `Quality: ${structuredData.movement_quality_score}/10` : null,
+        structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
+        structuredData?.fatigue_pattern && structuredData.fatigue_pattern !== 'none' ? `Fatigue: ${structuredData.fatigue_pattern}` : null,
+      ].filter(Boolean).join(' — ');
 
       await supabase.from('analysis_logs').insert({
         entry_date: new Date().toISOString().split('T')[0],
@@ -145,12 +157,11 @@ export async function POST(request: NextRequest) {
         content: analysis,
       });
 
-      // Update video record with analysis result
       await supabase
         .from('videos')
         .update({
           analysis_status: 'complete',
-          analysis_result: { structuredData, rawAnalysis: analysis },
+          analysis_result: { structuredData, rawAnalysis: analysis, frameCount: frames.length },
         })
         .eq('id', videoId);
     }
@@ -159,25 +170,22 @@ export async function POST(request: NextRequest) {
       analysis,
       structuredData,
       videoId,
+      frameCount: frames.length,
       model: 'claude-opus-4-0520',
     });
   } catch (error) {
     console.error('Video analysis error:', error);
 
-    // Try to mark analysis as failed
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       const { videoId } = await request.clone().json();
       if (supabaseUrl && supabaseServiceKey && videoId) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        await supabase
-          .from('videos')
-          .update({ analysis_status: 'failed' })
-          .eq('id', videoId);
+        await supabase.from('videos').update({ analysis_status: 'failed' }).eq('id', videoId);
       }
     } catch {
-      // Silent fail on status update
+      // Silent fail
     }
 
     return NextResponse.json(

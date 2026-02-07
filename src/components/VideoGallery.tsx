@@ -182,7 +182,7 @@ export default function VideoGallery() {
 
         // Extract frames and trigger analysis in background
         extractVideoFrames(file)
-          .then(({ frames, duration: dur }) => {
+          .then(({ frames, duration: dur, frameInterval }) => {
             // Update status to analyzing
             supabase
               .from('videos')
@@ -200,9 +200,11 @@ export default function VideoGallery() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                frames,
+                frames: frames.map((f) => f.base64),
+                timestamps: frames.map((f) => ({ timestamp: f.timestamp, label: f.label })),
                 videoId: inserted.id,
                 duration: dur,
+                frameInterval,
               }),
             });
           })
