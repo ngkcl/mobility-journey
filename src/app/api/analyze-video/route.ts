@@ -56,8 +56,22 @@ Specific, actionable corrections with cues. If exercise: include form fixes with
 Be direct and clinical. This is a rehabilitation tracking tool.`;
 
 export async function POST(request: NextRequest) {
+  type VideoAnalyzePayload = {
+    frames?: string[];
+    timestamps?: { label?: string; timestamp?: number }[];
+    videoId?: string;
+    duration?: number;
+    frameInterval?: number;
+  };
+
+  let payload: VideoAnalyzePayload | null = null;
+
   try {
-    const { frames, timestamps, videoId, duration, frameInterval } = await request.json();
+    payload = (await request.json()) as VideoAnalyzePayload | null;
+    if (!payload || typeof payload !== 'object') {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+    const { frames, timestamps, videoId, duration, frameInterval } = payload;
 
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
       return NextResponse.json({ error: 'frames array is required' }, { status: 400 });
@@ -179,7 +193,7 @@ export async function POST(request: NextRequest) {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const { videoId } = await request.clone().json();
+      const videoId = payload?.videoId;
       if (supabaseUrl && supabaseServiceKey && videoId) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         await supabase.from('videos').update({ analysis_status: 'failed' }).eq('id', videoId);

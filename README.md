@@ -33,6 +33,22 @@ bun run build
 
 Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
+## Testing
+
+```bash
+# Run unit tests (Vitest)
+pnpm test
+
+# Lint the codebase
+pnpm lint
+
+# Typecheck without emitting files
+pnpm typecheck
+
+# Run all checks in sequence
+pnpm check
+```
+
 ## Project Structure
 
 ```

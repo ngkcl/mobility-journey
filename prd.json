@@ -14,35 +14,35 @@
       "id": "2",
       "title": "Test Supabase client and data layer",
       "description": "Write unit tests for supabaseClient.ts. Mock Supabase calls. Test CRUD operations for photos, metrics, analysis_logs, todos, videos tables.",
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
       "id": "3",
       "title": "Test API routes",
       "description": "Write tests for /api/analyze and /api/analyze-video routes. Mock Claude/OpenAI calls. Test error handling, auth middleware, response formats.",
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
       "id": "4",
       "title": "Test UI components",
       "description": "Write component tests for PhotoTimeline, MetricsTracker, AnalysisLog, TodoTracker, ProgressCharts, VideoGallery. Test rendering, user interactions, loading/error states.",
-      "passes": false,
+      "passes": true,
       "priority": 4
     },
     {
       "id": "5",
       "title": "Fix all lint warnings",
       "description": "Replace <img> with next/image in PhotoTimeline.tsx and any other files. Fix all ESLint warnings. Ensure `pnpm lint` passes clean.",
-      "passes": false,
+      "passes": true,
       "priority": 5
     },
     {
       "id": "6",
       "title": "Add CI check script",
       "description": "Create a `check` npm script that runs typecheck + lint + test in sequence. Ensure all pass. Update README with testing docs.",
-      "passes": false,
+      "passes": true,
       "priority": 6
     }
   ]

@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",

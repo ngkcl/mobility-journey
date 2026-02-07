@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import { Upload, Trash2, Calendar, Play, X, Film, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getSupabase } from '@/lib/supabaseClient';
@@ -619,10 +620,12 @@ export default function VideoGallery() {
               {/* Thumbnail */}
               <div className="aspect-video bg-slate-800/50 relative overflow-hidden">
                 {video.thumbnail_url ? (
-                  <img
+                  <Image
                     src={video.thumbnail_url}
                     alt={video.label ?? 'Video thumbnail'}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
