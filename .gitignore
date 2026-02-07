@@ -41,4 +41,5 @@ yarn-error.log*
 next-env.d.ts
 ralph.log
 ralph-fixes.log
+ralph.pid
 fix-prd.json
