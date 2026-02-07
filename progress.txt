@@ -15,7 +15,7 @@
 - [ ] Verify status bar styling and global background colors.
 
 ### Blockers/Warnings
-- None
+- `git push origin ralph/expo-migration` failed: no `origin` remote configured.
 
 ### Files Changed
 - app.json
