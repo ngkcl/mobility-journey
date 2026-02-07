@@ -43,6 +43,21 @@ type MetricEntryView = {
   notes?: string;
 };
 
+type MetricKey = (typeof quickMetrics)[number]['key'];
+
+const SCORE_LABELS: Record<MetricKey, string> = {
+  painLevel: 'Pain',
+  postureScore: 'Posture',
+  symmetryScore: 'Symmetry',
+  energyLevel: 'Energy',
+};
+
+const TREND_META = {
+  up: { icon: 'arrow-up' as const, color: '#22c55e', label: 'Improving' },
+  down: { icon: 'arrow-down' as const, color: '#ef4444', label: 'Declining' },
+  flat: { icon: 'remove' as const, color: '#94a3b8', label: 'Neutral' },
+};
+
 export default function MetricsScreen() {
   const [entries, setEntries] = useState<MetricEntryView[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -99,7 +114,29 @@ export default function MetricsScreen() {
   };
 
   const addEntry = async () => {
-    if (!newEntry.date) return;
+    if (!newEntry.date) {
+      pushToast('Date is required.', 'error');
+      return;
+    }
+
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(newEntry.date)) {
+      pushToast('Use date format YYYY-MM-DD.', 'error');
+      return;
+    }
+
+    const invalidScore = quickMetrics.find((metric) => {
+      const value = newEntry[metric.key as keyof MetricEntryView];
+      if (value === undefined || value === null) return false;
+      const numericValue = typeof value === 'number' ? value : Number(value);
+      if (!Number.isFinite(numericValue)) return true;
+      return numericValue < 1 || numericValue > 10;
+    });
+
+    if (invalidScore) {
+      pushToast(`${SCORE_LABELS[invalidScore.key]} must be 1-10.`, 'error');
+      return;
+    }
 
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -177,6 +214,20 @@ export default function MetricsScreen() {
     return entry ? (entry[key as keyof MetricEntryView] as number) : null;
   };
 
+  const getTrend = (key: MetricKey) => {
+    const values = entries
+      .map((entry) => entry[key])
+      .filter((value): value is number => typeof value === 'number')
+      .slice(0, 5);
+
+    if (values.length < 2) return TREND_META.flat;
+
+    const diff = values[0] - values[values.length - 1];
+    if (diff >= 1) return TREND_META.up;
+    if (diff <= -1) return TREND_META.down;
+    return TREND_META.flat;
+  };
+
   // Exercise stats
   const streak = entries.filter((e) => e.exerciseDone).length;
   const totalMinutes = entries.reduce((sum, e) => sum + (e.exerciseMinutes ?? 0), 0);
@@ -213,6 +264,7 @@ export default function MetricsScreen() {
       <View className="flex-row flex-wrap gap-3 mb-4">
         {quickMetrics.map((metric) => {
           const value = getLatestValue(metric.key);
+          const trend = getTrend(metric.key);
           return (
             <View
               key={metric.key}
@@ -222,10 +274,18 @@ export default function MetricsScreen() {
                 <Ionicons name={metric.icon} size={16} color={metric.color} />
                 <Text className="text-slate-300 text-sm">{metric.label}</Text>
               </View>
-              <Text className="text-3xl font-bold text-white">
-                {value !== null ? `${value}` : '—'}
-                <Text className="text-lg text-slate-500">{metric.unit}</Text>
-              </Text>
+              <View className="flex-row items-end justify-between">
+                <Text className="text-3xl font-bold text-white">
+                  {value !== null ? `${value}` : '—'}
+                  <Text className="text-lg text-slate-500">{metric.unit}</Text>
+                </Text>
+                <View className="flex-row items-center gap-1">
+                  <Ionicons name={trend.icon} size={16} color={trend.color} />
+                  <Text className="text-xs" style={{ color: trend.color }}>
+                    {trend.label}
+                  </Text>
+                </View>
+              </View>
             </View>
           );
         })}

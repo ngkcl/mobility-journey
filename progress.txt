@@ -104,3 +104,26 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 11:35 - Story US-005: Metrics tab - daily check-in
+
+### Completed
+- Added validation for date format and 1-10 score range before saving check-ins.
+- Implemented trend indicators on quick stats cards using recent 5 entries.
+- Updated quick stats UI to show trend arrows and labels alongside latest values.
+
+### Next Up (for next iteration)
+- [ ] Implement US-006 todos/protocol tracker.
+- [ ] Validate trend logic on device and adjust thresholds if needed.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` still fails: no `origin` remote configured.
+
+### Files Changed
+- app/(tabs)/metrics.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---

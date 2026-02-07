@@ -98,7 +98,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Reference ../mobility-journey/src/components/MetricsTracker.tsx. Column mapping: painLevel→pain_level, postureScore→posture_score, symmetryScore→symmetry_score, energyLevel→energy_level, exerciseDone→exercise_done, exerciseMinutes→exercise_minutes, exerciseNames→exercise_names, functionalMilestone→functional_milestone, romForwardBend→rom_forward_bend, romLateral→rom_lateral, ribHump→rib_hump."
     },
     {
