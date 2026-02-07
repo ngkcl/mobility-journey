@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Check, Circle, Clock, Calendar, Dumbbell, Stethoscope, Pill } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
 
@@ -42,6 +42,7 @@ export default function TodoTracker() {
     let isMounted = true;
 
     const loadTodos = async () => {
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('todos')
         .select('id, title, details, completed, completed_at, due_date, category, frequency')
@@ -83,6 +84,7 @@ export default function TodoTracker() {
   const addTodo = async () => {
     if (!newTodo.title) return;
 
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('todos')
       .insert({
@@ -123,6 +125,7 @@ export default function TodoTracker() {
   };
 
   const toggleComplete = async (id: string) => {
+    const supabase = getSupabase();
     const target = todos.find(todo => todo.id === id);
     if (!target) return;
 
@@ -150,14 +153,15 @@ export default function TodoTracker() {
   };
 
   const deleteTodo = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!confirm('Are you sure?')) return;
+    const supabase = getSupabase();
     const prev = todos;
     setTodos(p => p.filter(t => t.id !== id));
     const { error } = await supabase.from('todos').delete().eq('id', id);
     if (error) {
       setTodos(prev);
-      console.error('Failed to delete todo', error);
-      pushToast('Failed to delete task. Restored.', 'error');
+      console.error('Failed to delete. Restored.', error);
+      pushToast('Failed to delete. Restored.', 'error');
     }
   };
 

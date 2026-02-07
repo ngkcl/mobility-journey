@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Bot, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
 
@@ -31,6 +31,7 @@ export default function AnalysisLog() {
     let isMounted = true;
 
     const loadEntries = async () => {
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('analysis_logs')
         .select('id, entry_date, category, title, content')
@@ -69,6 +70,7 @@ export default function AnalysisLog() {
   const addEntry = async () => {
     if (!newEntry.date || !newEntry.title || !newEntry.content) return;
 
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('analysis_logs')
       .insert({
@@ -106,14 +108,15 @@ export default function AnalysisLog() {
   };
 
   const deleteEntry = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this entry?')) return;
+    if (!confirm('Are you sure?')) return;
+    const supabase = getSupabase();
     const prev = entries;
     setEntries(p => p.filter(e => e.id !== id));
     const { error } = await supabase.from('analysis_logs').delete().eq('id', id);
     if (error) {
       setEntries(prev);
       console.error('Failed to delete analysis entry', error);
-      pushToast('Failed to delete analysis entry. Restored.', 'error');
+      pushToast('Failed to delete. Restored.', 'error');
     }
   };
 

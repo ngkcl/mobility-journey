@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
 
@@ -39,6 +39,7 @@ export default function MetricsTracker() {
     let isMounted = true;
 
     const loadEntries = async () => {
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('metrics')
         .select('id, entry_date, cobb_angle, pain_level, shoulder_diff, hip_diff, flexibility, notes')
@@ -80,6 +81,7 @@ export default function MetricsTracker() {
   const addEntry = async () => {
     if (!newEntry.date) return;
 
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('metrics')
       .insert({
@@ -119,14 +121,15 @@ export default function MetricsTracker() {
   };
 
   const deleteEntry = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this metric?')) return;
+    if (!confirm('Are you sure?')) return;
+    const supabase = getSupabase();
     const prev = entries;
     setEntries(p => p.filter(e => e.id !== id));
     const { error } = await supabase.from('metrics').delete().eq('id', id);
     if (error) {
       setEntries(prev);
       console.error('Failed to delete metric entry', error);
-      pushToast('Failed to delete metric entry. Restored.', 'error');
+      pushToast('Failed to delete. Restored.', 'error');
     }
   };
 
