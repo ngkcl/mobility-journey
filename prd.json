@@ -1,63 +1,49 @@
 {
-  "branchName": "ralph/add-persistence",
-  "projectName": "Mobility Journey Dashboard",
-  "description": "Add Supabase persistence and polish UI for posture/scoliosis tracking app",
+  "branchName": "ralph/devops-security",
+  "projectName": "Mobility Journey - DevOps & Security Hardening",
+  "description": "Set up CI/CD pipeline, review and harden RLS policies, add proper environment management, and improve deployment configuration.",
   "userStories": [
     {
       "id": "1",
-      "title": "Set up Supabase client and database schema",
-      "description": "Create Supabase project config, define tables for photos, metrics, analysis_logs, and todos. Create migration files.",
+      "title": "GitHub Actions CI pipeline",
+      "description": "Create .github/workflows/ci.yml that runs on push and PR: install deps, typecheck, lint, test (when tests exist). Add status badge to README.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "Persist photos to Supabase Storage",
-      "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
+      "title": "RLS policies audit and hardening",
+      "description": "Review all Supabase RLS policies. Currently using basic auth middleware - ensure RLS policies are properly restrictive. Add migration for any missing policies. Document the security model.",
       "passes": true,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Persist metrics to database",
-      "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
+      "title": "Environment configuration management",
+      "description": "Create proper .env.local.example with all required vars documented. Add runtime validation that fails fast if required env vars are missing. Add environment-specific configs (dev/staging/prod).",
       "passes": true,
       "priority": 3
     },
     {
       "id": "4",
-      "title": "Persist analysis log entries",
-      "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
-      "passes": true,
+      "title": "Error monitoring and logging",
+      "description": "Add structured error logging to API routes. Create error boundary component for React. Add health check endpoint /api/health that verifies Supabase connectivity.",
+      "passes": false,
       "priority": 4
     },
     {
       "id": "5",
-      "title": "Persist todos/protocol items",
-      "description": "Save todos to todos table. Track completion status. Load on page load.",
-      "passes": true,
+      "title": "Performance optimization",
+      "description": "Add next/image for all images (replacing <img> tags). Implement lazy loading for photo/video galleries. Add proper caching headers. Optimize Supabase queries with proper indexing suggestions.",
+      "passes": false,
       "priority": 5
     },
     {
       "id": "6",
-      "title": "Add loading states and error handling",
-      "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
-      "passes": true,
+      "title": "Deployment documentation",
+      "description": "Document full deployment process: Vercel config, Supabase setup, env vars needed, migration steps. Add CONTRIBUTING.md. Update README with architecture diagram (mermaid).",
+      "passes": false,
       "priority": 6
-    },
-    {
-      "id": "7",
-      "title": "Polish UI and mobile responsiveness",
-      "description": "Improve spacing, animations, empty states. Ensure great mobile experience.",
-      "passes": true,
-      "priority": 7
-    },
-    {
-      "id": "8",
-      "title": "Add data export feature",
-      "description": "Allow exporting all data as JSON for backup/portability.",
-      "passes": true,
-      "priority": 8
     }
   ]
 }

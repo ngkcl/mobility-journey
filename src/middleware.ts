@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverEnv } from './lib/env/server';
 
-const AUTH_USER = process.env.AUTH_USER || 'nick';
-const AUTH_PASS = process.env.AUTH_PASS || 'mandel2026';
+const { AUTH_USER, AUTH_PASS } = serverEnv;
 
 export function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');

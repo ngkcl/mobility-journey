@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { publicEnv } from '@/lib/env/public';
+import { serverEnv } from '@/lib/env/server';
 
 const VIDEO_ANALYSIS_PROMPT = `You are an expert physiotherapist and movement specialist analyzing a sequence of timestamped frames from a video of a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
@@ -67,12 +69,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
     }
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
-      return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
-    }
-
-    const anthropic = new Anthropic({ apiKey: anthropicKey });
+    const anthropic = new Anthropic({ apiKey: serverEnv.ANTHROPIC_API_KEY });
 
     // Build content array with timestamped frames
     const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
@@ -136,35 +133,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Save to Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabase = createClient(
+      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+      serverEnv.SUPABASE_SERVICE_ROLE_KEY,
+    );
 
-    if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const title = [
+      'AI Video Analysis (Opus)',
+      structuredData?.detected_exercise || structuredData?.movement_type || null,
+      structuredData?.movement_quality_score ? `Quality: ${structuredData.movement_quality_score}/10` : null,
+      structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
+      structuredData?.fatigue_pattern && structuredData.fatigue_pattern !== 'none' ? `Fatigue: ${structuredData.fatigue_pattern}` : null,
+    ].filter(Boolean).join(' — ');
 
-      const title = [
-        'AI Video Analysis (Opus)',
-        structuredData?.detected_exercise || structuredData?.movement_type || null,
-        structuredData?.movement_quality_score ? `Quality: ${structuredData.movement_quality_score}/10` : null,
-        structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
-        structuredData?.fatigue_pattern && structuredData.fatigue_pattern !== 'none' ? `Fatigue: ${structuredData.fatigue_pattern}` : null,
-      ].filter(Boolean).join(' — ');
+    await supabase.from('analysis_logs').insert({
+      entry_date: new Date().toISOString().split('T')[0],
+      category: 'ai',
+      title,
+      content: analysis,
+    });
 
-      await supabase.from('analysis_logs').insert({
-        entry_date: new Date().toISOString().split('T')[0],
-        category: 'ai',
-        title,
-        content: analysis,
-      });
-
-      await supabase
-        .from('videos')
-        .update({
-          analysis_status: 'complete',
-          analysis_result: { structuredData, rawAnalysis: analysis, frameCount: frames.length },
-        })
-        .eq('id', videoId);
-    }
+    await supabase
+      .from('videos')
+      .update({
+        analysis_status: 'complete',
+        analysis_result: { structuredData, rawAnalysis: analysis, frameCount: frames.length },
+      })
+      .eq('id', videoId);
 
     return NextResponse.json({
       analysis,
@@ -177,11 +172,12 @@ export async function POST(request: NextRequest) {
     console.error('Video analysis error:', error);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       const { videoId } = await request.clone().json();
-      if (supabaseUrl && supabaseServiceKey && videoId) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      if (videoId) {
+        const supabase = createClient(
+          publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+          serverEnv.SUPABASE_SERVICE_ROLE_KEY,
+        );
         await supabase.from('videos').update({ analysis_status: 'failed' }).eq('id', videoId);
       }
     } catch {

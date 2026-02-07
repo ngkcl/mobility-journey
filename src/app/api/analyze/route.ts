@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { publicEnv } from '@/lib/env/public';
+import { serverEnv } from '@/lib/env/server';
 
 const ANALYSIS_PROMPT = `You are an expert physiotherapist analyzing a progress photo for a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
@@ -55,12 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'photoUrl is required' }, { status: 400 });
     }
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
-      return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
-    }
-
-    const anthropic = new Anthropic({ apiKey: anthropicKey });
+    const anthropic = new Anthropic({ apiKey: serverEnv.ANTHROPIC_API_KEY });
 
     // Fetch image and convert to base64 for Claude
     const { data: imageData, mediaType } = await fetchImageAsBase64(photoUrl);
@@ -108,37 +105,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Save to Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabase = createClient(
+      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+      serverEnv.SUPABASE_SERVICE_ROLE_KEY,
+    );
 
-    if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Save analysis log
+    const title = [
+      'AI Posture Analysis (Opus)',
+      structuredData?.view_type ? `${structuredData.view_type} view` : null,
+      structuredData?.posture_score ? `Posture: ${structuredData.posture_score}/10` : null,
+      structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
+    ].filter(Boolean).join(' — ');
 
-      // Save analysis log
-      const title = [
-        'AI Posture Analysis (Opus)',
-        structuredData?.view_type ? `${structuredData.view_type} view` : null,
-        structuredData?.posture_score ? `Posture: ${structuredData.posture_score}/10` : null,
-        structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
-      ].filter(Boolean).join(' — ');
+    await supabase.from('analysis_logs').insert({
+      entry_date: new Date().toISOString().split('T')[0],
+      category: 'ai',
+      title,
+      content: analysis,
+    });
 
-      await supabase.from('analysis_logs').insert({
+    // Save scores as metrics
+    if (structuredData) {
+      await supabase.from('metrics').insert({
         entry_date: new Date().toISOString().split('T')[0],
-        category: 'ai',
-        title,
-        content: analysis,
+        posture_score: structuredData.posture_score ?? null,
+        symmetry_score: structuredData.symmetry_score ?? null,
+        rib_hump: structuredData.rib_hump ?? null,
+        notes: `Auto-extracted from AI photo analysis (confidence: ${structuredData.confidence || 'unknown'})`,
       });
-
-      // Save scores as metrics
-      if (structuredData) {
-        await supabase.from('metrics').insert({
-          entry_date: new Date().toISOString().split('T')[0],
-          posture_score: structuredData.posture_score ?? null,
-          symmetry_score: structuredData.symmetry_score ?? null,
-          rib_hump: structuredData.rib_hump ?? null,
-          notes: `Auto-extracted from AI photo analysis (confidence: ${structuredData.confidence || 'unknown'})`,
-        });
-      }
     }
 
     return NextResponse.json({
