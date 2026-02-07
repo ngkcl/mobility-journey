@@ -62,7 +62,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The guided mode is important — Nick should be able to tap 'Morning Protocol' and just follow along without thinking. Timer beeps when rest is over, shows next exercise, etc."
     },
     {

@@ -107,6 +107,24 @@ export interface WorkoutExercise {
   sets: WorkoutSet[];
 }
 
+export interface WorkoutTemplateExercise {
+  exercise_id: string;
+  sets: number | null;
+  reps: number | null;
+  duration: number | null;
+  side: WorkoutSetSide | null;
+  order: number;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  type: WorkoutType;
+  exercises: WorkoutTemplateExercise[];
+  estimated_duration_minutes: number | null;
+  created_at: string;
+}
+
 // ─── Metrics ──────────────────────────────────────────
 export interface MetricEntry {
   id: string;

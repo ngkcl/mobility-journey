@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
 import { computeWorkoutSummary } from '../../lib/workouts';
+import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
 import type {
   Exercise,
   ExerciseCategory,
@@ -21,6 +22,8 @@ import type {
   WorkoutExercise,
   WorkoutSet,
   WorkoutSetSide,
+  WorkoutTemplate,
+  WorkoutTemplateExercise,
   WorkoutType,
 } from '../../lib/types';
 
@@ -71,6 +74,14 @@ type SetDraft = {
   notes: string;
 };
 
+type TemplateExerciseDraft = WorkoutTemplateExercise & {
+  exercise: Exercise | null;
+};
+
+type TemplateDraft = Omit<WorkoutTemplate, 'exercises'> & {
+  exercises: TemplateExerciseDraft[];
+};
+
 const emptySetDraft = (side: WorkoutSetSide): SetDraft => ({
   reps: '',
   weight: '',
@@ -118,7 +129,31 @@ export default function WorkoutsScreen() {
   const [energyAfter, setEnergyAfter] = useState<string>('');
   const [painAfter, setPainAfter] = useState<string>('');
   const [summary, setSummary] = useState<ReturnType<typeof computeWorkoutSummary> | null>(null);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [templateDraft, setTemplateDraft] = useState<TemplateDraft | null>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [templatePickerQuery, setTemplatePickerQuery] = useState('');
+  const [templateReplaceIndex, setTemplateReplaceIndex] = useState<number | null>(null);
+  const [guidedTemplate, setGuidedTemplate] = useState<WorkoutTemplate | null>(null);
+  const [guidedExerciseIndex, setGuidedExerciseIndex] = useState(0);
+  const [guidedSetIndex, setGuidedSetIndex] = useState(0);
+  const [guidedRemaining, setGuidedRemaining] = useState<number | null>(null);
+  const [guidedStartedAt, setGuidedStartedAt] = useState<Date | null>(null);
+  const [guidedSets, setGuidedSets] = useState<Record<string, WorkoutSet[]>>({});
   const { pushToast } = useToast();
+
+  const exerciseById = useMemo(() => {
+    return new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  }, [exercises]);
+
+  const filteredTemplateExercises = useMemo(() => {
+    const query = templatePickerQuery.trim().toLowerCase();
+    if (!query) return exercises;
+    return exercises.filter((exercise) =>
+      `${exercise.name} ${exercise.description ?? ''}`.toLowerCase().includes(query),
+    );
+  }, [exercises, templatePickerQuery]);
 
   const loadExercises = async () => {
     const supabase = getSupabase();
@@ -188,8 +223,30 @@ export default function WorkoutsScreen() {
     setRecentExercises(Array.from(deduped.values()).slice(0, 6));
   };
 
+  const normalizeTemplate = (template: WorkoutTemplate): WorkoutTemplate => {
+    const exercisesList = Array.isArray(template.exercises) ? template.exercises : [];
+    const sorted = [...exercisesList].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    return { ...template, exercises: sorted };
+  };
+
+  const loadTemplates = async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('workout_templates')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) {
+      pushToast('Failed to load templates.', 'error');
+      return;
+    }
+
+    const normalized = (data ?? []).map((row: WorkoutTemplate) => normalizeTemplate(row));
+    setTemplates(normalized);
+  };
+
   const loadAll = async () => {
-    await Promise.all([loadExercises(), loadWorkouts(), loadRecentExercises()]);
+    await Promise.all([loadExercises(), loadWorkouts(), loadRecentExercises(), loadTemplates()]);
     setIsLoading(false);
   };
 
@@ -228,6 +285,7 @@ export default function WorkoutsScreen() {
 
     return () => clearInterval(id);
   }, [restRemaining]);
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -411,6 +469,293 @@ export default function WorkoutsScreen() {
     ]);
   };
 
+  const startTemplateEdit = (template: WorkoutTemplate) => {
+    if (activeWorkout || guidedTemplate) {
+      pushToast('Finish the current session first.', 'info');
+      return;
+    }
+
+    const draftExercises: TemplateExerciseDraft[] = template.exercises.map((exercise, index) => ({
+      ...exercise,
+      order: index + 1,
+      exercise: exerciseById.get(exercise.exercise_id) ?? null,
+    }));
+
+    setTemplateDraft({ ...template, exercises: draftExercises });
+    setShowTemplateEditor(true);
+    setTemplatePickerOpen(false);
+    setTemplateReplaceIndex(null);
+    setTemplatePickerQuery('');
+  };
+
+  const closeTemplateEditor = () => {
+    setShowTemplateEditor(false);
+    setTemplateDraft(null);
+    setTemplatePickerOpen(false);
+    setTemplateReplaceIndex(null);
+    setTemplatePickerQuery('');
+  };
+
+  const updateTemplateExercise = (index: number, patch: Partial<TemplateExerciseDraft>) => {
+    setTemplateDraft((prev) => {
+      if (!prev) return prev;
+      const nextExercises = [...prev.exercises];
+      nextExercises[index] = { ...nextExercises[index], ...patch };
+      return { ...prev, exercises: nextExercises };
+    });
+  };
+
+  const moveTemplateExercise = (index: number, direction: -1 | 1) => {
+    setTemplateDraft((prev) => {
+      if (!prev) return prev;
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= prev.exercises.length) return prev;
+      const nextExercises = [...prev.exercises];
+      const [moved] = nextExercises.splice(index, 1);
+      nextExercises.splice(targetIndex, 0, moved);
+      const reordered = nextExercises.map((exercise, idx) => ({ ...exercise, order: idx + 1 }));
+      return { ...prev, exercises: reordered };
+    });
+  };
+
+  const removeTemplateExercise = (index: number) => {
+    setTemplateDraft((prev) => {
+      if (!prev) return prev;
+      const nextExercises = prev.exercises.filter((_, idx) => idx !== index);
+      const reordered = nextExercises.map((exercise, idx) => ({ ...exercise, order: idx + 1 }));
+      return { ...prev, exercises: reordered };
+    });
+  };
+
+  const openTemplateExercisePicker = (replaceIndex?: number) => {
+    setTemplateReplaceIndex(Number.isInteger(replaceIndex) ? (replaceIndex as number) : null);
+    setTemplatePickerOpen(true);
+    setTemplatePickerQuery('');
+  };
+
+  const upsertTemplateExercise = (exercise: Exercise) => {
+    setTemplateDraft((prev) => {
+      if (!prev) return prev;
+      const baseEntry: TemplateExerciseDraft = {
+        exercise_id: exercise.id,
+        sets: exercise.sets_default ?? 1,
+        reps: exercise.reps_default ?? null,
+        duration: exercise.duration_seconds_default ?? null,
+        side: exercise.side_specific ? 'left' : 'bilateral',
+        order: prev.exercises.length + 1,
+        exercise,
+      };
+
+      let nextExercises = [...prev.exercises];
+      if (templateReplaceIndex !== null && nextExercises[templateReplaceIndex]) {
+        const existing = nextExercises[templateReplaceIndex];
+        nextExercises[templateReplaceIndex] = {
+          ...existing,
+          exercise_id: exercise.id,
+          exercise,
+          sets: exercise.sets_default ?? existing.sets ?? 1,
+          reps: exercise.reps_default ?? null,
+          duration: exercise.duration_seconds_default ?? null,
+          side: exercise.side_specific ? 'left' : 'bilateral',
+        };
+      } else {
+        nextExercises = [...nextExercises, baseEntry];
+      }
+
+      const reordered = nextExercises.map((item, idx) => ({ ...item, order: idx + 1 }));
+      return { ...prev, exercises: reordered };
+    });
+
+    setTemplatePickerOpen(false);
+    setTemplateReplaceIndex(null);
+    setTemplatePickerQuery('');
+  };
+
+  const saveTemplateDraft = async () => {
+    if (!templateDraft) return;
+    const supabase = getSupabase();
+    const exercisesPayload = templateDraft.exercises.map((exercise, index) => ({
+      exercise_id: exercise.exercise_id,
+      sets: exercise.sets ?? null,
+      reps: exercise.reps ?? null,
+      duration: exercise.duration ?? null,
+      side: exercise.side ?? null,
+      order: index + 1,
+    }));
+
+    const { error } = await supabase
+      .from('workout_templates')
+      .update({ exercises: exercisesPayload })
+      .eq('id', templateDraft.id);
+
+    if (error) {
+      pushToast('Failed to save template.', 'error');
+      return;
+    }
+
+    pushToast('Template updated.', 'success');
+    closeTemplateEditor();
+    await loadTemplates();
+  };
+
+  const startGuidedTemplate = (template: WorkoutTemplate) => {
+    if (activeWorkout) {
+      pushToast('Finish the current workout first.', 'info');
+      return;
+    }
+
+    if (template.exercises.length === 0) {
+      pushToast('Template has no exercises.', 'error');
+      return;
+    }
+
+    setGuidedTemplate(template);
+    setGuidedExerciseIndex(0);
+    setGuidedSetIndex(0);
+    setGuidedRemaining(null);
+    setGuidedStartedAt(new Date());
+    setGuidedSets({});
+    setShowStartForm(false);
+  };
+
+  const stopGuidedTemplate = useCallback(() => {
+    setGuidedTemplate(null);
+    setGuidedExerciseIndex(0);
+    setGuidedSetIndex(0);
+    setGuidedRemaining(null);
+    setGuidedStartedAt(null);
+    setGuidedSets({});
+  }, []);
+
+  const finishGuidedWorkout = useCallback(
+    async (setsOverride?: Record<string, WorkoutSet[]>) => {
+      if (!guidedTemplate || !guidedStartedAt) return;
+      const finalSets = setsOverride ?? guidedSets;
+      const totalSets = Object.values(finalSets).reduce((acc, sets) => acc + sets.length, 0);
+      if (totalSets === 0) {
+        pushToast('Log at least one set to save.', 'error');
+        return;
+      }
+
+      const supabase = getSupabase();
+      const startedAt = guidedStartedAt.toISOString();
+      const endedAt = new Date().toISOString();
+      const durationMinutes = Math.max(1, Math.round((Date.now() - guidedStartedAt.getTime()) / 60000));
+      const workoutPayload = {
+        date: startedAt.split('T')[0],
+        type: guidedTemplate.type,
+        started_at: startedAt,
+        ended_at: endedAt,
+        duration_minutes: durationMinutes,
+        notes: `Template: ${guidedTemplate.name}`,
+        energy_level_before: null,
+        pain_level_before: null,
+        energy_level_after: null,
+        pain_level_after: null,
+      };
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(workoutPayload)
+        .select('*')
+        .single();
+
+      if (error || !data) {
+        pushToast('Failed to save guided workout.', 'error');
+        return;
+      }
+
+      const exercisePayload = guidedTemplate.exercises.map((exercise, index) => ({
+        workout_id: data.id,
+        exercise_id: exercise.exercise_id,
+        order_index: index,
+        sets: finalSets[exercise.exercise_id] ?? [],
+      }));
+
+      const { error: exerciseError } = await supabase.from('workout_exercises').insert(exercisePayload);
+      if (exerciseError) {
+        pushToast('Workout saved, but exercises failed.', 'error');
+      }
+
+      const workoutSummary = computeWorkoutSummary(
+        exercisePayload.map((entry) => ({ sets: entry.sets })),
+      );
+      setSummary({ ...workoutSummary, totalDurationSeconds: durationMinutes * 60 });
+      stopGuidedTemplate();
+      await loadAll();
+      pushToast('Guided workout logged.', 'success');
+    },
+    [guidedTemplate, guidedStartedAt, guidedSets, pushToast, stopGuidedTemplate, loadAll],
+  );
+
+  const completeGuidedSet = useCallback(() => {
+    if (!guidedTemplate) return;
+    const currentExercise = guidedTemplate.exercises[guidedExerciseIndex];
+    if (!currentExercise) return;
+    const totalSets = getTemplateSetCount(currentExercise);
+    const isLastSet = guidedSetIndex + 1 >= totalSets;
+    const isLastExercise = guidedExerciseIndex + 1 >= guidedTemplate.exercises.length;
+    const exerciseInfo = exerciseById.get(currentExercise.exercise_id);
+    const fallbackSide: WorkoutSetSide = currentExercise.side ?? (exerciseInfo?.side_specific ? 'left' : 'bilateral');
+    const nextSet = buildTemplateSet(currentExercise, fallbackSide);
+
+    setGuidedSets((prev) => {
+      const next = { ...prev };
+      next[currentExercise.exercise_id] = [...(next[currentExercise.exercise_id] ?? []), nextSet];
+      if (isLastSet && isLastExercise) {
+        finishGuidedWorkout(next);
+      }
+      return next;
+    });
+
+    if (isLastSet) {
+      if (!isLastExercise) {
+        setGuidedExerciseIndex(guidedExerciseIndex + 1);
+        setGuidedSetIndex(0);
+        setGuidedRemaining(null);
+      }
+      return;
+    }
+
+    setGuidedSetIndex(guidedSetIndex + 1);
+    setGuidedRemaining(null);
+  }, [
+    guidedTemplate,
+    guidedExerciseIndex,
+    guidedSetIndex,
+    exerciseById,
+    finishGuidedWorkout,
+  ]);
+
+  const skipGuidedExercise = () => {
+    if (!guidedTemplate) return;
+    const isLastExercise = guidedExerciseIndex + 1 >= guidedTemplate.exercises.length;
+    if (isLastExercise) {
+      finishGuidedWorkout();
+      return;
+    }
+    setGuidedExerciseIndex(guidedExerciseIndex + 1);
+    setGuidedSetIndex(0);
+    setGuidedRemaining(null);
+  };
+
+  useEffect(() => {
+    if (guidedRemaining === null) return;
+    if (guidedRemaining <= 0) {
+      completeGuidedSet();
+      return;
+    }
+
+    const id = setInterval(() => {
+      setGuidedRemaining((prev) => {
+        if (prev === null) return null;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [guidedRemaining, completeGuidedSet]);
+
   const filteredExercises = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return exercises;
@@ -427,6 +772,12 @@ export default function WorkoutsScreen() {
     notes: '',
   };
 
+  const guidedExercise = guidedTemplate?.exercises[guidedExerciseIndex];
+  const guidedExerciseInfo = guidedExercise
+    ? exerciseById.get(guidedExercise.exercise_id) ?? null
+    : null;
+  const guidedTotalSets = guidedExercise ? getTemplateSetCount(guidedExercise) : 0;
+
   return (
     <ScrollView
       className="flex-1 bg-[#0b1020]"
@@ -440,7 +791,7 @@ export default function WorkoutsScreen() {
           <Text className="text-2xl font-semibold text-white">Workouts</Text>
           <Text className="text-slate-400 text-sm">Log sets, track asymmetry, and rest timers</Text>
         </View>
-        {!activeWorkout && (
+        {!activeWorkout && !guidedTemplate && (
           <Pressable
             onPress={() => {
               setActiveWorkout({ type: 'corrective', startedAt: new Date(), notes: '' });
@@ -453,6 +804,272 @@ export default function WorkoutsScreen() {
           </Pressable>
         )}
       </View>
+
+      {guidedTemplate && guidedExercise && (
+        <View className="bg-slate-900/70 rounded-2xl p-5 border border-amber-500/30 mb-6">
+          <View className="flex-row items-center justify-between mb-3">
+            <View>
+              <Text className="text-lg font-semibold text-white">Guided Protocol</Text>
+              <Text className="text-slate-400 text-xs">{guidedTemplate.name}</Text>
+            </View>
+            <Pressable onPress={stopGuidedTemplate} className="px-3 py-2 rounded-xl bg-slate-800">
+              <Text className="text-slate-300 text-xs">End</Text>
+            </Pressable>
+          </View>
+
+          <View className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70">
+            <Text className="text-slate-400 text-xs">
+              Exercise {guidedExerciseIndex + 1} of {guidedTemplate.exercises.length}
+            </Text>
+            <Text className="text-white text-lg font-semibold mt-1">
+              {guidedExerciseInfo?.name ?? 'Exercise'}
+            </Text>
+            {guidedExerciseInfo?.instructions && (
+              <Text className="text-slate-300 text-xs mt-2">{guidedExerciseInfo.instructions}</Text>
+            )}
+            <View className="flex-row flex-wrap gap-2 mt-3">
+              <Text className="text-xs text-slate-400">
+                Set {guidedSetIndex + 1} of {guidedTotalSets}
+              </Text>
+              {guidedExercise.reps !== null && (
+                <Text className="text-xs text-slate-400">Reps: {guidedExercise.reps}</Text>
+              )}
+              {guidedExercise.duration !== null && (
+                <Text className="text-xs text-slate-400">Duration: {guidedExercise.duration}s</Text>
+              )}
+              <Text className="text-xs text-slate-400">
+                Side: {guidedExercise.side ?? (guidedExerciseInfo?.side_specific ? 'left' : 'bilateral')}
+              </Text>
+            </View>
+
+            {guidedExercise.duration !== null && (
+              <View className="mt-4 bg-slate-900/70 rounded-xl p-3 border border-amber-500/30">
+                <Text className="text-amber-200 text-xs">Timer</Text>
+                <Text className="text-white text-2xl font-semibold">
+                  {formatSeconds(Math.max(guidedRemaining ?? guidedExercise.duration, 0))}
+                </Text>
+                {guidedRemaining === null ? (
+                  <Pressable
+                    onPress={() => setGuidedRemaining(guidedExercise.duration ?? null)}
+                    className="mt-3 px-3 py-2 rounded-lg bg-amber-500/20 self-start"
+                  >
+                    <Text className="text-amber-100 text-xs">Start Timer</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => setGuidedRemaining(null)}
+                    className="mt-3 px-3 py-2 rounded-lg bg-slate-800 self-start"
+                  >
+                    <Text className="text-slate-300 text-xs">Pause Timer</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </View>
+
+          <View className="flex-row gap-2 mt-4">
+            <Pressable
+              onPress={completeGuidedSet}
+              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
+            >
+              <Text className="text-white font-medium">Complete Set</Text>
+            </Pressable>
+            <Pressable
+              onPress={skipGuidedExercise}
+              className="bg-slate-800 px-4 py-2.5 rounded-xl"
+            >
+              <Text className="text-slate-300">Next Exercise</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {!guidedTemplate && !activeWorkout && !showStartForm && (
+        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
+          <View className="flex-row items-center justify-between mb-3">
+            <View>
+              <Text className="text-lg font-semibold text-white">Corrective Protocols</Text>
+              <Text className="text-slate-400 text-xs">Start a guided session in one tap</Text>
+            </View>
+          </View>
+
+          {templates.length === 0 ? (
+            <Text className="text-slate-400 text-sm">No templates available yet.</Text>
+          ) : (
+            <View className="gap-3">
+              {templates.map((template) => (
+                <View
+                  key={template.id}
+                  className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text className="text-white font-semibold">{template.name}</Text>
+                      <Text className="text-slate-400 text-xs mt-1">
+                        {template.exercises.length} exercises · {template.estimated_duration_minutes ?? '--'} min
+                      </Text>
+                    </View>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        onPress={() => startTemplateEdit(template)}
+                        className="px-3 py-2 rounded-lg bg-slate-800"
+                      >
+                        <Text className="text-slate-300 text-xs">Customize</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => startGuidedTemplate(template)}
+                        className="px-3 py-2 rounded-lg bg-teal-500"
+                      >
+                        <Text className="text-white text-xs">Start Protocol</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
+      {showTemplateEditor && templateDraft && (
+        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
+          <View className="flex-row items-center justify-between mb-4">
+            <View>
+              <Text className="text-lg font-semibold text-white">Edit Template</Text>
+              <Text className="text-slate-400 text-xs">{templateDraft.name}</Text>
+            </View>
+            <Pressable onPress={closeTemplateEditor} className="px-3 py-2 rounded-xl bg-slate-800">
+              <Text className="text-slate-300 text-xs">Close</Text>
+            </Pressable>
+          </View>
+
+          <View className="gap-3">
+            {templateDraft.exercises.map((exercise, index) => (
+              <View
+                key={`${exercise.exercise_id}-${index}`}
+                className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70"
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-white font-medium">
+                    {index + 1}. {exercise.exercise?.name ?? 'Missing exercise'}
+                  </Text>
+                  <View className="flex-row gap-1">
+                    <Pressable onPress={() => moveTemplateExercise(index, -1)} className="p-1">
+                      <Ionicons name="arrow-up" size={16} color="#94a3b8" />
+                    </Pressable>
+                    <Pressable onPress={() => moveTemplateExercise(index, 1)} className="p-1">
+                      <Ionicons name="arrow-down" size={16} color="#94a3b8" />
+                    </Pressable>
+                    <Pressable onPress={() => openTemplateExercisePicker(index)} className="p-1">
+                      <Ionicons name="swap-horizontal" size={16} color="#94a3b8" />
+                    </Pressable>
+                    <Pressable onPress={() => removeTemplateExercise(index)} className="p-1">
+                      <Ionicons name="trash-outline" size={16} color="#94a3b8" />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <View className="flex-row gap-2 mb-2">
+                  <TextInput
+                    placeholder="Sets"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                    value={exercise.sets !== null ? String(exercise.sets) : ''}
+                    onChangeText={(text) =>
+                      updateTemplateExercise(index, { sets: parseNumber(text) })
+                    }
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                  <TextInput
+                    placeholder="Reps"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                    value={exercise.reps !== null ? String(exercise.reps) : ''}
+                    onChangeText={(text) =>
+                      updateTemplateExercise(index, { reps: parseNumber(text) })
+                    }
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </View>
+                <View className="flex-row gap-2 mb-2">
+                  <TextInput
+                    placeholder="Duration (sec)"
+                    placeholderTextColor="#64748b"
+                    keyboardType="numeric"
+                    value={exercise.duration !== null ? String(exercise.duration) : ''}
+                    onChangeText={(text) =>
+                      updateTemplateExercise(index, { duration: parseNumber(text) })
+                    }
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </View>
+
+                <View className="flex-row flex-wrap gap-2">
+                  {(['left', 'right', 'bilateral'] as WorkoutSetSide[]).map((side) => (
+                    <Pressable
+                      key={side}
+                      onPress={() => updateTemplateExercise(index, { side })}
+                      className={`px-3 py-1.5 rounded-full border ${
+                        exercise.side === side ? 'bg-amber-500/30 border-amber-400' : 'border-slate-700'
+                      }`}
+                    >
+                      <Text className={`text-xs ${exercise.side === side ? 'text-white' : 'text-slate-300'}`}>
+                        {side}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={() => openTemplateExercisePicker()}
+            className="mt-4 bg-slate-800 px-4 py-2.5 rounded-xl items-center"
+          >
+            <Text className="text-slate-300 text-sm">Add Exercise</Text>
+          </Pressable>
+
+          {templatePickerOpen && (
+            <View className="mt-4">
+              <TextInput
+                placeholder="Search exercises"
+                placeholderTextColor="#64748b"
+                className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
+                value={templatePickerQuery}
+                onChangeText={setTemplatePickerQuery}
+              />
+              {templateReplaceIndex !== null && (
+                <Text className="text-slate-400 text-xs mt-2">Replacing exercise {templateReplaceIndex + 1}</Text>
+              )}
+              <View className="mt-3 gap-2">
+                {filteredTemplateExercises.slice(0, 20).map((exercise) => (
+                  <Pressable
+                    key={exercise.id}
+                    onPress={() => upsertTemplateExercise(exercise)}
+                    className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3"
+                  >
+                    <Text className="text-white font-medium">{exercise.name}</Text>
+                    <Text className="text-xs text-slate-400 mt-1">{exercise.category}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View className="flex-row gap-2 mt-5">
+            <Pressable
+              onPress={saveTemplateDraft}
+              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
+            >
+              <Text className="text-white font-medium">Save Template</Text>
+            </Pressable>
+            <Pressable onPress={closeTemplateEditor} className="bg-slate-800 px-4 py-2.5 rounded-xl">
+              <Text className="text-slate-300">Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {showStartForm && activeWorkout && (
         <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">

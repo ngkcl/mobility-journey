@@ -61,3 +61,30 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 13:23 - Story WK-003: Corrective protocol templates (morning/midday/evening)
+
+### Completed
+- Added workout_templates Supabase migration with seeded morning/midday/evening corrective templates.
+- Added guided protocol flow with timers, set tracking, and auto-advance, plus template customization UI.
+- Added template helpers + tests for template set defaults.
+
+### Next Up (for next iteration)
+- [ ] Start WK-004: AI daily plan generator screen + API integration.
+- [ ] Decide on workout history drill-down design for WK-005.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- supabase/migrations/20260207_workout_templates.sql
+- lib/types.ts
+- lib/templates.ts
+- lib/templates.test.js
+- app/(tabs)/workouts.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
