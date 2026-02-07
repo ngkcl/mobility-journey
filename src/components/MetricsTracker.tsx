@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface MetricEntry {
   id: string;
@@ -28,6 +30,7 @@ export default function MetricsTracker() {
   const [entries, setEntries] = useState<MetricEntry[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
   const [newEntry, setNewEntry] = useState<Partial<MetricEntry>>({
     date: new Date().toISOString().split('T')[0],
   });
@@ -43,7 +46,10 @@ export default function MetricsTracker() {
 
       if (error) {
         console.error('Failed to load metrics', error);
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load metrics. Please try again.', 'error');
+        }
         return;
       }
 
@@ -69,7 +75,7 @@ export default function MetricsTracker() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pushToast]);
 
   const addEntry = async () => {
     if (!newEntry.date) return;
@@ -90,6 +96,7 @@ export default function MetricsTracker() {
 
     if (error || !data) {
       console.error('Failed to save metric entry', error);
+      pushToast('Failed to save metric entry. Please try again.', 'error');
       return;
     }
 
@@ -116,6 +123,7 @@ export default function MetricsTracker() {
     const { error } = await supabase.from('metrics').delete().eq('id', id);
     if (error) {
       console.error('Failed to delete metric entry', error);
+      pushToast('Failed to delete metric entry. Please refresh.', 'error');
     }
   };
 
@@ -260,9 +268,7 @@ export default function MetricsTracker() {
         <h3 className="text-lg font-semibold text-white">History</h3>
         
         {isLoading ? (
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 text-center text-gray-400">
-            Loading metrics...
-          </div>
+          <LoadingState label="Loading metrics..." />
         ) : entries.length === 0 ? (
           <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
             <p className="text-gray-400">No entries yet. Add your first measurement to start tracking.</p>

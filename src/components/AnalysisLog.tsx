@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, Bot, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface AnalysisEntry {
   id: string;
@@ -18,6 +20,8 @@ export default function AnalysisLog() {
   const [entries, setEntries] = useState<AnalysisEntry[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'ai' | 'personal' | 'specialist'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
   const [newEntry, setNewEntry] = useState<Partial<AnalysisEntry>>({
     date: new Date().toISOString().split('T')[0],
     type: 'personal',
@@ -34,6 +38,10 @@ export default function AnalysisLog() {
 
       if (error) {
         console.error('Failed to load analysis logs', error);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load analysis entries. Please try again.', 'error');
+        }
         return;
       }
 
@@ -47,6 +55,7 @@ export default function AnalysisLog() {
 
       if (isMounted) {
         setEntries(normalized);
+        setIsLoading(false);
       }
     };
 
@@ -55,7 +64,7 @@ export default function AnalysisLog() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pushToast]);
 
   const addEntry = async () => {
     if (!newEntry.date || !newEntry.title || !newEntry.content) return;
@@ -73,6 +82,7 @@ export default function AnalysisLog() {
 
     if (error || !data) {
       console.error('Failed to save analysis entry', error);
+      pushToast('Failed to save analysis entry. Please try again.', 'error');
       return;
     }
 
@@ -100,6 +110,7 @@ export default function AnalysisLog() {
     const { error } = await supabase.from('analysis_logs').delete().eq('id', id);
     if (error) {
       console.error('Failed to delete analysis entry', error);
+      pushToast('Failed to delete analysis entry. Please refresh.', 'error');
     }
   };
 
@@ -224,7 +235,9 @@ export default function AnalysisLog() {
 
       {/* Entries list */}
       <div className="space-y-4">
-        {filteredEntries.length === 0 ? (
+        {isLoading ? (
+          <LoadingState label="Loading analysis log..." />
+        ) : filteredEntries.length === 0 ? (
           <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
             <p className="text-gray-400">No entries yet. Add your first analysis to start documenting your journey.</p>
           </div>

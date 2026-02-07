@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, Check, Circle, Clock, Calendar, Dumbbell, Stethoscope, Pill } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface Todo {
   id: string;
@@ -28,6 +30,8 @@ export default function TodoTracker() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | Todo['category']>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
   const [newTodo, setNewTodo] = useState<Partial<Todo>>({
     category: 'exercise',
     frequency: 'daily',
@@ -45,6 +49,10 @@ export default function TodoTracker() {
 
       if (error) {
         console.error('Failed to load todos', error);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load tasks. Please try again.', 'error');
+        }
         return;
       }
 
@@ -61,6 +69,7 @@ export default function TodoTracker() {
 
       if (isMounted) {
         setTodos(normalized);
+        setIsLoading(false);
       }
     };
 
@@ -69,7 +78,7 @@ export default function TodoTracker() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pushToast]);
 
   const addTodo = async () => {
     if (!newTodo.title) return;
@@ -89,6 +98,7 @@ export default function TodoTracker() {
 
     if (error || !data) {
       console.error('Failed to save todo', error);
+      pushToast('Failed to save task. Please try again.', 'error');
       return;
     }
 
@@ -135,6 +145,7 @@ export default function TodoTracker() {
 
     if (error) {
       console.error('Failed to update todo', error);
+      pushToast('Failed to update task. Please refresh.', 'error');
     }
   };
 
@@ -143,6 +154,7 @@ export default function TodoTracker() {
     const { error } = await supabase.from('todos').delete().eq('id', id);
     if (error) {
       console.error('Failed to delete todo', error);
+      pushToast('Failed to delete task. Please refresh.', 'error');
     }
   };
 
@@ -319,7 +331,9 @@ export default function TodoTracker() {
 
       {/* Todos list */}
       <div className="space-y-2">
-        {filteredTodos.length === 0 ? (
+        {isLoading ? (
+          <LoadingState label="Loading tasks..." />
+        ) : filteredTodos.length === 0 ? (
           <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
             <p className="text-gray-400">No tasks yet. Add exercises, appointments, or daily routines to track.</p>
           </div>

@@ -42,7 +42,7 @@
       "id": "6",
       "title": "Add loading states and error handling",
       "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
-      "passes": false,
+      "passes": true,
       "priority": 6
     },
     {

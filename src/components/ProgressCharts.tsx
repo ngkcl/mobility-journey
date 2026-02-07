@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ToastProvider';
 
 type ChartPoint = {
   date: string;
@@ -43,6 +45,7 @@ export default function ProgressCharts() {
   const [selectedMetric, setSelectedMetric] = useState('cobbAngle');
   const [data, setData] = useState<ChartPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
 
   const getChange = (key: string) => {
     const values = data
@@ -73,6 +76,20 @@ export default function ProgressCharts() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const formatTooltipLabel = (label: ReactNode) => {
+    if (typeof label === 'string') {
+      return formatDate(label);
+    }
+    return '';
+  };
+
+  const formatTooltipValue = (value: number | string | undefined) => {
+    if (typeof value !== 'number') {
+      return ['--', selectedMetricConfig.label] as const;
+    }
+    return [`${value}${selectedMetricConfig.unit}`, selectedMetricConfig.label] as const;
+  };
+
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving') return <TrendingUp className="text-green-500" size={20} />;
     if (trend === 'declining') return <TrendingDown className="text-red-500" size={20} />;
@@ -90,7 +107,10 @@ export default function ProgressCharts() {
 
       if (error) {
         console.error('Failed to load chart metrics', error);
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load chart data. Please try again.', 'error');
+        }
         return;
       }
 
@@ -118,7 +138,7 @@ export default function ProgressCharts() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pushToast]);
 
   return (
     <div className="space-y-6">
@@ -179,8 +199,9 @@ export default function ProgressCharts() {
         </div>
         
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
-            Loading chart data...
+          <div className="h-64 flex items-center justify-center gap-2 text-gray-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading chart data...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
@@ -215,8 +236,8 @@ export default function ProgressCharts() {
                     borderRadius: '8px',
                     color: '#fff'
                   }}
-                  labelFormatter={formatDate}
-                  formatter={(value: number) => [`${value}${selectedMetricConfig.unit}`, selectedMetricConfig.label]}
+                  labelFormatter={formatTooltipLabel}
+                  formatter={formatTooltipValue}
                 />
                 <Area 
                   type="monotone" 
@@ -236,8 +257,9 @@ export default function ProgressCharts() {
         <h3 className="text-lg font-semibold text-white mb-6">All Metrics Comparison</h3>
         
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
-            Loading chart data...
+          <div className="h-64 flex items-center justify-center gap-2 text-gray-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading chart data...</span>
           </div>
         ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
@@ -265,7 +287,7 @@ export default function ProgressCharts() {
                     borderRadius: '8px',
                     color: '#fff'
                   }}
-                  labelFormatter={formatDate}
+                  labelFormatter={formatTooltipLabel}
                 />
                 {metrics.map((metric) => (
                   <Line 

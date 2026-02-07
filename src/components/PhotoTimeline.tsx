@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Upload, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface Photo {
   id: string;
@@ -26,6 +28,7 @@ export default function PhotoTimeline() {
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const { pushToast } = useToast();
 
   const filteredPhotos = selectedView === 'all' 
     ? photos 
@@ -42,7 +45,10 @@ export default function PhotoTimeline() {
 
       if (error) {
         console.error('Failed to load photos', error);
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load photos. Please try again.', 'error');
+        }
         return;
       }
 
@@ -76,13 +82,15 @@ export default function PhotoTimeline() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pushToast]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
+    let hadUploadError = false;
+    let hadMetadataError = false;
 
     for (const file of Array.from(files)) {
       const fileExt = file.name.split('.').pop() ?? 'jpg';
@@ -96,6 +104,7 @@ export default function PhotoTimeline() {
 
       if (uploadError) {
         console.error('Failed to upload photo', uploadError);
+        hadUploadError = true;
         continue;
       }
 
@@ -115,6 +124,7 @@ export default function PhotoTimeline() {
 
       if (insertError || !inserted) {
         console.error('Failed to save photo metadata', insertError);
+        hadMetadataError = true;
         continue;
       }
 
@@ -133,6 +143,12 @@ export default function PhotoTimeline() {
 
     setIsUploading(false);
     e.target.value = '';
+    if (hadUploadError) {
+      pushToast('Some photos failed to upload. Please retry.', 'error');
+    }
+    if (hadMetadataError) {
+      pushToast('Some photos could not be saved. Please retry.', 'error');
+    }
   };
 
   const togglePhotoSelection = (id: string) => {
@@ -150,12 +166,14 @@ export default function PhotoTimeline() {
     const { error: deleteError } = await supabase.from('photos').delete().eq('id', id);
     if (deleteError) {
       console.error('Failed to delete photo metadata', deleteError);
+      pushToast('Failed to delete photo. Please try again.', 'error');
     }
 
     if (target?.storagePath) {
       const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([target.storagePath]);
       if (storageError) {
         console.error('Failed to delete photo file', storageError);
+        pushToast('Failed to delete photo file from storage.', 'error');
       }
     }
   };
@@ -257,9 +275,7 @@ export default function PhotoTimeline() {
 
       {/* Photo grid */}
       {isLoading ? (
-        <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 text-center text-gray-400">
-          Loading photos...
-        </div>
+        <LoadingState label="Loading photos..." className="p-12" />
       ) : filteredPhotos.length === 0 ? (
         <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 border-dashed text-center">
           <Upload size={48} className="mx-auto text-gray-600 mb-4" />

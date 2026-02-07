@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Supabase client uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `src/lib/supabaseClient.ts`.
+- Use `ToastProvider` and `useToast` from `src/components/ToastProvider.tsx` for error notifications.
 
 ---
 ## 2026-02-07 04:24 - Story 1: Set up Supabase client and database schema
@@ -124,4 +125,37 @@
 
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
+---
+---
+## 2026-02-06 19:34 - Story 6: Add loading states and error handling
+
+### Completed
+- Added ToastProvider/useToast for error notifications and wrapped app layout.
+- Added reusable LoadingState component and loading spinners in data fetch views.
+- Wired Supabase error handling to toast notifications across all data modules.
+- Added a typecheck script to package.json for quality checks.
+
+### Next Up (for next iteration)
+- [ ] Story 7: Polish UI and mobile responsiveness.
+- [ ] Story 8: Add data export feature.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/ToastProvider.tsx
+- src/components/LoadingState.tsx
+- src/app/layout.tsx
+- src/components/PhotoTimeline.tsx
+- src/components/MetricsTracker.tsx
+- src/components/AnalysisLog.tsx
+- src/components/TodoTracker.tsx
+- src/components/ProgressCharts.tsx
+- package.json
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None beyond the pattern noted above.
 ---
