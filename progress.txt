@@ -127,3 +127,26 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 11:38 - Story US-006: Todos/Protocol tab - task tracker
+
+### Completed
+- Built the Protocol/Todos screen with stats, filters, task list, and add form.
+- Wired Supabase CRUD with optimistic completion toggles and delete confirmation.
+- Added category icon/color badges, frequency/due date chips, and completed styling.
+
+### Next Up (for next iteration)
+- [ ] Implement US-007 analysis log tab.
+- [ ] Verify todos screen interactions on device/web.
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- app/(tabs)/todos.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
