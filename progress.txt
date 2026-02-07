@@ -1,0 +1,31 @@
+## Codebase Patterns
+- Use valid expo-router typed routes (e.g. /analysis) for Link hrefs to satisfy typecheck.
+
+---
+## 2026-02-07 12:29 - Story AP-001: Switch to development build with expo-dev-client
+
+### Completed
+- Installed expo-dev-client and updated lockfile.
+- Set iOS bundle identifier and NSMotionUsageDescription in app.json.
+- Ran `npx expo prebuild` successfully to generate native folders.
+- Fixed expo-router typed Link target in not-found screen to pass typecheck.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-002: add react-native-headphone-motion and create hook.
+- [ ] Add motion permission handling and fallback UI behavior.
+
+### Blockers/Warnings
+- CocoaPods gem install failed; Homebrew install succeeded during prebuild.
+- Native folders `ios/` and `android/` are gitignored; regenerate as needed.
+
+### Files Changed
+- app.json
+- app/+not-found.tsx
+- package.json
+- pnpm-lock.yaml
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- Expo prebuild will try gem install for CocoaPods first, then fall back to Homebrew.
+---

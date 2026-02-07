@@ -16,7 +16,7 @@
         "Project builds with npx expo run:ios (or at minimum prebuild succeeds)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "This is required before any native module can work. Expo Go doesn't support custom native modules."
     },
     {

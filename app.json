@@ -14,9 +14,11 @@
       "backgroundColor": "#0f172a"
     },
     "ios": {
+      "bundleIdentifier": "com.mandel.mobilityjourney",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Allow Mobility Journey to access your camera for progress photos.",
+        "NSMotionUsageDescription": "Mobility Journey uses AirPods motion to track your posture",
         "NSPhotoLibraryUsageDescription": "Allow Mobility Journey to access your photo library for progress photos.",
         "NSPhotoLibraryAddUsageDescription": "Allow Mobility Journey to save photos to your library."
       }
@@ -29,10 +31,16 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.mandel.mobilityjourney"
     },
     "web": {
       "bundler": "metro",
