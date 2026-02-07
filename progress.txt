@@ -118,3 +118,29 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 13:38 - Story WK-005: Workout history and progress analytics
+
+### Completed
+- Extended workouts screen with history filters (date range, type, search) and expandable detail cards.
+- Added workout analytics utilities and tests for consistency, streaks, volume, and side balance.
+- Integrated workout analytics into Progress Charts with volume trends, strength progression, and left/right comparisons.
+
+### Next Up (for next iteration)
+- [ ] Start WK-006: workout reminders and scheduling.
+- [ ] Confirm notification permissions flow for expo-notifications on iOS/Android.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- app/(tabs)/workouts.tsx
+- app/(tabs)/charts.tsx
+- lib/workoutAnalytics.ts
+- lib/workoutAnalytics.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

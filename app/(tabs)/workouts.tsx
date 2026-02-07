@@ -104,6 +104,14 @@ const formatSeconds = (seconds: number): string => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
 
+const parseDateInput = (value: string): Date | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const date = new Date(`${trimmed}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
 const buildWorkoutExercisePayload = (exercise: WorkoutExerciseDraft, index: number) => ({
   exercise_id: exercise.exercise.id,
   order_index: index,
@@ -141,6 +149,11 @@ export default function WorkoutsScreen() {
   const [guidedRemaining, setGuidedRemaining] = useState<number | null>(null);
   const [guidedStartedAt, setGuidedStartedAt] = useState<Date | null>(null);
   const [guidedSets, setGuidedSets] = useState<Record<string, WorkoutSet[]>>({});
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<'all' | WorkoutType>('all');
+  const [historyStartDate, setHistoryStartDate] = useState('');
+  const [historyEndDate, setHistoryEndDate] = useState('');
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
   const { pushToast } = useToast();
 
   const exerciseById = useMemo(() => {
@@ -176,7 +189,7 @@ export default function WorkoutsScreen() {
       .from('workouts')
       .select('*')
       .order('date', { ascending: false })
-      .limit(10);
+      .limit(60);
 
     if (workoutError) {
       pushToast('Failed to load workouts.', 'error');
@@ -201,6 +214,32 @@ export default function WorkoutsScreen() {
 
     setWorkouts(history);
   };
+
+  const filteredHistory = useMemo(() => {
+    const query = historySearchQuery.trim().toLowerCase();
+    const start = parseDateInput(historyStartDate);
+    const end = parseDateInput(historyEndDate);
+
+    return workouts.filter((item) => {
+      if (historyTypeFilter !== 'all' && item.workout.type !== historyTypeFilter) {
+        return false;
+      }
+      if (start) {
+        const date = new Date(item.workout.date);
+        if (date < start) return false;
+      }
+      if (end) {
+        const date = new Date(item.workout.date);
+        if (date > end) return false;
+      }
+      if (!query) return true;
+      const exerciseNames = item.exercises
+        .map((exercise) => exerciseById.get(exercise.exercise_id ?? '')?.name ?? '')
+        .join(' ');
+      const haystack = `${item.workout.notes ?? ''} ${exerciseNames}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [exerciseById, historyEndDate, historySearchQuery, historyStartDate, historyTypeFilter, workouts]);
 
   const loadRecentExercises = async () => {
     const supabase = getSupabase();
@@ -1458,20 +1497,77 @@ export default function WorkoutsScreen() {
         </View>
       )}
 
-      <Text className="text-lg font-semibold text-white mb-3">Recent Workouts</Text>
+      <Text className="text-lg font-semibold text-white mb-3">Workout History</Text>
+
+      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-4">
+        <TextInput
+          placeholder="Search notes or exercises..."
+          placeholderTextColor="#64748b"
+          value={historySearchQuery}
+          onChangeText={setHistorySearchQuery}
+          className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+        />
+        <View className="flex-row flex-wrap gap-2 mt-3">
+          {(['all', 'corrective', 'gym', 'cardio', 'other'] as const).map((type) => {
+            const active = historyTypeFilter === type;
+            const label = type === 'all' ? 'All' : WORKOUT_TYPES.find((item) => item.value === type)?.label ?? type;
+            return (
+              <Pressable
+                key={type}
+                onPress={() => setHistoryTypeFilter(type)}
+                className={`px-3 py-1 rounded-full border ${
+                  active ? 'bg-teal-500/20 border-teal-500/40' : 'bg-slate-950 border-slate-800'
+                }`}
+              >
+                <Text className={`text-xs ${active ? 'text-teal-200' : 'text-slate-300'}`}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View className="flex-row gap-3 mt-3">
+          <View className="flex-1">
+            <Text className="text-xs text-slate-400 mb-1">Start date</Text>
+            <TextInput
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#64748b"
+              value={historyStartDate}
+              onChangeText={setHistoryStartDate}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="text-xs text-slate-400 mb-1">End date</Text>
+            <TextInput
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#64748b"
+              value={historyEndDate}
+              onChangeText={setHistoryEndDate}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm"
+            />
+          </View>
+        </View>
+        <Text className="text-xs text-slate-500 mt-3">
+          Showing {filteredHistory.length} of {workouts.length} workouts
+        </Text>
+      </View>
 
       {isLoading ? (
         <LoadingState label="Loading workouts..." />
-      ) : workouts.length === 0 ? (
+      ) : filteredHistory.length === 0 ? (
         <View className="bg-slate-900 rounded-2xl p-8 border border-slate-800 border-dashed items-center">
-          <Text className="text-slate-300 text-center">No workouts logged yet.</Text>
+          <Text className="text-slate-300 text-center">No workouts match these filters yet.</Text>
         </View>
       ) : (
-        workouts.map((item) => {
+        filteredHistory.map((item) => {
           const summary = computeWorkoutSummary(item.exercises.map((exercise) => ({ sets: exercise.sets })));
           const typeMeta = WORKOUT_TYPES.find((type) => type.value === item.workout.type);
+          const isExpanded = expandedWorkoutId === item.workout.id;
           return (
-            <View key={item.workout.id} className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-3">
+            <Pressable
+              key={item.workout.id}
+              onPress={() => setExpandedWorkoutId(isExpanded ? null : item.workout.id)}
+              className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-3"
+            >
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="text-white font-medium">
                   {format(new Date(item.workout.date), 'MMMM d, yyyy')}
@@ -1491,7 +1587,41 @@ export default function WorkoutsScreen() {
               {item.workout.notes && (
                 <Text className="text-slate-300 text-sm mt-2">{item.workout.notes}</Text>
               )}
-            </View>
+              {isExpanded && (
+                <View className="mt-3 border-t border-slate-800 pt-3">
+                  {item.exercises.length === 0 ? (
+                    <Text className="text-slate-500 text-xs">No exercises logged.</Text>
+                  ) : (
+                    item.exercises.map((exercise) => {
+                      const name = exerciseById.get(exercise.exercise_id ?? '')?.name ?? 'Unknown exercise';
+                      return (
+                        <View key={exercise.id} className="mb-3">
+                          <Text className="text-slate-200 text-sm font-medium">{name}</Text>
+                          <Text className="text-slate-500 text-xs">
+                            {exercise.sets.length} sets
+                          </Text>
+                          <View className="mt-2 gap-2">
+                            {exercise.sets.map((set, setIndex) => (
+                              <View
+                                key={`${exercise.id}-${setIndex}`}
+                                className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"
+                              >
+                                <Text className="text-slate-300 text-xs">
+                                  {set.side ? `${set.side} ` : ''}
+                                  {set.reps ?? 0} reps · {set.weight_kg ?? 0} kg
+                                  {set.duration_seconds ? ` · ${set.duration_seconds}s` : ''}
+                                  {set.rpe ? ` · RPE ${set.rpe}` : ''}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              )}
+            </Pressable>
           );
         })
       )}

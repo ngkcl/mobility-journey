@@ -101,7 +101,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "The left/right comparison over time is the most valuable analytics feature — shows if the muscular imbalance is actually improving."
     },
     {
