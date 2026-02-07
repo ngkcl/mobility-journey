@@ -80,3 +80,27 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 11:34 - Story US-004: Photos tab - photo timeline with upload
+
+### Completed
+- Added compare mode with selection UI and side-by-side modal.
+- Adjusted responsive grid to 2/3/4 columns based on width.
+- Added a placeholder lint script to satisfy quality checks.
+
+### Next Up (for next iteration)
+- [ ] Implement US-005 metrics tracker.
+- [ ] Verify photo compare mode interactions on device/web.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` still fails: no `origin` remote configured.
+
+### Files Changed
+- app/(tabs)/photos.tsx
+- package.json
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---

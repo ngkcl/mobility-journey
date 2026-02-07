@@ -10,6 +10,7 @@ import {
   Dimensions,
   RefreshControl,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,7 +25,7 @@ const PHOTO_BUCKET = 'progress-photos';
 const VIEWS: readonly ('all' | PhotoView)[] = ['all', 'front', 'back', 'left', 'right'] as const;
 const UPLOAD_VIEWS: readonly PhotoView[] = ['front', 'back', 'left', 'right'] as const;
 const screenWidth = Dimensions.get('window').width;
-const numColumns = screenWidth > 600 ? 4 : 2;
+const numColumns = screenWidth > 900 ? 4 : screenWidth > 600 ? 3 : 2;
 const gap = 8;
 const imageSize = (screenWidth - gap * (numColumns + 1)) / numColumns;
 
@@ -35,6 +36,9 @@ export default function PhotosScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
   const { pushToast } = useToast();
 
   const filteredPhotos =
@@ -86,6 +90,7 @@ export default function PhotosScreen() {
   };
 
   const handleUpload = async () => {
+    setCompareMode(false);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
@@ -161,6 +166,7 @@ export default function PhotosScreen() {
   };
 
   const handleCamera = async () => {
+    setCompareMode(false);
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Camera access is required to take photos.');
@@ -259,8 +265,35 @@ export default function PhotosScreen() {
     ]);
   };
 
+  const toggleCompareSelection = (id: string) => {
+    setCompareSelection((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((value) => value !== id);
+      }
+      if (prev.length >= 2) {
+        pushToast('Select up to two photos.', 'info');
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const openCompare = () => {
+    if (compareSelection.length !== 2) {
+      pushToast('Select two photos to compare.', 'info');
+      return;
+    }
+    setCompareOpen(true);
+  };
+
+  const clearCompare = () => {
+    setCompareOpen(false);
+    setCompareSelection([]);
+  };
+
   const renderPhoto = ({ item }: { item: Photo }) => (
     <Pressable
+      onPress={() => (compareMode ? toggleCompareSelection(item.id) : undefined)}
       onLongPress={() => deletePhoto(item.id)}
       style={{ width: imageSize, margin: gap / 2 }}
     >
@@ -270,6 +303,17 @@ export default function PhotosScreen() {
           style={{ width: imageSize, height: imageSize * 1.33 }}
           resizeMode="cover"
         />
+        {compareMode && (
+          <View className="absolute top-2 right-2">
+            <View
+              className={`h-6 w-6 rounded-full border ${
+                compareSelection.includes(item.id)
+                  ? 'bg-teal-500 border-teal-300'
+                  : 'bg-slate-900/80 border-slate-600'
+              }`}
+            />
+          </View>
+        )}
         <View className="absolute top-2 left-2 bg-slate-900/70 px-2 py-1 rounded">
           <Text className="text-white text-xs capitalize">{item.view}</Text>
         </View>
@@ -291,6 +335,21 @@ export default function PhotosScreen() {
             <Text className="text-2xl font-semibold text-white">Progress Photos</Text>
             <Text className="text-slate-400 text-sm">Track visual changes over time</Text>
           </View>
+          <Pressable
+            onPress={() => {
+              setCompareMode((prev) => !prev);
+              setCompareSelection([]);
+            }}
+            className={`px-3 py-2 rounded-xl border ${
+              compareMode ? 'bg-teal-500 border-teal-400' : 'bg-slate-900 border-slate-800'
+            }`}
+          >
+            <Text
+              className={`text-xs font-semibold ${compareMode ? 'text-white' : 'text-slate-300'}`}
+            >
+              {compareMode ? 'Comparing' : 'Compare'}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Upload controls */}
@@ -360,6 +419,31 @@ export default function PhotosScreen() {
             ))}
           </View>
         </ScrollView>
+
+        {compareMode && (
+          <View className="mt-3 flex-row items-center gap-2">
+            <Text className="text-slate-300 text-xs">
+              Selected {compareSelection.length}/2
+            </Text>
+            <Pressable
+              onPress={openCompare}
+              className={`px-3 py-1.5 rounded-full ${
+                compareSelection.length === 2 ? 'bg-teal-500' : 'bg-slate-800'
+              }`}
+            >
+              <Text
+                className={`text-xs font-semibold ${
+                  compareSelection.length === 2 ? 'text-white' : 'text-slate-400'
+                }`}
+              >
+                View Compare
+              </Text>
+            </Pressable>
+            <Pressable onPress={clearCompare} className="px-3 py-1.5 rounded-full bg-slate-900">
+              <Text className="text-xs text-slate-400">Clear</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* Photo grid */}
@@ -391,6 +475,38 @@ export default function PhotosScreen() {
           }
         />
       )}
+
+      <Modal visible={compareOpen} animationType="slide" onRequestClose={clearCompare}>
+        <View className="flex-1 bg-[#0b1020] p-4">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-semibold text-white">Compare Photos</Text>
+            <Pressable onPress={clearCompare} className="px-3 py-2 rounded-xl bg-slate-800">
+              <Text className="text-slate-200 text-xs font-semibold">Close</Text>
+            </Pressable>
+          </View>
+          <View className="flex-1 flex-row gap-3">
+            {compareSelection.map((id) => {
+              const photo = photos.find((p) => p.id === id);
+              if (!photo) return null;
+              return (
+                <View key={photo.id} className="flex-1 rounded-2xl overflow-hidden bg-slate-900">
+                  <Image
+                    source={{ uri: photo.public_url }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                  <View className="absolute bottom-0 left-0 right-0 bg-slate-950/70 px-3 py-2">
+                    <Text className="text-white text-xs capitalize">{photo.view}</Text>
+                    <Text className="text-slate-300 text-[10px]">
+                      {format(new Date(photo.taken_at), 'MMM d, yyyy')}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

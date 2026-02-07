@@ -79,7 +79,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Reference ../mobility-journey/src/components/PhotoTimeline.tsx. Storage bucket is 'progress-photos', path format 'progress/{timestamp}-{uuid}.{ext}'. After upload, trigger analysis via fetch to API_URL/api/analyze."
     },
     {
