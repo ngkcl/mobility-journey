@@ -1,0 +1,126 @@
+{
+  "project": "mobility-app",
+  "branchName": "ralph/workout-tracker",
+  "description": "Full workout tracker with AI daily plan generation. Tracks home corrective exercises (scoliosis protocol), gym sessions, and any other activity. Generates personalized daily plans based on posture data, pain levels, and training history.",
+  "context": {
+    "scoliosisProtocol": "3x daily corrective sessions: Morning 20min, Midday 15min, Evening 20min",
+    "knownIssues": "Right-side muscular imbalance, right-thoracic scoliosis, right shoulder dropped/rolled forward",
+    "tightMuscles": "Right QL, right hip flexors, right erector spinae, right lat",
+    "weakMuscles": "Left glute med, left QL, core (obliques), left-side stabilizers",
+    "correctionStrategy": "Release tight muscles → Activate weak muscles → Integrate functional movements → Maintain posture awareness"
+  },
+  "userStories": [
+    {
+      "id": "WK-001",
+      "title": "Exercise library with scoliosis-specific exercises",
+      "description": "Create a built-in exercise library seeded with corrective exercises for Nick's specific imbalance pattern.",
+      "acceptanceCriteria": [
+        "Create Supabase table: exercises (id, name, category, target_muscles, description, instructions, sets_default, reps_default, duration_seconds_default, side_specific, video_url, image_url)",
+        "Categories: corrective, stretching, strengthening, warmup, cooldown, gym_compound, gym_isolation, cardio, mobility",
+        "Seed with Nick's corrective exercises: bird dogs, cat-cow, dead bugs, side planks (left-focused), clamshells, hip flexor stretches, thoracic rotations, foam rolling (right QL, right lat), schroth breathing, wall angels, band pull-aparts, single-leg glute bridges",
+        "Exercise detail view showing: name, target muscles, instructions, sets/reps, whether it's side-specific (left vs right emphasis)",
+        "Search and filter by category and target muscle",
+        "Ability to add custom exercises",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "The side_specific flag is important — many corrective exercises should be done more on the weak (left) side. Include common gym exercises too (squat, bench, deadlift, rows, etc.) for gym tracking."
+    },
+    {
+      "id": "WK-002",
+      "title": "Workout logging with sets, reps, weight",
+      "description": "Log individual workouts with detailed exercise tracking including asymmetry awareness.",
+      "acceptanceCriteria": [
+        "Create Supabase table: workouts (id, date, type [corrective|gym|cardio|other], started_at, ended_at, duration_minutes, notes, energy_level_before, energy_level_after, pain_level_before, pain_level_after)",
+        "Create Supabase table: workout_exercises (id, workout_id, exercise_id, order_index, sets JSON array [{reps, weight_kg, duration_seconds, side, rpe, notes}])",
+        "New Workouts tab (or sub-tab within existing structure)",
+        "Start Workout flow: pick type → add exercises → log sets in real-time",
+        "For side-specific exercises: separate logging for left and right with asymmetry indicator",
+        "Rest timer between sets with configurable duration",
+        "Quick-add from recent/favorite exercises",
+        "Workout summary on completion: total volume, duration, exercises done, left/right comparison",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "The left/right tracking is key — for unilateral exercises (single arm rows, clamshells, etc.), we want to see if the imbalance is improving over time. RPE (rate of perceived exertion) per set helps track fatigue."
+    },
+    {
+      "id": "WK-003",
+      "title": "Corrective protocol templates (morning/midday/evening)",
+      "description": "Pre-built workout templates for the 3x daily scoliosis corrective sessions.",
+      "acceptanceCriteria": [
+        "Create Supabase table: workout_templates (id, name, type, exercises JSON array [{exercise_id, sets, reps, duration, side, order}], estimated_duration_minutes)",
+        "Three default templates: Morning Corrective (20min), Midday Corrective (15min), Evening Corrective (20min)",
+        "Morning template: foam rolling (right side focus), thoracic mobility, schroth breathing, bird dogs, dead bugs, wall angels",
+        "Midday template: hip flexor stretch, thoracic rotations, side planks (left focus), band pull-aparts, posture reset",
+        "Evening template: full body stretch, foam rolling, cat-cow, clamshells (left focus), single-leg glute bridges, schroth breathing",
+        "One-tap 'Start Protocol' button to begin a template workout",
+        "Guided mode: shows current exercise with timer/rep counter, auto-advances to next",
+        "Can customize templates (reorder, swap exercises, adjust sets/reps)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "The guided mode is important — Nick should be able to tap 'Morning Protocol' and just follow along without thinking. Timer beeps when rest is over, shows next exercise, etc."
+    },
+    {
+      "id": "WK-004",
+      "title": "AI daily plan generator",
+      "description": "Generate a personalized daily workout plan using AI based on current state, history, and goals.",
+      "acceptanceCriteria": [
+        "Daily plan screen showing today's recommended workout plan",
+        "Plan considers: yesterday's workouts, current pain level (from metrics), posture score trends, which corrective sessions were done, gym schedule, energy level",
+        "AI generates plan via configurable API endpoint (same pattern as photo/video analysis)",
+        "Plan includes: which corrective sessions to prioritize, gym workout suggestion if it's a gym day, specific exercise swaps based on pain/fatigue",
+        "Plan output: structured JSON with exercises, sets, reps, reasoning for each recommendation",
+        "Display as a clean daily card: 'Today's Plan' with morning/afternoon/evening sections",
+        "User can accept plan, modify it, or regenerate",
+        "Save generated plans to Supabase for history",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "The AI prompt should include Nick's specific condition (right-thoracic scoliosis, right-side imbalance), his correction strategy (release tight → activate weak → integrate → maintain), and recent data. Use the existing API pattern from lib/api.ts."
+    },
+    {
+      "id": "WK-005",
+      "title": "Workout history and progress analytics",
+      "description": "View past workouts, track consistency, and see strength/volume trends.",
+      "acceptanceCriteria": [
+        "Workout history list with filters: date range, type (corrective/gym/all), and search",
+        "Each workout card shows: date, type badge, duration, exercise count, key stats",
+        "Tap to expand and see full workout details (exercises, sets, weights)",
+        "Weekly consistency tracker: how many of 21 corrective sessions (3x7) were completed",
+        "Streak counter for consecutive days with at least one session",
+        "For gym exercises: weight progression charts (per exercise over time)",
+        "Left vs right strength comparison charts for unilateral exercises",
+        "Volume trends: weekly total sets, total reps, total weight lifted",
+        "Integration with existing Progress Charts tab",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "The left/right comparison over time is the most valuable analytics feature — shows if the muscular imbalance is actually improving."
+    },
+    {
+      "id": "WK-006",
+      "title": "Workout reminders and scheduling",
+      "description": "Configurable reminders for corrective sessions and gym days.",
+      "acceptanceCriteria": [
+        "Settings screen for workout schedule: which days, what times for each session",
+        "Default schedule: Morning 9:00, Midday 13:30, Evening 21:00",
+        "Push notifications via expo-notifications: reminder 20 min before each session",
+        "Post-session check-in notification if session wasn't logged (30 min after scheduled time)",
+        "Gym day scheduling: mark which days are gym days",
+        "Calendar view showing scheduled vs completed workouts",
+        "Save schedule to AsyncStorage",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "This replaces the manual cron-based exercise reminders I currently have set up. The app should handle its own notifications."
+    }
+  ]
+}
