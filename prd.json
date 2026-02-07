@@ -24,7 +24,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "The side_specific flag is important — many corrective exercises should be done more on the weak (left) side. Include common gym exercises too (squat, bench, deadlift, rows, etc.) for gym tracking."
     },
     {

@@ -1,0 +1,34 @@
+## Codebase Patterns
+- When adding new Expo Router routes, update `.expo/types/router.d.ts` so `router.push` stays type-safe.
+
+---
+## 2026-02-07 13:07 - Story WK-001: Exercise library with scoliosis-specific exercises
+
+### Completed
+- Added `exercises` Supabase table migration with seeded corrective + gym exercises.
+- Built Exercise Library tab with search, category/target filters, and custom exercise creation.
+- Added exercise detail screen showing targets, defaults, and side-specific emphasis.
+- Added normalization utility + tests and updated route type definitions.
+
+### Next Up (for next iteration)
+- [ ] Start WK-002: workout logging tables + UI flow for workouts and sets.
+- [ ] Confirm Supabase schema updates for workouts and workout_exercises.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- supabase/migrations/20260207_exercises.sql
+- lib/types.ts
+- lib/exercises.ts
+- lib/exercises.test.js
+- app/(tabs)/exercises.tsx
+- app/exercise/[id].tsx
+- app/(tabs)/_layout.tsx
+- .expo/types/router.d.ts
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- Added route typing update for new screens to keep `router.push` typecheck happy.
+---

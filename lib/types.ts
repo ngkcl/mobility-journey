@@ -45,6 +45,33 @@ export interface Video {
   tags: string[] | null;
 }
 
+// ─── Exercises ────────────────────────────────────────
+export type ExerciseCategory =
+  | 'corrective'
+  | 'stretching'
+  | 'strengthening'
+  | 'warmup'
+  | 'cooldown'
+  | 'gym_compound'
+  | 'gym_isolation'
+  | 'cardio'
+  | 'mobility';
+
+export interface Exercise {
+  id: string;
+  name: string;
+  category: ExerciseCategory;
+  target_muscles: string[] | null;
+  description: string | null;
+  instructions: string | null;
+  sets_default: number | null;
+  reps_default: number | null;
+  duration_seconds_default: number | null;
+  side_specific: boolean;
+  video_url: string | null;
+  image_url: string | null;
+}
+
 // ─── Metrics ──────────────────────────────────────────
 export interface MetricEntry {
   id: string;
