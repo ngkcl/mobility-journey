@@ -14,7 +14,7 @@
       "id": "2",
       "title": "Persist photos to Supabase Storage",
       "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

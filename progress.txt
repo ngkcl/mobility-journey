@@ -28,3 +28,26 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None beyond the pattern noted above.
 ---
+---
+## 2026-02-07 04:25 - Story 2: Persist photos to Supabase Storage
+
+### Completed
+- Loaded photos from Supabase `photos` table on mount and normalized URLs.
+- Uploaded images to `progress-photos` storage bucket and saved metadata to Supabase.
+- Added view selector for uploads and wired deletes to remove DB and storage records.
+
+### Next Up (for next iteration)
+- [ ] Story 3: Persist metrics to database and load historical data.
+- [ ] Confirm Supabase storage bucket permissions (public vs signed) and update if needed.
+
+### Blockers/Warnings
+- `pnpm test` reports no tests specified (project has no tests yet).
+
+### Files Changed
+- src/components/PhotoTimeline.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
