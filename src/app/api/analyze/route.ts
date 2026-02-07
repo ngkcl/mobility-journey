@@ -2,22 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 
-const ANALYSIS_PROMPT = `You are an expert physiotherapist and posture analysis specialist reviewing a progress photo for a patient with scoliosis and right-side muscular imbalance.
+const ANALYSIS_PROMPT = `You are an expert physiotherapist and posture analysis specialist. You're reviewing a progress photo for a patient with scoliosis (right thoracic curve) and right-side muscular imbalance.
 
-Analyze this photo and provide a structured assessment:
+Analyze this photo with clinical precision. Provide your response in TWO parts:
 
-1. **Posture Overview**: Describe what you see — shoulder alignment, hip alignment, spinal curvature, head position, overall stance
-2. **Asymmetries Detected**: Specifically note any left/right differences in shoulders, hips, rib cage, muscle development
-3. **Estimated Measurements** (if visible):
-   - Shoulder height difference (mm estimate)
-   - Hip height difference (mm estimate)  
-   - Lateral spinal deviation (mild/moderate/severe)
-   - Head tilt (degrees estimate)
-4. **Changes vs Typical Scoliosis Patterns**: How does this compare to common right-thoracic scoliosis patterns?
-5. **Recommendations**: 2-3 specific exercises or stretches that would help based on what you see
-6. **Progress Notes**: Any positive signs or areas of concern
+## PART 1: STRUCTURED DATA (JSON)
+Output a JSON block with these fields (use null if not determinable):
+\`\`\`json
+{
+  "shoulder_diff_mm": <number or null>,
+  "hip_diff_mm": <number or null>,
+  "head_tilt_degrees": <number or null>,
+  "lateral_deviation": "<mild|moderate|severe|null>",
+  "overall_posture_score": <1-10>,
+  "muscle_asymmetry": "<none|mild|moderate|severe>",
+  "view_type": "<front|back|left|right|other>",
+  "confidence": "<low|medium|high>"
+}
+\`\`\`
 
-Be specific and clinical. Use measurements where possible. This data will be tracked over time to measure progress.`;
+## PART 2: CLINICAL NOTES
+1. **What I See**: Describe shoulder alignment, hip alignment, spinal curve indicators, head position, rib cage, muscle bulk differences
+2. **Key Asymmetries**: Specific left/right differences with estimated measurements
+3. **Scoliosis Indicators**: How this relates to right-thoracic scoliosis patterns
+4. **Progress Markers**: Things to watch for improvement in future photos
+5. **Top 3 Exercises**: Specific exercises for what you observe (name, sets, reps)
+
+Be direct and specific. Avoid disclaimers about not being a real doctor — this is a tracking tool. Give your best clinical assessment.`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: openaiKey });
 
-    // Run vision analysis
+    // Run vision analysis with GPT-4o
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -46,12 +57,24 @@ export async function POST(request: NextRequest) {
           ],
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 2000,
+      temperature: 0.3,
     });
 
     const analysis = response.choices[0]?.message?.content;
     if (!analysis) {
       return NextResponse.json({ error: 'No analysis generated' }, { status: 500 });
+    }
+
+    // Extract structured data from the analysis
+    let structuredData = null;
+    const jsonMatch = analysis.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch) {
+      try {
+        structuredData = JSON.parse(jsonMatch[1]);
+      } catch {
+        // JSON parsing failed, continue with just the text
+      }
     }
 
     // Save to Supabase
@@ -61,15 +84,33 @@ export async function POST(request: NextRequest) {
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+      // Save analysis log
       await supabase.from('analysis_logs').insert({
         entry_date: new Date().toISOString().split('T')[0],
         category: 'ai',
-        title: `AI Photo Analysis${photoId ? ` (Photo: ${photoId.slice(0, 8)})` : ''}`,
+        title: `AI Posture Analysis${structuredData?.view_type ? ` (${structuredData.view_type} view)` : ''}${structuredData?.overall_posture_score ? ` — Score: ${structuredData.overall_posture_score}/10` : ''}`,
         content: analysis,
       });
+
+      // If we got structured data, also save as a metric entry
+      if (structuredData && (structuredData.shoulder_diff_mm !== null || structuredData.hip_diff_mm !== null)) {
+        await supabase.from('metrics').insert({
+          entry_date: new Date().toISOString().split('T')[0],
+          shoulder_diff: structuredData.shoulder_diff_mm,
+          hip_diff: structuredData.hip_diff_mm,
+          pain_level: null,
+          cobb_angle: null,
+          flexibility: null,
+          notes: `Auto-extracted from AI photo analysis (confidence: ${structuredData.confidence || 'unknown'})`,
+        });
+      }
     }
 
-    return NextResponse.json({ analysis, photoId });
+    return NextResponse.json({
+      analysis,
+      structuredData,
+      photoId,
+    });
   } catch (error) {
     console.error('Analysis error:', error);
     return NextResponse.json(
