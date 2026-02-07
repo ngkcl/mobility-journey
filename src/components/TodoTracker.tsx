@@ -6,6 +6,7 @@ import { format, isSameDay, isWithinInterval, startOfWeek, endOfWeek, startOfDay
 import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
+import AppointmentTracker from '@/components/AppointmentTracker';
 
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
@@ -394,6 +395,8 @@ export default function TodoTracker() {
           <div className="text-slate-400 text-sm">Weekly Compliance</div>
         </div>
       </div>
+
+      <AppointmentTracker />
 
       {/* Streaks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

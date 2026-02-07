@@ -28,14 +28,14 @@
       "id": "4",
       "title": "Exercise video references",
       "description": "Allow attaching YouTube/video URLs to exercises in the library. Show embedded video player in exercise detail view. User can also upload their own form-check videos linked to specific exercises.",
-      "passes": false,
+      "passes": true,
       "priority": 4
     },
     {
       "id": "5",
       "title": "Specialist appointment tracker",
       "description": "Add an appointments table: date, specialist name, type (physio/chiro/ortho/massage), notes, follow-up date. Show upcoming appointments on dashboard. Track visit history and specialist recommendations.",
-      "passes": false,
+      "passes": true,
       "priority": 5
     },
     {

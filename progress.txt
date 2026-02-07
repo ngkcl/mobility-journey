@@ -91,3 +91,52 @@ Each iteration appends here using this format:
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 01:08 - Story 4: Exercise video references
+
+### Completed
+- Added exercise detail modal with embedded reference video players and URL linking
+- Added exercise-linked video uploads via Video Gallery exercise dropdown
+- Added schema fields for exercise reference URLs and linked exercise videos
+
+### Next Up (for next iteration)
+- [ ] Story 5: specialist appointment tracker
+- [ ] Story 6: exercise logging with notes
+
+### Blockers/Warnings
+- Lint warnings remain for `<img>` usage in `PhotoTimeline` and `VideoGallery`
+
+### Files Changed
+- src/components/ExerciseLibrary.tsx
+- src/components/VideoGallery.tsx
+- supabase/migrations/20260207190000_add_exercise_video_links.sql
+- prd.json
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 02:05 - Story 5: Specialist appointment tracker
+
+### Completed
+- Added appointments table migration with RLS policy for specialist visit tracking
+- Built appointment tracker UI with upcoming list, visit history, and recommendation capture
+- Included appointments in export payload and surfaced tracker in Protocol tab
+
+### Next Up (for next iteration)
+- [ ] Story 6: exercise logging with notes
+- [ ] Address lint warnings for <img> usage if desired
+
+### Blockers/Warnings
+- Lint warnings remain for <img> usage in `PhotoTimeline` and `VideoGallery`
+
+### Files Changed
+- supabase/migrations/20260207193000_add_appointments.sql
+- src/components/AppointmentTracker.tsx
+- src/components/TodoTracker.tsx
+- src/app/page.tsx
+- prd.json
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---

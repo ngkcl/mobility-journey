@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, Video, Activity, FileText, CheckSquare, TrendingUp, Menu, X } from 'lucide-react';
+import { Camera, Video, Activity, FileText, CheckSquare, TrendingUp, Menu, X, BookOpen } from 'lucide-react';
 import PhotoTimeline from '@/components/PhotoTimeline';
 import VideoGallery from '@/components/VideoGallery';
 import MetricsTracker from '@/components/MetricsTracker';
 import AnalysisLog from '@/components/AnalysisLog';
 import TodoTracker from '@/components/TodoTracker';
 import ProgressCharts from '@/components/ProgressCharts';
+import ExerciseLibrary from '@/components/ExerciseLibrary';
 import { getSupabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ToastProvider';
 
-type Tab = 'photos' | 'videos' | 'metrics' | 'analysis' | 'todos' | 'charts';
+type Tab = 'photos' | 'videos' | 'metrics' | 'analysis' | 'todos' | 'charts' | 'library';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('photos');
@@ -25,6 +26,7 @@ export default function Home() {
     { id: 'metrics' as Tab, label: 'Metrics', icon: Activity },
     { id: 'analysis' as Tab, label: 'Analysis', icon: FileText },
     { id: 'todos' as Tab, label: 'Protocol', icon: CheckSquare },
+    { id: 'library' as Tab, label: 'Library', icon: BookOpen },
     { id: 'charts' as Tab, label: 'Progress', icon: TrendingUp },
   ];
 
@@ -33,12 +35,22 @@ export default function Home() {
     setIsExporting(true);
 
     const sb = getSupabase();
-    const [photosResult, videosResult, metricsResult, analysisResult, todosResult] = await Promise.all([
+    const [
+      photosResult,
+      videosResult,
+      metricsResult,
+      analysisResult,
+      todosResult,
+      exercisesResult,
+      appointmentsResult,
+    ] = await Promise.all([
       sb.from('photos').select('*').order('taken_at', { ascending: false }),
       sb.from('videos').select('*').order('recorded_at', { ascending: false }),
       sb.from('metrics').select('*').order('entry_date', { ascending: false }),
       sb.from('analysis_logs').select('*').order('entry_date', { ascending: false }),
       sb.from('todos').select('*').order('created_at', { ascending: false }),
+      sb.from('exercises').select('*').order('created_at', { ascending: false }),
+      sb.from('appointments').select('*').order('appointment_date', { ascending: false }),
     ]);
 
     const errors = [
@@ -47,6 +59,8 @@ export default function Home() {
       metricsResult.error,
       analysisResult.error,
       todosResult.error,
+      exercisesResult.error,
+      appointmentsResult.error,
     ].filter(Boolean);
 
     if (errors.length > 0) {
@@ -63,6 +77,8 @@ export default function Home() {
       metrics: metricsResult.data ?? [],
       analysisLogs: analysisResult.data ?? [],
       todos: todosResult.data ?? [],
+      exercises: exercisesResult.data ?? [],
+      appointments: appointmentsResult.data ?? [],
     };
 
     const json = JSON.stringify(payload, null, 2);
@@ -186,6 +202,7 @@ export default function Home() {
           {activeTab === 'metrics' && <MetricsTracker />}
           {activeTab === 'analysis' && <AnalysisLog />}
           {activeTab === 'todos' && <TodoTracker />}
+          {activeTab === 'library' && <ExerciseLibrary />}
           {activeTab === 'charts' && <ProgressCharts />}
         </div>
       </main>
