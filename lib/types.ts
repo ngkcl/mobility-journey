@@ -89,6 +89,18 @@ export interface Todo {
   frequency: TodoFrequency | null;
 }
 
+// ─── Posture Sessions ─────────────────────────────────
+export interface PostureSession {
+  id: string;
+  started_at: string;
+  ended_at: string;
+  duration_seconds: number;
+  good_posture_pct: number | null;
+  slouch_count: number | null;
+  avg_pitch: number | null;
+  baseline_pitch: number | null;
+}
+
 // ─── Charts ───────────────────────────────────────────
 export interface ChartPoint {
   date: string;

@@ -135,3 +135,33 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 12:49 - Story AP-006: Posture session history and Supabase logging
+
+### Completed
+- Documented posture_sessions table schema in Supabase migration.
+- Logged posture sessions on stop with average pitch, slouch count, and good posture percentage.
+- Added posture session history list in Posture screen with refresh handling.
+- Integrated daily/weekly posture trend chart and export data in Progress Charts.
+- Added posture trend aggregation helpers and unit tests.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-007: camera-based posture detection module for web and native.
+- [ ] Explore posture alerts parity for camera-based detection.
+
+### Blockers/Warnings
+- `git push` will fail because no `origin` remote is configured.
+
+### Files Changed
+- supabase/migrations/20260207_posture_sessions.sql
+- lib/types.ts
+- lib/postureSessions.ts
+- lib/postureSessions.test.js
+- app/(tabs)/posture.tsx
+- app/(tabs)/charts.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

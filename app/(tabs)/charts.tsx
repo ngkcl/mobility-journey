@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
-import type { ChartPoint } from '../../lib/types';
+import type { ChartPoint, PostureSession } from '../../lib/types';
 import { useNavigation } from 'expo-router';
+import { buildPostureTrend, type PostureTrendMode } from '../../lib/postureSessions';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -72,23 +73,33 @@ export default function ChartsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [postureSessions, setPostureSessions] = useState<PostureSession[]>([]);
+  const [postureTrendMode, setPostureTrendMode] = useState<PostureTrendMode>('weekly');
   const { pushToast } = useToast();
   const navigation = useNavigation();
 
   const loadMetrics = async () => {
     const supabase = getSupabase();
-    const { data: rows, error } = await supabase
-      .from('metrics')
-      .select('entry_date, pain_level, posture_score, symmetry_score, energy_level')
-      .order('entry_date', { ascending: true });
+    const [metricsResponse, postureResponse] = await Promise.all([
+      supabase
+        .from('metrics')
+        .select('entry_date, pain_level, posture_score, symmetry_score, energy_level')
+        .order('entry_date', { ascending: true }),
+      supabase
+        .from('posture_sessions')
+        .select('id, started_at, ended_at, duration_seconds, good_posture_pct')
+        .order('started_at', { ascending: true }),
+    ]);
 
-    if (error) {
+    if (metricsResponse.error) {
       pushToast('Failed to load chart data.', 'error');
-      setIsLoading(false);
-      return;
     }
 
-    const normalized = (rows ?? [])
+    if (postureResponse.error) {
+      pushToast('Failed to load posture trends.', 'error');
+    }
+
+    const normalized = (metricsResponse.data ?? [])
       .map((row: any) => ({
         date: row.entry_date,
         painLevel: row.pain_level ?? undefined,
@@ -105,6 +116,7 @@ export default function ChartsScreen() {
       );
 
     setData(normalized);
+    setPostureSessions((postureResponse.data ?? []) as PostureSession[]);
     setIsLoading(false);
   };
 
@@ -123,12 +135,13 @@ export default function ChartsScreen() {
     setIsExporting(true);
     try {
       const supabase = getSupabase();
-      const [photos, videos, metricsRows, analysisLogs, todos] = await Promise.all([
+      const [photos, videos, metricsRows, analysisLogs, todos, postureSessions] = await Promise.all([
         supabase.from('photos').select('*').order('taken_at', { ascending: true }),
         supabase.from('videos').select('*').order('recorded_at', { ascending: true }),
         supabase.from('metrics').select('*').order('entry_date', { ascending: true }),
         supabase.from('analysis_logs').select('*').order('entry_date', { ascending: true }),
         supabase.from('todos').select('*').order('due_date', { ascending: true }),
+        supabase.from('posture_sessions').select('*').order('started_at', { ascending: true }),
       ]);
 
       const errors = [
@@ -137,6 +150,7 @@ export default function ChartsScreen() {
         metricsRows.error,
         analysisLogs.error,
         todos.error,
+        postureSessions.error,
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -151,6 +165,7 @@ export default function ChartsScreen() {
         metrics: metricsRows.data ?? [],
         analysisLogs: analysisLogs.data ?? [],
         todos: todos.data ?? [],
+        postureSessions: postureSessions.data ?? [],
       };
 
       const fileName = `mobility-export-${exportPayload.exportedAt.replace(
@@ -213,6 +228,18 @@ export default function ChartsScreen() {
     });
   }, [handleExport, isExporting, navigation]);
 
+  const postureTrend = useMemo(
+    () => buildPostureTrend(postureSessions, postureTrendMode),
+    [postureSessions, postureTrendMode],
+  );
+  const postureTrendValues = postureTrend.map((point) =>
+    Number.isFinite(point.value) ? Number(point.value.toFixed(1)) : 0,
+  );
+  const postureTrendLabels = postureTrend.map((point) => {
+    const date = new Date(point.date);
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  });
+
   const selectedConfig = metrics.find((m) => m.key === selectedMetric)!;
 
   const getChange = (key: string) => {
@@ -256,6 +283,12 @@ export default function ChartsScreen() {
           i % Math.ceil(chartLabels.length / maxLabels) === 0 ? label : '',
         )
       : chartLabels;
+  const postureDisplayLabels =
+    postureTrendLabels.length > maxLabels
+      ? postureTrendLabels.map((label, i) =>
+          i % Math.ceil(postureTrendLabels.length / maxLabels) === 0 ? label : '',
+        )
+      : postureTrendLabels;
 
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving')
@@ -304,6 +337,73 @@ export default function ChartsScreen() {
             )}
           </Pressable>
         </View>
+      </View>
+
+      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="text-lg font-semibold text-white">Posture Monitoring Trend</Text>
+            <Text className="text-sm text-slate-400">Average good posture %</Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => setPostureTrendMode('daily')}
+              className={`px-3 py-1 rounded-full border ${
+                postureTrendMode === 'daily'
+                  ? 'border-teal-400 bg-teal-500/20'
+                  : 'border-slate-700'
+              }`}
+            >
+              <Text className="text-xs text-slate-200">Daily</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setPostureTrendMode('weekly')}
+              className={`px-3 py-1 rounded-full border ${
+                postureTrendMode === 'weekly'
+                  ? 'border-teal-400 bg-teal-500/20'
+                  : 'border-slate-700'
+              }`}
+            >
+              <Text className="text-xs text-slate-200">Weekly</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {isLoading ? (
+          <View className="h-52 items-center justify-center gap-2">
+            <ActivityIndicator color="#5eead4" />
+            <Text className="text-slate-400 text-sm">Loading posture trend...</Text>
+          </View>
+        ) : postureTrendValues.length === 0 ? (
+          <View className="h-52 items-center justify-center">
+            <Text className="text-slate-400">No posture sessions yet.</Text>
+          </View>
+        ) : (
+          <LineChart
+            data={{
+              labels: postureDisplayLabels,
+              datasets: [
+                {
+                  data: postureTrendValues,
+                  color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+                  strokeWidth: 2,
+                },
+              ],
+            }}
+            width={screenWidth - 32}
+            height={220}
+            yAxisSuffix="%"
+            yAxisInterval={1}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+              propsForDots: { r: '4', strokeWidth: '2', stroke: '#22c55e' },
+            }}
+            bezier
+            style={{ borderRadius: 16 }}
+            fromZero
+          />
+        )}
       </View>
 
       {/* Metric selector cards */}

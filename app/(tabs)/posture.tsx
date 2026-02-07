@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import { getSupabase } from '../../lib/supabase';
+import { useToast } from '../../components/Toast';
 import { useHeadphoneMotion } from '../../lib/useHeadphoneMotion';
 import { createSlouchDetector, SlouchState } from '../../lib/slouchDetector';
 import { computePercentage, formatAngle, formatDuration } from '../../lib/postureSession';
+import type { PostureSession } from '../../lib/types';
 import {
   DEFAULT_POSTURE_SETTINGS,
   POSTURE_SETTINGS_LIMITS,
@@ -62,6 +65,8 @@ export default function PostureScreen() {
   const goodStreakRef = useRef(0);
   const longestGoodMsRef = useRef(0);
   const slouchCountRef = useRef(0);
+  const pitchSumRef = useRef(0);
+  const pitchCountRef = useRef(0);
 
   const [slouchState, setSlouchState] = useState<SlouchState>(SlouchState.GOOD_POSTURE);
   const [baselinePitch, setBaselinePitch] = useState<number | null>(null);
@@ -72,6 +77,9 @@ export default function PostureScreen() {
   const [slouchCount, setSlouchCount] = useState(0);
   const [settings, setSettings] = useState(DEFAULT_POSTURE_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<PostureSession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const { pushToast } = useToast();
 
   const resetSessionStats = () => {
     lastSampleRef.current = null;
@@ -80,6 +88,8 @@ export default function PostureScreen() {
     goodStreakRef.current = 0;
     longestGoodMsRef.current = 0;
     slouchCountRef.current = 0;
+    pitchSumRef.current = 0;
+    pitchCountRef.current = 0;
     setElapsedMs(0);
     setGoodMs(0);
     setLongestGoodMs(0);
@@ -111,6 +121,70 @@ export default function PostureScreen() {
     setSlouchState(SlouchState.GOOD_POSTURE);
   };
 
+  const loadSessionHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('posture_sessions')
+        .select(
+          'id, started_at, ended_at, duration_seconds, good_posture_pct, slouch_count, avg_pitch, baseline_pitch',
+        )
+        .order('started_at', { ascending: false })
+        .limit(6);
+
+      if (error) {
+        pushToast('Failed to load posture history.', 'error');
+        setHistoryLoading(false);
+        return;
+      }
+
+      setSessionHistory((data ?? []) as PostureSession[]);
+    } catch (error) {
+      pushToast('Failed to load posture history.', 'error');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [pushToast]);
+
+  const saveSession = useCallback(
+    async (startedAt: number, endedAt: number) => {
+      const durationMs = Math.max(0, endedAt - startedAt);
+      if (durationMs <= 0) {
+        return;
+      }
+
+      const durationSeconds = Math.round(durationMs / 1000);
+      const goodPct = computePercentage(goodMsRef.current, durationMs);
+      const avgPitch =
+        pitchCountRef.current > 0 ? pitchSumRef.current / pitchCountRef.current : null;
+      const baseline = detectorRef.current.getBaseline();
+
+      try {
+        const supabase = getSupabase();
+        const { error } = await supabase.from('posture_sessions').insert({
+          started_at: new Date(startedAt).toISOString(),
+          ended_at: new Date(endedAt).toISOString(),
+          duration_seconds: durationSeconds,
+          good_posture_pct: goodPct,
+          slouch_count: slouchCountRef.current,
+          avg_pitch: avgPitch,
+          baseline_pitch: baseline,
+        });
+
+        if (error) {
+          pushToast('Failed to save posture session.', 'error');
+          return;
+        }
+
+        loadSessionHistory().catch(() => null);
+      } catch (error) {
+        pushToast('Failed to save posture session.', 'error');
+      }
+    },
+    [loadSessionHistory, pushToast],
+  );
+
   useEffect(() => {
     const loadSettings = async () => {
       const stored = await loadPostureSettings();
@@ -120,6 +194,10 @@ export default function PostureScreen() {
 
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    loadSessionHistory().catch(() => null);
+  }, [loadSessionHistory]);
 
   useEffect(() => {
     if (!settingsLoaded) {
@@ -216,6 +294,7 @@ export default function PostureScreen() {
     updateSettings({ alertDelaySec: settings.alertDelaySec + delta });
   };
 
+
   useEffect(() => {
     if (isTracking && !wasTrackingRef.current) {
       resetSessionStats();
@@ -223,12 +302,15 @@ export default function PostureScreen() {
     }
 
     if (!isTracking && wasTrackingRef.current) {
+      if (sessionStart !== null) {
+        saveSession(sessionStart, Date.now()).catch(() => null);
+      }
       setSessionStart(null);
       lastSampleRef.current = null;
     }
 
     wasTrackingRef.current = isTracking;
-  }, [isTracking]);
+  }, [isTracking, saveSession, sessionStart]);
 
   useEffect(() => {
     if (!isTracking || sessionStart === null) {
@@ -250,6 +332,9 @@ export default function PostureScreen() {
     if (pitch === null || !Number.isFinite(pitch)) {
       return;
     }
+
+    pitchSumRef.current += pitch;
+    pitchCountRef.current += 1;
 
     const now = Date.now();
     const lastSample = lastSampleRef.current ?? now;
@@ -299,6 +384,17 @@ export default function PostureScreen() {
     { key: 'roll', label: 'Roll', value: roll, hint: ANGLE_HELP.roll },
     { key: 'yaw', label: 'Yaw', value: yaw, hint: ANGLE_HELP.yaw },
   ];
+
+  const formatSessionDate = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown';
+    }
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
+  };
 
   return (
     <ScrollView
@@ -408,6 +504,56 @@ export default function PostureScreen() {
           <Text className="text-slate-400 text-sm">Longest good streak</Text>
           <Text className="text-white font-semibold">{formatDuration(longestGoodMs)}</Text>
         </View>
+      </View>
+
+      <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-white font-semibold">Session history</Text>
+          <Pressable
+            onPress={loadSessionHistory}
+            className="bg-slate-800 px-3 py-1.5 rounded-full"
+          >
+            <Text className="text-xs text-slate-200">Refresh</Text>
+          </Pressable>
+        </View>
+
+        {historyLoading ? (
+          <View className="items-center py-6">
+            <ActivityIndicator color="#5eead4" />
+            <Text className="text-slate-400 text-xs mt-2">Loading sessions...</Text>
+          </View>
+        ) : sessionHistory.length === 0 ? (
+          <Text className="text-slate-400 text-sm">
+            No sessions yet. Start monitoring to build your history.
+          </Text>
+        ) : (
+          sessionHistory.map((session) => (
+            <View
+              key={session.id}
+              className="flex-row items-center justify-between mb-3"
+            >
+              <View>
+                <Text className="text-slate-200 text-sm">
+                  {formatSessionDate(session.started_at)}
+                </Text>
+                <Text className="text-slate-500 text-xs">
+                  Duration {formatDuration(session.duration_seconds * 1000)}
+                </Text>
+                <Text className="text-slate-500 text-xs">
+                  Avg pitch {formatAngle(session.avg_pitch)}
+                </Text>
+              </View>
+              <View className="items-end">
+                <Text className="text-white font-semibold">
+                  {session.good_posture_pct ?? 0}%
+                </Text>
+                <Text className="text-slate-500 text-xs">
+                  {session.slouch_count ?? 0} slouch{session.slouch_count === 1 ? '' : 'es'}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
       </View>
 
       <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
