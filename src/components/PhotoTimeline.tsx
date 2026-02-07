@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Upload, Trash2, Calendar } from 'lucide-react';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
@@ -281,11 +282,15 @@ export default function PhotoTimeline() {
               if (!photo) return null;
               return (
                 <div key={id} className="space-y-2">
-                  <img
-                    src={photo.url}
-                    alt={`${photo.view} view`}
-                    className="w-full aspect-[3/4] object-cover rounded-xl"
-                  />
+                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl">
+                    <Image
+                      src={photo.url}
+                      alt={`${photo.view} view`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover"
+                    />
+                  </div>
                   <p className="text-sm text-slate-400 text-center">
                     {format(new Date(photo.date), 'MMM d, yyyy')}
                   </p>
@@ -330,10 +335,12 @@ export default function PhotoTimeline() {
                   : 'border-slate-800/70'
               }`}
             >
-              <img
+              <Image
                 src={photo.url}
                 alt={`${photo.view} view`}
-                className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
               
               {/* Overlay */}

@@ -27,6 +27,8 @@ const specialistTypeLabel: Record<SpecialistType, string> = {
   other: 'Other',
 };
 
+const parseDateOnly = (dateStr: string) => new Date(`${dateStr}T00:00:00`);
+
 export default function AppointmentTracker() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,17 +136,17 @@ export default function AppointmentTracker() {
   const { upcoming, history } = useMemo(() => {
     const upcomingAppointments = appointments
       .filter((appointment) => {
-        const date = startOfDay(new Date(appointment.appointmentDate));
+        const date = startOfDay(parseDateOnly(appointment.appointmentDate));
         return isAfter(date, today) || isEqual(date, today);
       })
-      .sort((a, b) => compareAsc(new Date(a.appointmentDate), new Date(b.appointmentDate)));
+      .sort((a, b) => compareAsc(parseDateOnly(a.appointmentDate), parseDateOnly(b.appointmentDate)));
 
     const historyAppointments = appointments
       .filter((appointment) => {
-        const date = startOfDay(new Date(appointment.appointmentDate));
+        const date = startOfDay(parseDateOnly(appointment.appointmentDate));
         return isBefore(date, today);
       })
-      .sort((a, b) => compareDesc(new Date(a.appointmentDate), new Date(b.appointmentDate)));
+      .sort((a, b) => compareDesc(parseDateOnly(a.appointmentDate), parseDateOnly(b.appointmentDate)));
 
     return { upcoming: upcomingAppointments, history: historyAppointments };
   }, [appointments, today]);
@@ -181,7 +183,7 @@ export default function AppointmentTracker() {
           {nextAppointment ? (
             <div className="mt-2">
               <div className="text-white font-semibold">{nextAppointment.specialistName}</div>
-              <div className="text-sm text-slate-400">{format(new Date(nextAppointment.appointmentDate), 'MMM d, yyyy')}</div>
+              <div className="text-sm text-slate-400">{format(parseDateOnly(nextAppointment.appointmentDate), 'MMM d, yyyy')}</div>
             </div>
           ) : (
             <div className="mt-2 text-slate-500 text-sm">None scheduled</div>
@@ -292,12 +294,12 @@ export default function AppointmentTracker() {
                       <div className="text-white font-medium">{appointment.specialistName}</div>
                       <div className="text-sm text-slate-400">{specialistTypeLabel[appointment.specialistType]}</div>
                     </div>
-                    <div className="text-sm text-slate-300">{format(new Date(appointment.appointmentDate), 'MMM d, yyyy')}</div>
+                    <div className="text-sm text-slate-300">{format(parseDateOnly(appointment.appointmentDate), 'MMM d, yyyy')}</div>
                   </div>
                   {(appointment.notes || appointment.recommendations || appointment.followUpDate) && (
                     <div className="mt-3 text-xs text-slate-400 space-y-1">
                       {appointment.followUpDate && (
-                        <div>Follow-up: {format(new Date(appointment.followUpDate), 'MMM d, yyyy')}</div>
+                        <div>Follow-up: {format(parseDateOnly(appointment.followUpDate), 'MMM d, yyyy')}</div>
                       )}
                       {appointment.recommendations && <div>Recommendations: {appointment.recommendations}</div>}
                       {appointment.notes && <div>Notes: {appointment.notes}</div>}
@@ -337,12 +339,12 @@ export default function AppointmentTracker() {
                       <div className="text-white font-medium">{appointment.specialistName}</div>
                       <div className="text-sm text-slate-400">{specialistTypeLabel[appointment.specialistType]}</div>
                     </div>
-                    <div className="text-sm text-slate-300">{format(new Date(appointment.appointmentDate), 'MMM d, yyyy')}</div>
+                    <div className="text-sm text-slate-300">{format(parseDateOnly(appointment.appointmentDate), 'MMM d, yyyy')}</div>
                   </div>
                   {(appointment.notes || appointment.recommendations || appointment.followUpDate) && (
                     <div className="mt-3 text-xs text-slate-400 space-y-1">
                       {appointment.followUpDate && (
-                        <div>Follow-up: {format(new Date(appointment.followUpDate), 'MMM d, yyyy')}</div>
+                        <div>Follow-up: {format(parseDateOnly(appointment.followUpDate), 'MMM d, yyyy')}</div>
                       )}
                       {appointment.recommendations && <div>Recommendations: {appointment.recommendations}</div>}
                       {appointment.notes && <div>Notes: {appointment.notes}</div>}

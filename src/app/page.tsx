@@ -43,6 +43,7 @@ export default function Home() {
       todosResult,
       exercisesResult,
       appointmentsResult,
+      exerciseLogsResult,
     ] = await Promise.all([
       sb.from('photos').select('*').order('taken_at', { ascending: false }),
       sb.from('videos').select('*').order('recorded_at', { ascending: false }),
@@ -51,6 +52,7 @@ export default function Home() {
       sb.from('todos').select('*').order('created_at', { ascending: false }),
       sb.from('exercises').select('*').order('created_at', { ascending: false }),
       sb.from('appointments').select('*').order('appointment_date', { ascending: false }),
+      sb.from('exercise_logs').select('*').order('log_date', { ascending: false }),
     ]);
 
     const errors = [
@@ -61,6 +63,7 @@ export default function Home() {
       todosResult.error,
       exercisesResult.error,
       appointmentsResult.error,
+      exerciseLogsResult.error,
     ].filter(Boolean);
 
     if (errors.length > 0) {
@@ -79,6 +82,7 @@ export default function Home() {
       todos: todosResult.data ?? [],
       exercises: exercisesResult.data ?? [],
       appointments: appointmentsResult.data ?? [],
+      exerciseLogs: exerciseLogsResult.data ?? [],
     };
 
     const json = JSON.stringify(payload, null, 2);

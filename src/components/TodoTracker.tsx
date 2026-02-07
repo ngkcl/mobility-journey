@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, Check, Circle, Clock, Calendar, Dumbbell, Stethoscope, Pill } from 'lucide-react';
+import { Plus, Trash2, Check, Circle, Clock, Calendar, Dumbbell, Stethoscope, Pill, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isSameDay, isWithinInterval, startOfWeek, endOfWeek, startOfDay, subDays, eachDayOfInterval, isAfter } from 'date-fns';
 import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
@@ -20,6 +20,18 @@ interface Todo {
   dueDate?: string;
   completed: boolean;
   completedAt?: string;
+}
+
+interface ExerciseLog {
+  id: string;
+  todoId: string;
+  exerciseTitle: string;
+  logDate: string;
+  painLevel?: number;
+  feltTight?: boolean;
+  modifiedForm?: string;
+  notes?: string;
+  createdAt?: string;
 }
 
 const categoryConfig = {
@@ -50,6 +62,8 @@ const scheduleOptions = [
 ] as const;
 
 const getDayKeyForDate = (date: Date): DayKey => DAY_INDEX_MAP[date.getDay()];
+const parseDateOnly = (dateStr: string) => new Date(`${dateStr}T00:00:00`);
+const toLocalDateString = (date: Date) => format(date, 'yyyy-MM-dd');
 
 const formatScheduleLabel = (todo: Todo) => {
   switch (todo.frequency) {
@@ -76,7 +90,7 @@ const isScheduledForDate = (todo: Todo, date: Date) => {
 
   if (todo.frequency === 'once') {
     if (!todo.dueDate) return false;
-    return isSameDay(new Date(todo.dueDate), date);
+    return isSameDay(parseDateOnly(todo.dueDate), date);
   }
 
   if (todo.frequency === 'custom') {
@@ -92,7 +106,7 @@ const isScheduledForDate = (todo: Todo, date: Date) => {
       return todo.scheduleDays.includes(dayKey);
     }
     if (todo.dueDate) {
-      return getDayKeyForDate(new Date(todo.dueDate)) === dayKey;
+      return getDayKeyForDate(parseDateOnly(todo.dueDate)) === dayKey;
     }
     return false;
   }
@@ -121,6 +135,15 @@ export default function TodoTracker() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | Todo['category']>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
+  const [logTarget, setLogTarget] = useState<Todo | null>(null);
+  const [logForm, setLogForm] = useState({
+    notes: '',
+    painLevel: '',
+    feltTight: false,
+    modifiedForm: '',
+  });
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
   const { pushToast } = useToast();
   const [newTodo, setNewTodo] = useState<Partial<Todo>>({
     category: 'exercise',
@@ -134,13 +157,19 @@ export default function TodoTracker() {
 
     const loadTodos = async () => {
       const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('todos')
-        .select('id, title, details, completed, completed_at, due_date, category, frequency, schedule_days')
-        .order('created_at', { ascending: false });
+      const [todosResult, logsResult] = await Promise.all([
+        supabase
+          .from('todos')
+          .select('id, title, details, completed, completed_at, due_date, category, frequency, schedule_days')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('exercise_logs')
+          .select('id, todo_id, exercise_title, log_date, pain_level, felt_tight, modified_form, notes, created_at')
+          .order('log_date', { ascending: false }),
+      ]);
 
-      if (error) {
-        console.error('Failed to load todos', error);
+      if (todosResult.error) {
+        console.error('Failed to load todos', todosResult.error);
         if (isMounted) {
           setIsLoading(false);
           pushToast('Failed to load tasks. Please try again.', 'error');
@@ -148,7 +177,14 @@ export default function TodoTracker() {
         return;
       }
 
-      const normalized = (data ?? []).map((row) => ({
+      if (logsResult.error) {
+        console.error('Failed to load exercise logs', logsResult.error);
+        if (isMounted) {
+          pushToast('Failed to load exercise logs. Please try again.', 'error');
+        }
+      }
+
+      const normalized = (todosResult.data ?? []).map((row) => ({
         id: row.id,
         title: row.title,
         description: row.details ?? undefined,
@@ -160,8 +196,21 @@ export default function TodoTracker() {
         completedAt: row.completed_at ?? undefined,
       }));
 
+      const normalizedLogs = (logsResult.data ?? []).map((row) => ({
+        id: row.id,
+        todoId: row.todo_id,
+        exerciseTitle: row.exercise_title,
+        logDate: row.log_date,
+        painLevel: row.pain_level ?? undefined,
+        feltTight: row.felt_tight ?? undefined,
+        modifiedForm: row.modified_form ?? undefined,
+        notes: row.notes ?? undefined,
+        createdAt: row.created_at ?? undefined,
+      }));
+
       if (isMounted) {
         setTodos(normalized);
+        setExerciseLogs(normalizedLogs);
         setIsLoading(false);
       }
     };
@@ -219,17 +268,79 @@ export default function TodoTracker() {
     setShowAddForm(false);
   };
 
-  const toggleComplete = async (id: string) => {
+  const logsByTodo = useMemo(() => {
+    const map = new Map<string, ExerciseLog[]>();
+    exerciseLogs.forEach((log) => {
+      const bucket = map.get(log.todoId) ?? [];
+      bucket.push(log);
+      map.set(log.todoId, bucket);
+    });
+    map.forEach((logs, key) => {
+      logs.sort((a, b) => (a.logDate < b.logDate ? 1 : a.logDate > b.logDate ? -1 : 0));
+      map.set(key, logs);
+    });
+    return map;
+  }, [exerciseLogs]);
+
+  const toggleHistory = (id: string) => {
+    setExpandedHistory((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const getExerciseStats = (logs: ExerciseLog[]) => {
+    if (logs.length === 0) {
+      return { total: 0, lastPain: null, avgPain: null, trend: null as null | 'up' | 'down' | 'flat' };
+    }
+    const painValues = logs.map((log) => log.painLevel).filter((value): value is number => value != null);
+    const lastPain = painValues.length > 0 ? painValues[0] : null;
+    const avgPain = painValues.length > 0 ? Math.round(painValues.reduce((sum, value) => sum + value, 0) / painValues.length) : null;
+    const recent = painValues.slice(0, 3);
+    const prior = painValues.slice(3, 6);
+    const avgRecent = recent.length > 0 ? recent.reduce((sum, value) => sum + value, 0) / recent.length : null;
+    const avgPrior = prior.length > 0 ? prior.reduce((sum, value) => sum + value, 0) / prior.length : null;
+    let trend: 'up' | 'down' | 'flat' | null = null;
+    if (avgRecent != null && avgPrior != null) {
+      const diff = avgRecent - avgPrior;
+      if (Math.abs(diff) < 0.5) trend = 'flat';
+      else trend = diff > 0 ? 'up' : 'down';
+    }
+    return { total: logs.length, lastPain, avgPain, trend };
+  };
+
+  const resetLogForm = () => {
+    setLogForm({
+      notes: '',
+      painLevel: '',
+      feltTight: false,
+      modifiedForm: '',
+    });
+  };
+
+  const removeExerciseLog = async (todoId: string, logDate: string) => {
     const supabase = getSupabase();
-    const target = todos.find(todo => todo.id === id);
-    if (!target) return;
+    setExerciseLogs((prev) => prev.filter((log) => !(log.todoId === todoId && log.logDate === logDate)));
+    const { error } = await supabase
+      .from('exercise_logs')
+      .delete()
+      .eq('todo_id', todoId)
+      .eq('log_date', logDate);
+    if (error) {
+      console.error('Failed to delete exercise log', error);
+      pushToast('Failed to update exercise log. Please refresh.', 'error');
+    }
+  };
 
-    const now = new Date();
-    const isCompleting = isRecurringTodo(target) ? !isCompletedOnDate(target, now) : !target.completed;
-    const completedAt = isCompleting ? now.toISOString() : undefined;
-
-    setTodos(prev => prev.map(t => 
-      t.id === id 
+  const updateTodoCompletion = async (id: string, isCompleting: boolean, completedAt?: string) => {
+    const supabase = getSupabase();
+    setTodos(prev => prev.map(t =>
+      t.id === id
         ? { ...t, completed: isCompleting, completedAt }
         : t
     ));
@@ -246,6 +357,77 @@ export default function TodoTracker() {
       console.error('Failed to update todo', error);
       pushToast('Failed to update task. Please refresh.', 'error');
     }
+  };
+
+  const completeExerciseWithLog = async (todo: Todo, skipNotes = false) => {
+    const now = new Date();
+    const completedAt = now.toISOString();
+    const logDate = toLocalDateString(now);
+    const { notes, feltTight, modifiedForm, painLevel: painLevelRaw } = logForm;
+    const painLevel = painLevelRaw ? Number.parseInt(painLevelRaw, 10) : null;
+    const normalizedPain = Number.isFinite(painLevel) ? Math.min(10, Math.max(0, painLevel as number)) : null;
+
+    const supabase = getSupabase();
+    resetLogForm();
+    setLogTarget(null);
+
+    await updateTodoCompletion(todo.id, true, completedAt);
+
+    const { data, error } = await supabase
+      .from('exercise_logs')
+      .insert({
+        todo_id: todo.id,
+        exercise_title: todo.title,
+        log_date: logDate,
+        pain_level: skipNotes ? null : normalizedPain,
+        felt_tight: skipNotes ? null : feltTight,
+        modified_form: skipNotes ? null : (modifiedForm || null),
+        notes: skipNotes ? null : (notes || null),
+      })
+      .select('id, todo_id, exercise_title, log_date, pain_level, felt_tight, modified_form, notes, created_at')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to save exercise log', error);
+      pushToast('Saved completion but could not log notes.', 'error');
+      return;
+    }
+
+    const normalizedLog: ExerciseLog = {
+      id: data.id,
+      todoId: data.todo_id,
+      exerciseTitle: data.exercise_title,
+      logDate: data.log_date,
+      painLevel: data.pain_level ?? undefined,
+      feltTight: data.felt_tight ?? undefined,
+      modifiedForm: data.modified_form ?? undefined,
+      notes: data.notes ?? undefined,
+      createdAt: data.created_at ?? undefined,
+    };
+
+    setExerciseLogs((prev) => [normalizedLog, ...prev]);
+  };
+
+  const toggleComplete = async (id: string) => {
+    const target = todos.find(todo => todo.id === id);
+    if (!target) return;
+
+    const now = new Date();
+    const isCompleting = isRecurringTodo(target) ? !isCompletedOnDate(target, now) : !target.completed;
+    const completedAt = isCompleting ? now.toISOString() : undefined;
+
+    if (target.category === 'exercise' && isCompleting) {
+      resetLogForm();
+      setLogTarget(target);
+      return;
+    }
+
+    if (target.category === 'exercise' && !isCompleting) {
+      const logDate = toLocalDateString(now);
+      await removeExerciseLog(target.id, logDate);
+    }
+
+    await updateTodoCompletion(id, isCompleting, completedAt);
   };
 
   const deleteTodo = async (id: string) => {
@@ -288,7 +470,7 @@ export default function TodoTracker() {
     if (todo.category !== 'exercise') return false;
     if (todo.frequency === 'once') {
       if (!todo.dueDate) return false;
-      return isWithinInterval(new Date(todo.dueDate), { start: weekStart, end: weekEnd });
+      return isWithinInterval(parseDateOnly(todo.dueDate), { start: weekStart, end: weekEnd });
     }
     if (todo.frequency === 'custom' && todo.scheduleDays && todo.scheduleDays.length === 0) return false;
     return true;
@@ -681,6 +863,9 @@ export default function TodoTracker() {
             const config = categoryConfig[todo.category];
             const Icon = config.icon;
             const isComplete = isCompleteForDate(todo, today);
+            const logs = logsByTodo.get(todo.id) ?? [];
+            const stats = getExerciseStats(logs);
+            const isHistoryOpen = expandedHistory.has(todo.id);
             
             return (
               <div 
@@ -722,7 +907,7 @@ export default function TodoTracker() {
                       {todo.dueDate && (
                         <span className="flex items-center gap-1">
                           <Calendar size={12} />
-                          {format(new Date(todo.dueDate), 'MMM d')}
+                          {format(parseDateOnly(todo.dueDate), 'MMM d')}
                         </span>
                       )}
                       {todo.completedAt && (
@@ -732,20 +917,155 @@ export default function TodoTracker() {
                         </span>
                       )}
                     </div>
+                    {todo.category === 'exercise' && (
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                        <span className="rounded-full bg-slate-800/60 px-2 py-0.5">
+                          Sessions: {stats.total}
+                        </span>
+                        <span className="rounded-full bg-slate-800/60 px-2 py-0.5">
+                          Avg pain: {stats.avgPain ?? '—'}
+                        </span>
+                        <span className="rounded-full bg-slate-800/60 px-2 py-0.5">
+                          Trend: {stats.trend === 'down' ? 'Improving' : stats.trend === 'up' ? 'Worsening' : stats.trend === 'flat' ? 'Stable' : '—'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
-                  <button
-                    onClick={() => deleteTodo(todo.id)}
-                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/70 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {todo.category === 'exercise' && (
+                      <button
+                        onClick={() => toggleHistory(todo.id)}
+                        className="flex items-center gap-1 rounded-lg border border-slate-800/70 px-2 py-1 text-xs text-slate-300 hover:text-white hover:border-teal-400 transition-colors"
+                      >
+                        {isHistoryOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        {isHistoryOpen ? 'Hide history' : 'View history'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteTodo(todo.id)}
+                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/70 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
+
+                {todo.category === 'exercise' && isHistoryOpen && (
+                  <div className="mt-4 rounded-xl border border-slate-800/70 bg-slate-950/40 p-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-slate-200">Exercise history</h4>
+                      <span className="text-xs text-slate-500">{logs.length} sessions logged</span>
+                    </div>
+                    {logs.length === 0 ? (
+                      <p className="mt-3 text-sm text-slate-400">No logs yet. Complete this exercise to add notes.</p>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        {logs.slice(0, 5).map((log) => (
+                          <div key={log.id} className="rounded-lg border border-slate-800/70 bg-slate-900/60 p-3">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                              <span className="text-slate-200">{format(parseDateOnly(log.logDate), 'MMM d, yyyy')}</span>
+                              {log.painLevel != null && <span>Pain: {log.painLevel}/10</span>}
+                              {log.feltTight != null && <span>{log.feltTight ? 'Felt tight' : 'Loose'}</span>}
+                              {log.modifiedForm && <span>Modified: {log.modifiedForm}</span>}
+                            </div>
+                            {log.notes && <p className="mt-2 text-sm text-slate-300">{log.notes}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })
         )}
       </div>
+
+      {logTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-800/70 shadow-2xl">
+            <button
+              onClick={() => setLogTarget(null)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Log exercise notes</h3>
+                <p className="text-sm text-slate-400">Complete “{logTarget.title}” and capture how it felt.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Pain level (0-10)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={logForm.painLevel}
+                  onChange={(e) => setLogForm((prev) => ({ ...prev, painLevel: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800/70 text-slate-200 border border-slate-700/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  placeholder="e.g., 4"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="felt-tight"
+                  type="checkbox"
+                  checked={logForm.feltTight}
+                  onChange={(e) => setLogForm((prev) => ({ ...prev, feltTight: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-teal-500 focus:ring-teal-500/30"
+                />
+                <label htmlFor="felt-tight" className="text-sm text-slate-300">Felt tight today</label>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Modified form (optional)</label>
+                <input
+                  type="text"
+                  value={logForm.modifiedForm}
+                  onChange={(e) => setLogForm((prev) => ({ ...prev, modifiedForm: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800/70 text-slate-200 border border-slate-700/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  placeholder="e.g., Reduced range, used wall support"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Notes (optional)</label>
+                <textarea
+                  value={logForm.notes}
+                  onChange={(e) => setLogForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800/70 text-slate-200 border border-slate-700/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-y min-h-[90px]"
+                  placeholder="Felt tight on left side, focus on breathing..."
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 justify-end">
+                <button
+                  onClick={() => setLogTarget(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800/70 text-slate-300 hover:bg-slate-700/70 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => logTarget && completeExerciseWithLog(logTarget, true)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors"
+                >
+                  Complete without notes
+                </button>
+                <button
+                  onClick={() => logTarget && completeExerciseWithLog(logTarget)}
+                  className="px-4 py-2 rounded-xl bg-teal-500 text-white hover:bg-teal-400 transition-colors"
+                >
+                  Save & Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

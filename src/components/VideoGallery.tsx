@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Upload, Trash2, Calendar, Play, X, Film, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
@@ -22,6 +23,7 @@ interface Video {
   analysis_status: string;
   analysis_result: AnalysisResult | null;
   tags: string[] | null;
+  exercise_id: string | null;
 }
 
 interface AnalysisResult {
@@ -44,10 +46,17 @@ const CATEGORIES = ['exercise', 'posture', 'mobility', 'daily', 'other'] as cons
 type Category = (typeof CATEGORIES)[number];
 const VIDEO_BUCKET = 'progress-videos';
 
+interface ExerciseSummary {
+  id: string;
+  name: string;
+}
+
 export default function VideoGallery() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [exercises, setExercises] = useState<ExerciseSummary[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
   const [uploadCategory, setUploadCategory] = useState<Category>('exercise');
+  const [uploadExerciseId, setUploadExerciseId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
@@ -55,6 +64,12 @@ export default function VideoGallery() {
   const [notesText, setNotesText] = useState('');
   const { pushToast } = useToast();
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
+
+  const exerciseNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    exercises.forEach((exercise) => map.set(exercise.id, exercise.name));
+    return map;
+  }, [exercises]);
 
   const filteredVideos =
     selectedCategory === 'all'
@@ -66,13 +81,13 @@ export default function VideoGallery() {
 
     const loadVideos = async () => {
       const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .order('recorded_at', { ascending: false });
+      const [videosResult, exercisesResult] = await Promise.all([
+        supabase.from('videos').select('*').order('recorded_at', { ascending: false }),
+        supabase.from('exercises').select('id, name').order('name'),
+      ]);
 
-      if (error) {
-        console.error('Failed to load videos', error);
+      if (videosResult.error) {
+        console.error('Failed to load videos', videosResult.error);
         if (isMounted) {
           setIsLoading(false);
           pushToast('Failed to load videos. Please try again.', 'error');
@@ -80,8 +95,16 @@ export default function VideoGallery() {
         return;
       }
 
+      if (exercisesResult.error) {
+        console.error('Failed to load exercises', exercisesResult.error);
+        if (isMounted) {
+          pushToast('Failed to load exercises for linking.', 'error');
+        }
+      }
+
       if (isMounted) {
-        setVideos((data ?? []) as Video[]);
+        setVideos((videosResult.data ?? []) as Video[]);
+        setExercises((exercisesResult.data ?? []) as ExerciseSummary[]);
         setIsLoading(false);
       }
     };
@@ -166,6 +189,7 @@ export default function VideoGallery() {
             public_url: publicUrl,
             thumbnail_url: thumbnailUrl,
             category: uploadCategory,
+            exercise_id: uploadExerciseId || null,
             analysis_status: 'pending',
           })
           .select('*')
@@ -335,18 +359,32 @@ export default function VideoGallery() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <select
-            value={uploadCategory}
-            onChange={(e) => setUploadCategory(e.target.value as Category)}
-            className="min-w-[140px] px-3 py-2 rounded-xl bg-slate-900/70 text-slate-200 border border-slate-800/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-            aria-label="Video category"
-          >
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
+              <select
+                value={uploadCategory}
+                onChange={(e) => setUploadCategory(e.target.value as Category)}
+                className="min-w-[140px] px-3 py-2 rounded-xl bg-slate-900/70 text-slate-200 border border-slate-800/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                aria-label="Video category"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={uploadExerciseId}
+                onChange={(e) => setUploadExerciseId(e.target.value)}
+                className="min-w-[180px] px-3 py-2 rounded-xl bg-slate-900/70 text-slate-200 border border-slate-800/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                aria-label="Linked exercise"
+              >
+                <option value="">Link to exercise</option>
+                {exercises.map((exercise) => (
+                  <option key={exercise.id} value={exercise.id}>
+                    {exercise.name}
+                  </option>
+                ))}
+              </select>
 
           <label
             className={`px-4 py-2 rounded-xl cursor-pointer transition-colors flex items-center gap-2 ${
@@ -432,6 +470,15 @@ export default function VideoGallery() {
                 <h3 className="text-lg font-semibold text-white">
                   {expanded.label}
                 </h3>
+              )}
+
+              {expanded.exercise_id && (
+                <div className="text-sm text-slate-400">
+                  Linked exercise:{' '}
+                  <span className="text-slate-200">
+                    {exerciseNameById.get(expanded.exercise_id) ?? 'Unknown'}
+                  </span>
+                </div>
               )}
 
               {/* Notes */}
@@ -619,10 +666,12 @@ export default function VideoGallery() {
               {/* Thumbnail */}
               <div className="aspect-video bg-slate-800/50 relative overflow-hidden">
                 {video.thumbnail_url ? (
-                  <img
+                  <Image
                     src={video.thumbnail_url}
                     alt={video.label ?? 'Video thumbnail'}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -662,6 +711,12 @@ export default function VideoGallery() {
                 {video.label && (
                   <p className="text-sm text-slate-200 truncate">
                     {video.label}
+                  </p>
+                )}
+
+                {video.exercise_id && (
+                  <p className="text-xs text-slate-400">
+                    {exerciseNameById.get(video.exercise_id) ?? 'Linked exercise'}
                   </p>
                 )}
 

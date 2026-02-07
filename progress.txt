@@ -1,142 +1,49 @@
-# Ralph Loop Progress
 
-## Codebase Patterns (READ THIS FIRST!)
-<!-- 
-Consolidated learnings from all iterations.
-Add REUSABLE patterns here, not story-specific details.
--->
-- 
+## Codebase Patterns
+- Parse date-only strings with `new Date(\`\${dateStr}T00:00:00\`)` to avoid timezone off-by-one in UI comparisons/formatting.
 
 ---
-
-## Current Goal
-<!-- High-level objective from PRD -->
-
-
-## Metrics
-- **Iteration:** 0 of MAX
-- **Stories Complete:** 0 of TOTAL
-- **Tests:** X passing, Y failing
-- **Coverage:** Z%
-
----
-
-## Last Completed
-<!-- Most recent iteration's work -->
-- [ ] Nothing yet — first iteration
-
-## Next Up (for next iteration)
-<!-- What the next iteration should focus on -->
-- [ ] Start with first story from prd.json
-
-## Blockers/Warnings
-<!-- 
-Things that didn't work — DON'T RETRY THESE
-Document failures so future iterations avoid them
--->
-- None yet
-
----
-
-## Session Log
-
-<!-- 
-Each iteration appends here using this format:
-
----
-## [YYYY-MM-DD HH:MM] - Story [ID]: [Title]
+## 2026-02-07 01:31 - Story 1: Run quality checks and fix failures
 
 ### Completed
-- What was implemented
-- Key decisions made
+- Replaced `<img>` with `next/image` in photo timeline and video gallery to satisfy lint rules.
+- Verified `bun run typecheck` and `bun run lint` pass.
 
 ### Next Up (for next iteration)
-- [ ] Immediate next task
-- [ ] Following task
+- [ ] Review streak calculation, daily compliance, and scheduling logic for timezone/off-by-one issues (Story 2).
+- [ ] Review migrations for exercise_library/appointments tables and add missing indexes/constraints/RLS if needed (Story 3).
 
 ### Blockers/Warnings
-- Things that didn't work
-- Edge cases discovered
+- `bun test` reports no tests found; no automated test suite currently configured.
 
 ### Files Changed
-- path/to/file1.ts
-- path/to/file2.ts
-
-### Learnings (add to Codebase Patterns if reusable)
-- Patterns discovered
-- Gotchas encountered
----
-
--->
----
-## 2026-02-07 01:03 - Story 3: Streak tracking and gamification
-
-### Completed
-- Added streak summary (current, longest, total days) based on scheduled exercise completion
-- Added milestone celebration banner for key streak lengths
-- Added 12-week GitHub-style streak calendar with legend
-
-### Next Up (for next iteration)
-- [ ] Story 4: add exercise video references and embedded player
-- [ ] Story 5: specialist appointment tracker
-
-### Blockers/Warnings
-- Lint warnings remain for `<img>` usage in `PhotoTimeline` and `VideoGallery`
-- Streaks depend on scheduled exercise completion data; only completed days are recorded
-
-### Files Changed
-- src/components/TodoTracker.tsx
-- prd.json
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 01:08 - Story 4: Exercise video references
-
-### Completed
-- Added exercise detail modal with embedded reference video players and URL linking
-- Added exercise-linked video uploads via Video Gallery exercise dropdown
-- Added schema fields for exercise reference URLs and linked exercise videos
-
-### Next Up (for next iteration)
-- [ ] Story 5: specialist appointment tracker
-- [ ] Story 6: exercise logging with notes
-
-### Blockers/Warnings
-- Lint warnings remain for `<img>` usage in `PhotoTimeline` and `VideoGallery`
-
-### Files Changed
-- src/components/ExerciseLibrary.tsx
+- src/components/PhotoTimeline.tsx
 - src/components/VideoGallery.tsx
-- supabase/migrations/20260207190000_add_exercise_video_links.sql
 - prd.json
 
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
 ---
-## 2026-02-07 02:05 - Story 5: Specialist appointment tracker
+## 2026-02-07 02:10 - Story 2: Review exercise and streak logic
 
 ### Completed
-- Added appointments table migration with RLS policy for specialist visit tracking
-- Built appointment tracker UI with upcoming list, visit history, and recommendation capture
-- Included appointments in export payload and surfaced tracker in Protocol tab
+- Normalized date-only parsing in appointment and todo scheduling to avoid timezone/off-by-one errors.
+- Ensured exercise log dates use local date strings for consistency with streak logic.
 
 ### Next Up (for next iteration)
-- [ ] Story 6: exercise logging with notes
-- [ ] Address lint warnings for <img> usage if desired
+- [ ] Review migrations for exercise_library/appointments tables and add missing indexes/constraints/RLS if needed (Story 3).
+- [ ] Verify any other date-only fields that should be normalized for local display.
 
 ### Blockers/Warnings
-- Lint warnings remain for <img> usage in `PhotoTimeline` and `VideoGallery`
+- `pnpm test` reports no tests specified; no automated test suite currently configured.
 
 ### Files Changed
-- supabase/migrations/20260207193000_add_appointments.sql
-- src/components/AppointmentTracker.tsx
 - src/components/TodoTracker.tsx
-- src/app/page.tsx
+- src/components/AppointmentTracker.tsx
 - prd.json
+- progress.txt
 
 ### Learnings (add to Codebase Patterns if reusable)
-- None
+- Use a local date-only parser for `YYYY-MM-DD` strings before comparisons/formatting.
 ---

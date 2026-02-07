@@ -1,49 +1,28 @@
 {
   "branchName": "ralph/exercise-protocol",
-  "projectName": "Mobility Journey - Exercise Protocol & Reminders",
-  "description": "Upgrade the todo/protocol tracker into a full exercise management system with video library, daily reminders, streaks, and specialist appointment tracking.",
+  "projectName": "Mobility Journey - Exercise Protocol (Review & Fix)",
+  "description": "Review PR #4 code quality. Run typecheck and lint. Fix any issues. Ensure exercise library, streaks, and appointment tracking work correctly.",
   "userStories": [
     {
       "id": "1",
-      "title": "Exercise library with categories",
-      "description": "Create an exercise library (new Supabase table) with fields: name, category (stretching/strengthening/mobility/posture), target area (shoulders/spine/hips/core), instructions, difficulty, sets/reps/duration defaults. Seed with common scoliosis/posture exercises. UI to browse and add to protocol.",
+      "title": "Run quality checks and fix failures",
+      "description": "Run bun run typecheck and bun run lint. Fix any failures. Check for unused imports, dead code, missing types, any build errors.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "Daily protocol scheduling",
-      "description": "Upgrade TodoTracker to support scheduling exercises on specific days (M/W/F, daily, custom). Show today's exercises prominently. Track completion with timestamps. Calculate daily/weekly compliance rate.",
+      "title": "Review exercise and streak logic",
+      "description": "Review streak calculation, daily compliance, scheduling logic. Check for: timezone issues in streak calculation, off-by-one errors, empty state handling, proper date comparisons. Fix anything found.",
       "passes": true,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Streak tracking and gamification",
-      "description": "Track consecutive days of completing all scheduled exercises. Show current streak, longest streak, total days active. Add visual streak calendar (GitHub-style contribution grid). Celebrate milestones.",
-      "passes": true,
-      "priority": 3
-    },
-    {
-      "id": "4",
-      "title": "Exercise video references",
-      "description": "Allow attaching YouTube/video URLs to exercises in the library. Show embedded video player in exercise detail view. User can also upload their own form-check videos linked to specific exercises.",
-      "passes": true,
-      "priority": 4
-    },
-    {
-      "id": "5",
-      "title": "Specialist appointment tracker",
-      "description": "Add an appointments table: date, specialist name, type (physio/chiro/ortho/massage), notes, follow-up date. Show upcoming appointments on dashboard. Track visit history and specialist recommendations.",
-      "passes": true,
-      "priority": 5
-    },
-    {
-      "id": "6",
-      "title": "Exercise logging with notes",
-      "description": "When completing an exercise, allow adding notes (felt tight, pain level, modified form). Track exercise-specific metrics over time. Show per-exercise history and progression.",
+      "title": "Review database schema and queries",
+      "description": "Review Supabase migrations for exercise_library, appointments tables. Check for: missing indexes, proper foreign keys, RLS policies on new tables, efficient queries. Fix anything found.",
       "passes": false,
-      "priority": 6
+      "priority": 3
     }
   ]
 }
