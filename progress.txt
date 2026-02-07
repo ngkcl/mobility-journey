@@ -15,7 +15,7 @@
 - [ ] Confirm Supabase schema updates for workouts and workout_exercises.
 
 ### Blockers/Warnings
-- None.
+- `git push origin ralph/workout-tracker` failed: no `origin` remote configured.
 
 ### Files Changed
 - supabase/migrations/20260207_exercises.sql
