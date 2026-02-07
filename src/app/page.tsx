@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, Activity, FileText, CheckSquare, TrendingUp, Menu, X } from 'lucide-react';
+import { Camera, Video, Activity, FileText, CheckSquare, TrendingUp, Menu, X } from 'lucide-react';
 import PhotoTimeline from '@/components/PhotoTimeline';
+import VideoGallery from '@/components/VideoGallery';
 import MetricsTracker from '@/components/MetricsTracker';
 import AnalysisLog from '@/components/AnalysisLog';
 import TodoTracker from '@/components/TodoTracker';
@@ -10,7 +11,7 @@ import ProgressCharts from '@/components/ProgressCharts';
 import { getSupabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ToastProvider';
 
-type Tab = 'photos' | 'metrics' | 'analysis' | 'todos' | 'charts';
+type Tab = 'photos' | 'videos' | 'metrics' | 'analysis' | 'todos' | 'charts';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('photos');
@@ -20,6 +21,7 @@ export default function Home() {
 
   const tabs = [
     { id: 'photos' as Tab, label: 'Photos', icon: Camera },
+    { id: 'videos' as Tab, label: 'Videos', icon: Video },
     { id: 'metrics' as Tab, label: 'Metrics', icon: Activity },
     { id: 'analysis' as Tab, label: 'Analysis', icon: FileText },
     { id: 'todos' as Tab, label: 'Protocol', icon: CheckSquare },
@@ -31,8 +33,9 @@ export default function Home() {
     setIsExporting(true);
 
     const sb = getSupabase();
-    const [photosResult, metricsResult, analysisResult, todosResult] = await Promise.all([
+    const [photosResult, videosResult, metricsResult, analysisResult, todosResult] = await Promise.all([
       sb.from('photos').select('*').order('taken_at', { ascending: false }),
+      sb.from('videos').select('*').order('recorded_at', { ascending: false }),
       sb.from('metrics').select('*').order('entry_date', { ascending: false }),
       sb.from('analysis_logs').select('*').order('entry_date', { ascending: false }),
       sb.from('todos').select('*').order('created_at', { ascending: false }),
@@ -40,6 +43,7 @@ export default function Home() {
 
     const errors = [
       photosResult.error,
+      videosResult.error,
       metricsResult.error,
       analysisResult.error,
       todosResult.error,
@@ -55,6 +59,7 @@ export default function Home() {
     const payload = {
       exportedAt: new Date().toISOString(),
       photos: photosResult.data ?? [],
+      videos: videosResult.data ?? [],
       metrics: metricsResult.data ?? [],
       analysisLogs: analysisResult.data ?? [],
       todos: todosResult.data ?? [],
@@ -177,6 +182,7 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-fade-up">
           {activeTab === 'photos' && <PhotoTimeline />}
+          {activeTab === 'videos' && <VideoGallery />}
           {activeTab === 'metrics' && <MetricsTracker />}
           {activeTab === 'analysis' && <AnalysisLog />}
           {activeTab === 'todos' && <TodoTracker />}
