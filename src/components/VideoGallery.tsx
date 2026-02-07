@@ -207,27 +207,35 @@ export default function VideoGallery() {
                 duration: dur,
                 frameInterval,
               }),
+            }).then(async (res) => {
+              if (!res.ok) {
+                const errorText = await res.text().catch(() => '');
+                throw new Error(
+                  `Analysis request failed (${res.status})${errorText ? `: ${errorText}` : ''}`,
+                );
+              }
+              return res.json();
             });
           })
-          .then((res) => res.json())
           .then((data) => {
-            if (data.analysis) {
-              pushToast('Video analysis complete — check Analysis tab', 'success');
-              setVideos((prev) =>
-                prev.map((v) =>
-                  v.id === inserted.id
-                    ? {
-                        ...v,
-                        analysis_status: 'complete',
-                        analysis_result: {
-                          structuredData: data.structuredData,
-                          rawAnalysis: data.analysis,
-                        },
-                      }
-                    : v,
-                ),
-              );
+            if (!data?.analysis) {
+              throw new Error('No analysis returned');
             }
+            pushToast('Video analysis complete — check Analysis tab', 'success');
+            setVideos((prev) =>
+              prev.map((v) =>
+                v.id === inserted.id
+                  ? {
+                      ...v,
+                      analysis_status: 'complete',
+                      analysis_result: {
+                        structuredData: data.structuredData,
+                        rawAnalysis: data.analysis,
+                      },
+                    }
+                  : v,
+              ),
+            );
           })
           .catch((err) => {
             console.error('Video analysis failed', err);
@@ -236,6 +244,7 @@ export default function VideoGallery() {
                 v.id === inserted.id ? { ...v, analysis_status: 'failed' } : v,
               ),
             );
+            pushToast('Video analysis failed. Please try again.', 'error');
           });
       } catch (err) {
         console.error('Upload error', err);
@@ -324,6 +333,16 @@ export default function VideoGallery() {
     ? videos.find((v) => v.id === expandedVideo)
     : null;
 
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    id: string,
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setExpandedVideo(id);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -394,6 +413,8 @@ export default function VideoGallery() {
             {/* Close button */}
             <button
               onClick={() => setExpandedVideo(null)}
+              type="button"
+              aria-label="Close video details"
               className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
             >
               <X size={20} />
@@ -574,6 +595,7 @@ export default function VideoGallery() {
               <div className="pt-4 border-t border-slate-800/70">
                 <button
                   onClick={() => deleteVideo(expanded.id)}
+                  type="button"
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors text-sm"
                 >
                   <Trash2 size={16} />
@@ -615,6 +637,10 @@ export default function VideoGallery() {
             <div
               key={video.id}
               onClick={() => setExpandedVideo(video.id)}
+              onKeyDown={(event) => handleCardKeyDown(event, video.id)}
+              role="button"
+              tabIndex={0}
+              aria-label={video.label ? `Open video ${video.label}` : 'Open video details'}
               className="relative group rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800/70 cursor-pointer hover:border-slate-700 transition-all"
             >
               {/* Thumbnail */}
@@ -696,6 +722,8 @@ export default function VideoGallery() {
                   e.stopPropagation();
                   deleteVideo(video.id);
                 }}
+                type="button"
+                aria-label="Delete video"
                 className="absolute top-2 right-2 p-2 bg-rose-500/80 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-rose-500 transition-all"
               >
                 <Trash2 size={16} className="text-white" />

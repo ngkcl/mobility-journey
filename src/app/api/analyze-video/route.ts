@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'frames array is required' }, { status: 400 });
     }
 
+    if (frames.some((frame) => typeof frame !== 'string' || frame.trim().length === 0)) {
+      return NextResponse.json({ error: 'frames must be base64 strings' }, { status: 400 });
+    }
+
     if (!videoId) {
       return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
     }
@@ -202,9 +206,6 @@ export async function POST(request: NextRequest) {
       // Silent fail
     }
 
-    return NextResponse.json(
-      { error: 'Video analysis failed', details: String(error) },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Video analysis failed' }, { status: 500 });
   }
 }

@@ -227,6 +227,8 @@ export default function PhotoTimeline() {
           </select>
           <button
             onClick={() => setCompareMode(!compareMode)}
+            type="button"
+            aria-pressed={compareMode}
             className={`px-4 py-2 rounded-xl transition-all ${
               compareMode 
                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
@@ -327,12 +329,22 @@ export default function PhotoTimeline() {
             <div
               key={photo.id}
               onClick={() => compareMode && togglePhotoSelection(photo.id)}
+              onKeyDown={(event) => {
+                if (!compareMode) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  togglePhotoSelection(photo.id);
+                }
+              }}
+              role={compareMode ? 'button' : undefined}
+              tabIndex={compareMode ? 0 : -1}
+              aria-pressed={compareMode ? selectedPhotos.includes(photo.id) : undefined}
               className={`relative group rounded-2xl overflow-hidden bg-slate-900/70 border transition-all ${
                 compareMode
                   ? selectedPhotos.includes(photo.id)
                     ? 'border-amber-400 ring-2 ring-amber-400/80'
-                    : 'border-slate-800/70 cursor-pointer hover:border-slate-700'
-                  : 'border-slate-800/70'
+                  : 'border-slate-800/70 cursor-pointer hover:border-slate-700'
+                : 'border-slate-800/70'
               }`}
             >
               <div className="relative w-full aspect-[3/4] overflow-hidden">
@@ -362,6 +374,8 @@ export default function PhotoTimeline() {
                           e.stopPropagation();
                           deletePhoto(photo.id);
                         }}
+                        type="button"
+                        aria-label="Delete photo"
                         className="p-2 bg-rose-500/80 rounded-lg hover:bg-rose-500 transition-colors"
                       >
                         <Trash2 size={16} />
