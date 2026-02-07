@@ -1,63 +1,49 @@
 {
-  "branchName": "ralph/add-persistence",
-  "projectName": "Mobility Journey Dashboard",
-  "description": "Add Supabase persistence and polish UI for posture/scoliosis tracking app",
+  "branchName": "ralph/exercise-protocol",
+  "projectName": "Mobility Journey - Exercise Protocol & Reminders",
+  "description": "Upgrade the todo/protocol tracker into a full exercise management system with video library, daily reminders, streaks, and specialist appointment tracking.",
   "userStories": [
     {
       "id": "1",
-      "title": "Set up Supabase client and database schema",
-      "description": "Create Supabase project config, define tables for photos, metrics, analysis_logs, and todos. Create migration files.",
+      "title": "Exercise library with categories",
+      "description": "Create an exercise library (new Supabase table) with fields: name, category (stretching/strengthening/mobility/posture), target area (shoulders/spine/hips/core), instructions, difficulty, sets/reps/duration defaults. Seed with common scoliosis/posture exercises. UI to browse and add to protocol.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "Persist photos to Supabase Storage",
-      "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
+      "title": "Daily protocol scheduling",
+      "description": "Upgrade TodoTracker to support scheduling exercises on specific days (M/W/F, daily, custom). Show today's exercises prominently. Track completion with timestamps. Calculate daily/weekly compliance rate.",
       "passes": true,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Persist metrics to database",
-      "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
+      "title": "Streak tracking and gamification",
+      "description": "Track consecutive days of completing all scheduled exercises. Show current streak, longest streak, total days active. Add visual streak calendar (GitHub-style contribution grid). Celebrate milestones.",
       "passes": true,
       "priority": 3
     },
     {
       "id": "4",
-      "title": "Persist analysis log entries",
-      "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
-      "passes": true,
+      "title": "Exercise video references",
+      "description": "Allow attaching YouTube/video URLs to exercises in the library. Show embedded video player in exercise detail view. User can also upload their own form-check videos linked to specific exercises.",
+      "passes": false,
       "priority": 4
     },
     {
       "id": "5",
-      "title": "Persist todos/protocol items",
-      "description": "Save todos to todos table. Track completion status. Load on page load.",
-      "passes": true,
+      "title": "Specialist appointment tracker",
+      "description": "Add an appointments table: date, specialist name, type (physio/chiro/ortho/massage), notes, follow-up date. Show upcoming appointments on dashboard. Track visit history and specialist recommendations.",
+      "passes": false,
       "priority": 5
     },
     {
       "id": "6",
-      "title": "Add loading states and error handling",
-      "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
-      "passes": true,
+      "title": "Exercise logging with notes",
+      "description": "When completing an exercise, allow adding notes (felt tight, pain level, modified form). Track exercise-specific metrics over time. Show per-exercise history and progression.",
+      "passes": false,
       "priority": 6
-    },
-    {
-      "id": "7",
-      "title": "Polish UI and mobile responsiveness",
-      "description": "Improve spacing, animations, empty states. Ensure great mobile experience.",
-      "passes": true,
-      "priority": 7
-    },
-    {
-      "id": "8",
-      "title": "Add data export feature",
-      "description": "Allow exporting all data as JSON for backup/portability.",
-      "passes": true,
-      "priority": 8
     }
   ]
 }
