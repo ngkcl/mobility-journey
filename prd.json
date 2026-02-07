@@ -1,0 +1,198 @@
+{
+  "project": "mobility-app",
+  "branchName": "ralph/expo-migration",
+  "description": "Migrate Mobility Journey from Next.js to Expo (React Native) — personal posture/scoliosis tracking dashboard with web + iOS + Android support. Same Supabase backend.",
+  "context": {
+    "existingApp": "../mobility-journey/",
+    "supabaseTables": ["photos", "videos", "metrics", "analysis_logs", "todos"],
+    "theme": "Dark theme: slate-900 backgrounds, teal-500 accent, aurora gradient header",
+    "auth": "Basic HTTP auth in Next.js → Simple PIN/passcode screen for now (single user app)"
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Project setup: Expo + NativeWind + dependencies",
+      "description": "Set up the Expo project with all necessary dependencies for cross-platform development.",
+      "acceptanceCriteria": [
+        "Install nativewind v4, tailwindcss, @supabase/supabase-js, expo-image-picker, expo-av, date-fns, @expo/vector-icons",
+        "Configure NativeWind v4 with tailwind.config.js and babel preset",
+        "Create .env.example with EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_API_URL",
+        "Configure app.json with name 'Mobility Journey', dark theme, iOS/Android permissions (camera, photo library)",
+        "Create lib/supabase.ts with singleton Supabase client using EXPO_PUBLIC_ env vars",
+        "Create lib/types.ts with TypeScript interfaces for Photo, Video, MetricEntry, AnalysisEntry, Todo (matching Supabase schema)",
+        "App builds and runs with `npx expo start --web` without errors",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Reference existing types from ../mobility-journey/src/components/*.tsx. Supabase tables: photos (id, taken_at, view, public_url, storage_path, notes), videos (id, recorded_at, duration_seconds, storage_path, public_url, thumbnail_url, label, category, notes, analysis_status, analysis_result, tags), metrics (id, entry_date, pain_level, posture_score, symmetry_score, energy_level, exercise_done, exercise_minutes, exercise_names, functional_milestone, rom_forward_bend, rom_lateral, rib_hump, notes), analysis_logs (id, entry_date, category, title, content), todos (id, title, details, completed, completed_at, due_date, category, frequency)"
+    },
+    {
+      "id": "US-002",
+      "title": "Tab navigation layout with dark theme",
+      "description": "Set up bottom tab navigation with 6 tabs matching the existing dashboard, with the dark aurora theme.",
+      "acceptanceCriteria": [
+        "Bottom tab navigator with 6 tabs: Photos, Videos, Metrics, Analysis, Protocol, Progress",
+        "Each tab has an icon (use @expo/vector-icons Ionicons: camera, videocam, pulse, document-text, checkbox, trending-up)",
+        "Active tab uses teal-500 color (#14b8a6), inactive uses slate-400",
+        "Tab bar background is dark (slate-950/bg-opacity)",
+        "Screen headers match dark theme (slate-950 background, white text)",
+        "Global styles: dark background (#0b1020), light text (#f8fafc)",
+        "Status bar is light-content on dark background",
+        "App renders all 6 tab screens with placeholder content",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Use expo-router's Tabs component. The existing app uses: Camera, Video, Activity, FileText, CheckSquare, TrendingUp icons from lucide-react."
+    },
+    {
+      "id": "US-003",
+      "title": "Toast notification system",
+      "description": "Create a cross-platform toast notification component for success/error/info messages.",
+      "acceptanceCriteria": [
+        "Toast component that displays at top of screen with slide-down animation",
+        "Three tones: error (red), success (green), info (teal)",
+        "Auto-dismisses after 4 seconds",
+        "ToastProvider context wrapping the app so any screen can call pushToast(message, tone)",
+        "Works on both web and native",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Port from existing ToastProvider.tsx but use React Native Animated API instead of CSS."
+    },
+    {
+      "id": "US-004",
+      "title": "Photos tab - photo timeline with upload",
+      "description": "Migrate the PhotoTimeline component: view progress photos, upload new ones, filter by view angle, compare mode.",
+      "acceptanceCriteria": [
+        "Load photos from Supabase 'photos' table, display in a grid (2 columns on phone, 3-4 on tablet/web)",
+        "Each photo card shows: image, view badge (front/back/left/right), date",
+        "Filter buttons: All, Front, Back, Left, Right",
+        "Upload button opens expo-image-picker (camera + gallery options)",
+        "Upload flow: pick image → select view type → upload to Supabase Storage 'progress-photos' bucket → insert metadata row",
+        "Delete photo with confirmation (removes from storage + database)",
+        "Compare mode: select 2 photos to view side-by-side",
+        "Loading state while fetching",
+        "Empty state with upload prompt when no photos",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/PhotoTimeline.tsx. Storage bucket is 'progress-photos', path format 'progress/{timestamp}-{uuid}.{ext}'. After upload, trigger analysis via fetch to API_URL/api/analyze."
+    },
+    {
+      "id": "US-005",
+      "title": "Metrics tab - daily check-in",
+      "description": "Migrate the MetricsTracker: log daily pain, posture, symmetry, energy scores, exercises, ROM, and notes.",
+      "acceptanceCriteria": [
+        "Quick stats cards at top: Pain, Posture, Symmetry, Energy with latest values and trend arrows",
+        "Exercise streak counter showing total sessions and minutes",
+        "Add check-in form with: date picker, 4 score sliders/inputs (1-10), exercise checkbox + duration + names, ROM inputs, rib hump selector, functional milestone text, notes",
+        "Form validation: date required, scores must be 1-10",
+        "Save to Supabase 'metrics' table with proper column mapping (entry_date, pain_level, posture_score, etc.)",
+        "History list showing past entries with scores, exercise badges, and notes",
+        "Delete entries with confirmation",
+        "Trend calculation: compare recent 5 entries to show improving/declining/neutral",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/MetricsTracker.tsx. Column mapping: painLevel→pain_level, postureScore→posture_score, symmetryScore→symmetry_score, energyLevel→energy_level, exerciseDone→exercise_done, exerciseMinutes→exercise_minutes, exerciseNames→exercise_names, functionalMilestone→functional_milestone, romForwardBend→rom_forward_bend, romLateral→rom_lateral, ribHump→rib_hump."
+    },
+    {
+      "id": "US-006",
+      "title": "Todos/Protocol tab - task tracker",
+      "description": "Migrate the TodoTracker: manage exercises, appointments, supplements with completion tracking.",
+      "acceptanceCriteria": [
+        "Stats row: total tasks, pending count, completed today, completion rate percentage",
+        "Status filter: All / Pending / Completed",
+        "Category filter: All / Exercise / Appointment / Supplement / Other",
+        "Each todo item shows: completion checkbox (circle), category icon, title, description, frequency badge, due date",
+        "Toggle complete/incomplete with optimistic UI update",
+        "Add task form: title, category picker, frequency picker (daily/weekly/once), due date, description",
+        "Delete with confirmation",
+        "Category icons and colors: exercise=blue, appointment=green, supplement=amber, other=slate",
+        "Completed items show with reduced opacity and strikethrough title",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/TodoTracker.tsx. Supabase columns: id, title, details, completed, completed_at, due_date, category, frequency."
+    },
+    {
+      "id": "US-007",
+      "title": "Analysis Log tab",
+      "description": "Migrate the AnalysisLog: view AI analyses, personal notes, and specialist feedback.",
+      "acceptanceCriteria": [
+        "Filter by type: All, AI Analysis, Personal, Specialist",
+        "Each entry shows: type badge with icon (Bot/User), title, date, content (expandable for long entries)",
+        "Add entry form: date, type selector, title, content textarea",
+        "Delete with confirmation",
+        "Type colors: ai=amber, personal=sky, specialist=emerald",
+        "Whitespace-preserved content display (for AI analysis formatting)",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/AnalysisLog.tsx. Table: analysis_logs with columns: id, entry_date, category, title, content."
+    },
+    {
+      "id": "US-008",
+      "title": "Videos tab - video gallery with playback",
+      "description": "Migrate the VideoGallery: upload, view, and play movement videos with analysis status.",
+      "acceptanceCriteria": [
+        "Load videos from Supabase 'videos' table, display in card grid",
+        "Each card shows: thumbnail (or placeholder icon), category badge, analysis status badge, date, duration",
+        "Category filter: All, Exercise, Posture, Mobility, Daily, Other",
+        "Upload video via expo-image-picker (video mode)",
+        "Upload flow: pick video → select category → upload to 'progress-videos' bucket → insert row",
+        "Tap card to open video detail modal/screen with: video player (expo-av), metadata, notes (editable), analysis results if available",
+        "Analysis status badges: pending (yellow), analyzing (blue+spinner), complete (green), failed (red)",
+        "When analysis is complete, show scores (movement quality, posture, symmetry) and expandable raw analysis text",
+        "Delete video with confirmation",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/VideoGallery.tsx. Storage bucket 'progress-videos', paths 'videos/{timestamp}-{uuid}.{ext}' and 'thumbnails/{name}.jpg'. Analysis result shape: { structuredData: { movement_quality_score, posture_score, symmetry_score, ... }, rawAnalysis: string }."
+    },
+    {
+      "id": "US-009",
+      "title": "Progress Charts tab",
+      "description": "Migrate the ProgressCharts: visualize metrics over time with interactive charts.",
+      "acceptanceCriteria": [
+        "4 metric summary cards at top (Pain, Posture, Symmetry, Energy) with latest value, trend arrow, and change since start",
+        "Clickable cards to select which metric to chart",
+        "Main area chart showing selected metric over time (date on X axis, 0-10 on Y axis)",
+        "All metrics comparison line chart below",
+        "Metric colors: pain=#f97316, posture=#14b8a6, symmetry=#8b5cf6, energy=#f59e0b",
+        "Use a React Native compatible charting library (victory-native, react-native-chart-kit, or react-native-svg-charts)",
+        "Charts work on both web and native",
+        "Loading state and empty state when no data",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Reference ../mobility-journey/src/components/ProgressCharts.tsx. Existing app uses Recharts which is web-only. Need a cross-platform alternative. victory-native is recommended. Data comes from 'metrics' table: entry_date, pain_level, posture_score, symmetry_score, energy_level."
+    },
+    {
+      "id": "US-010",
+      "title": "Data export functionality",
+      "description": "Add ability to export all data as JSON, replacing the web download approach.",
+      "acceptanceCriteria": [
+        "Export button accessible from a settings/menu area",
+        "Exports all data (photos metadata, videos metadata, metrics, analysis logs, todos) as JSON",
+        "On native: use expo-sharing to share the JSON file",
+        "On web: download as file (same as existing behavior)",
+        "Shows loading state during export",
+        "Toast notification on success/failure",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Reference the handleExport function in ../mobility-journey/src/app/page.tsx. Use expo-file-system to write temp file, then expo-sharing to share it."
+    }
+  ]
+}
