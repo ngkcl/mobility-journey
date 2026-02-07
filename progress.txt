@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Use valid expo-router typed routes (e.g. /analysis) for Link hrefs to satisfy typecheck.
+- Unit tests run via `node --test` and use `ts-node/register/transpile-only` to import TS modules.
 
 ---
 ## 2026-02-07 12:32 - Story AP-002: Install and configure react-native-headphone-motion
@@ -53,4 +54,30 @@
 
 ### Learnings (add to Codebase Patterns if reusable)
 - Expo prebuild will try gem install for CocoaPods first, then fall back to Homebrew.
+---
+---
+## 2026-02-07 12:35 - Story AP-003: Slouch detection engine
+
+### Completed
+- Added slouch detection engine with calibration, thresholds, debouncing, and state transitions.
+- Emitted slouch events on WARNING/SLOUCHING transitions with timestamp and duration metadata.
+- Added node-based unit tests for slouch detection logic.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-004: posture monitor screen with real-time feedback using slouch detector + headphone motion hook.
+- [ ] Consider wiring detector into UI state with live stats + session timer.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- lib/slouchDetector.ts
+- lib/slouchDetector.test.js
+- package.json
+- pnpm-lock.yaml
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
 ---

@@ -48,7 +48,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Key insight: forward head tilt (pitch going negative/down) correlates with slouching. The calibration step is critical because everyone sits differently."
     },
     {
