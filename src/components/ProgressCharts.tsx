@@ -1,24 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ToastProvider';
 
-// Demo data - in production this would come from the metrics tracker
-const demoData = [
-  { date: '2026-02-01', cobbAngle: 18, painLevel: 5, flexibility: 6 },
-  { date: '2026-02-08', cobbAngle: 17.5, painLevel: 4, flexibility: 6.5 },
-  { date: '2026-02-15', cobbAngle: 17, painLevel: 4, flexibility: 7 },
-  { date: '2026-02-22', cobbAngle: 16.5, painLevel: 3, flexibility: 7 },
-  { date: '2026-03-01', cobbAngle: 16, painLevel: 3, flexibility: 7.5 },
-];
+type ChartPoint = {
+  date: string;
+  cobbAngle?: number;
+  painLevel?: number;
+  flexibility?: number;
+};
 
 const metrics = [
   { 
     key: 'cobbAngle', 
     label: 'Cobb Angle', 
     unit: '°', 
-    color: '#3b82f6',
+    color: '#14b8a6',
     description: 'Lower is better. Measures spinal curvature.',
     lowerIsBetter: true,
   },
@@ -26,7 +27,7 @@ const metrics = [
     key: 'painLevel', 
     label: 'Pain Level', 
     unit: '/10', 
-    color: '#ef4444',
+    color: '#f97316',
     description: 'Lower is better. Daily pain rating.',
     lowerIsBetter: true,
   },
@@ -42,12 +43,17 @@ const metrics = [
 
 export default function ProgressCharts() {
   const [selectedMetric, setSelectedMetric] = useState('cobbAngle');
-  const [data] = useState(demoData);
+  const [data, setData] = useState<ChartPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
 
   const getChange = (key: string) => {
-    if (data.length < 2) return { value: 0, trend: 'neutral' };
-    const first = data[0][key as keyof typeof data[0]] as number;
-    const last = data[data.length - 1][key as keyof typeof data[0]] as number;
+    const values = data
+      .map((point) => point[key as keyof ChartPoint])
+      .filter((value): value is number => typeof value === 'number');
+    if (values.length < 2) return { value: 0, trend: 'neutral' };
+    const first = values[0];
+    const last = values[values.length - 1];
     const change = last - first;
     const metric = metrics.find(m => m.key === key);
     
@@ -70,47 +76,108 @@ export default function ProgressCharts() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const formatTooltipLabel = (label: ReactNode) => {
+    if (typeof label === 'string') {
+      return formatDate(label);
+    }
+    return '';
+  };
+
+  const formatTooltipValue = (value: number | string | undefined) => {
+    if (typeof value !== 'number') {
+      return ['--', selectedMetricConfig.label] as const;
+    }
+    return [`${value}${selectedMetricConfig.unit}`, selectedMetricConfig.label] as const;
+  };
+
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving') return <TrendingUp className="text-green-500" size={20} />;
     if (trend === 'declining') return <TrendingDown className="text-red-500" size={20} />;
-    return <Minus className="text-gray-500" size={20} />;
+    return <Minus className="text-slate-500" size={20} />;
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMetrics = async () => {
+      const { data: rows, error } = await supabase
+        .from('metrics')
+        .select('entry_date, cobb_angle, pain_level, flexibility')
+        .order('entry_date', { ascending: true });
+
+      if (error) {
+        console.error('Failed to load chart metrics', error);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load chart data. Please try again.', 'error');
+        }
+        return;
+      }
+
+      const normalized = (rows ?? [])
+        .map((row) => ({
+          date: row.entry_date,
+          cobbAngle: row.cobb_angle ?? undefined,
+          painLevel: row.pain_level ?? undefined,
+          flexibility: row.flexibility ?? undefined,
+        }))
+        .filter((point) =>
+          typeof point.cobbAngle === 'number' ||
+          typeof point.painLevel === 'number' ||
+          typeof point.flexibility === 'number'
+        );
+
+      if (isMounted) {
+        setData(normalized);
+        setIsLoading(false);
+      }
+    };
+
+    loadMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pushToast]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-white">Progress Charts</h2>
-        <p className="text-gray-400">Visualize your improvement over time</p>
+        <h2 className="text-2xl font-semibold text-white">Progress Charts</h2>
+        <p className="text-slate-400">Visualize your improvement over time</p>
       </div>
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {metrics.map((metric) => {
           const { value, trend } = getChange(metric.key);
-          const latestValue = data.length > 0 ? data[data.length - 1][metric.key as keyof typeof data[0]] : 0;
+          const latestValue = [...data]
+            .reverse()
+            .map((point) => point[metric.key as keyof ChartPoint])
+            .find((val): val is number => typeof val === 'number');
           
           return (
             <button
               key={metric.key}
               onClick={() => setSelectedMetric(metric.key)}
-              className={`bg-gray-900 rounded-xl p-4 border text-left transition-all ${
+              className={`bg-slate-900/70 rounded-2xl p-4 border text-left transition-all shadow-lg shadow-black/20 ${
                 selectedMetric === metric.key 
-                  ? 'border-blue-500 ring-1 ring-blue-500' 
-                  : 'border-gray-800 hover:border-gray-700'
+                  ? 'border-teal-400 ring-1 ring-teal-400/60' 
+                  : 'border-slate-800/70 hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400">{metric.label}</span>
+                <span className="text-slate-300">{metric.label}</span>
                 <TrendIcon trend={trend} />
               </div>
               <div className="text-3xl font-bold" style={{ color: metric.color }}>
-                {latestValue}{metric.unit}
+                {latestValue !== undefined ? `${latestValue}${metric.unit}` : '—'}
               </div>
               <div className={`text-sm mt-1 ${
                 trend === 'improving' ? 'text-green-400' : 
                 trend === 'declining' ? 'text-red-400' : 
-                'text-gray-500'
+                'text-slate-500'
               }`}>
                 {value > 0 ? '+' : ''}{value.toFixed(1)} since start
               </div>
@@ -120,19 +187,24 @@ export default function ProgressCharts() {
       </div>
 
       {/* Main chart */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-semibold text-white">{selectedMetricConfig.label} Over Time</h3>
-            <p className="text-sm text-gray-400 flex items-center gap-1">
+            <p className="text-sm text-slate-400 flex items-center gap-1">
               <Info size={14} />
               {selectedMetricConfig.description}
             </p>
           </div>
         </div>
         
-        {data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
+        {isLoading ? (
+          <div className="h-64 flex items-center justify-center gap-2 text-slate-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading chart data...</span>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-64 flex items-center justify-center text-slate-400">
             No data yet. Add metrics to see your progress chart.
           </div>
         ) : (
@@ -145,27 +217,27 @@ export default function ProgressCharts() {
                     <stop offset="95%" stopColor={selectedMetricConfig.color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatDate}
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <YAxis 
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                   domain={['auto', 'auto']}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: '#0f172a', 
+                    border: '1px solid #334155',
                     borderRadius: '8px',
                     color: '#fff'
                   }}
-                  labelFormatter={formatDate}
-                  formatter={(value: number) => [`${value}${selectedMetricConfig.unit}`, selectedMetricConfig.label]}
+                  labelFormatter={formatTooltipLabel}
+                  formatter={formatTooltipValue}
                 />
                 <Area 
                   type="monotone" 
@@ -181,36 +253,41 @@ export default function ProgressCharts() {
       </div>
 
       {/* All metrics chart */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
         <h3 className="text-lg font-semibold text-white mb-6">All Metrics Comparison</h3>
         
-        {data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
+        {isLoading ? (
+          <div className="h-64 flex items-center justify-center gap-2 text-slate-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading chart data...</span>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-64 flex items-center justify-center text-slate-400">
             No data yet. Add metrics to see comparison chart.
           </div>
         ) : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatDate}
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <YAxis 
-                  stroke="#9ca3af"
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: '#0f172a', 
+                    border: '1px solid #334155',
                     borderRadius: '8px',
                     color: '#fff'
                   }}
-                  labelFormatter={formatDate}
+                  labelFormatter={formatTooltipLabel}
                 />
                 {metrics.map((metric) => (
                   <Line 
@@ -233,7 +310,7 @@ export default function ProgressCharts() {
           {metrics.map((metric) => (
             <div key={metric.key} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: metric.color }} />
-              <span className="text-sm text-gray-400">{metric.label}</span>
+              <span className="text-sm text-slate-400">{metric.label}</span>
             </div>
           ))}
         </div>

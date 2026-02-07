@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface MetricEntry {
   id: string;
@@ -26,33 +29,105 @@ const metricDefinitions = [
 export default function MetricsTracker() {
   const [entries, setEntries] = useState<MetricEntry[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { pushToast } = useToast();
   const [newEntry, setNewEntry] = useState<Partial<MetricEntry>>({
     date: new Date().toISOString().split('T')[0],
   });
 
-  const addEntry = () => {
-    if (!newEntry.date) return;
-    
-    const entry: MetricEntry = {
-      id: Date.now().toString(),
-      date: newEntry.date,
-      cobbAngle: newEntry.cobbAngle,
-      painLevel: newEntry.painLevel,
-      shoulderDiff: newEntry.shoulderDiff,
-      hipDiff: newEntry.hipDiff,
-      flexibility: newEntry.flexibility,
-      notes: newEntry.notes,
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntries = async () => {
+      const { data, error } = await supabase
+        .from('metrics')
+        .select('id, entry_date, cobb_angle, pain_level, shoulder_diff, hip_diff, flexibility, notes')
+        .order('entry_date', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load metrics', error);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load metrics. Please try again.', 'error');
+        }
+        return;
+      }
+
+      const normalized = (data ?? []).map((row) => ({
+        id: row.id,
+        date: row.entry_date,
+        cobbAngle: row.cobb_angle ?? undefined,
+        painLevel: row.pain_level ?? undefined,
+        shoulderDiff: row.shoulder_diff ?? undefined,
+        hipDiff: row.hip_diff ?? undefined,
+        flexibility: row.flexibility ?? undefined,
+        notes: row.notes ?? undefined,
+      }));
+
+      if (isMounted) {
+        setEntries(normalized);
+        setIsLoading(false);
+      }
     };
-    
-    setEntries(prev => [entry, ...prev].sort((a, b) => 
+
+    loadEntries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pushToast]);
+
+  const addEntry = async () => {
+    if (!newEntry.date) return;
+
+    const { data, error } = await supabase
+      .from('metrics')
+      .insert({
+        entry_date: newEntry.date,
+        cobb_angle: newEntry.cobbAngle ?? null,
+        pain_level: newEntry.painLevel ?? null,
+        shoulder_diff: newEntry.shoulderDiff ?? null,
+        hip_diff: newEntry.hipDiff ?? null,
+        flexibility: newEntry.flexibility ?? null,
+        notes: newEntry.notes ?? null,
+      })
+      .select('id, entry_date, cobb_angle, pain_level, shoulder_diff, hip_diff, flexibility, notes')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to save metric entry', error);
+      pushToast('Failed to save metric entry. Please try again.', 'error');
+      return;
+    }
+
+    const entry: MetricEntry = {
+      id: data.id,
+      date: data.entry_date,
+      cobbAngle: data.cobb_angle ?? undefined,
+      painLevel: data.pain_level ?? undefined,
+      shoulderDiff: data.shoulder_diff ?? undefined,
+      hipDiff: data.hip_diff ?? undefined,
+      flexibility: data.flexibility ?? undefined,
+      notes: data.notes ?? undefined,
+    };
+
+    setEntries(prev => [entry, ...prev].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     ));
     setNewEntry({ date: new Date().toISOString().split('T')[0] });
     setShowAddForm(false);
   };
 
-  const deleteEntry = (id: string) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
+  const deleteEntry = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this metric?')) return;
+    const prev = entries;
+    setEntries(p => p.filter(e => e.id !== id));
+    const { error } = await supabase.from('metrics').delete().eq('id', id);
+    if (error) {
+      setEntries(prev);
+      console.error('Failed to delete metric entry', error);
+      pushToast('Failed to delete metric entry. Restored.', 'error');
+    }
   };
 
   const getLatestValue = (key: keyof MetricEntry) => {
@@ -86,21 +161,21 @@ export default function MetricsTracker() {
   const TrendIcon = ({ trend }: { trend: string }) => {
     if (trend === 'improving') return <TrendingUp className="text-green-500" size={18} />;
     if (trend === 'declining') return <TrendingDown className="text-red-500" size={18} />;
-    return <Minus className="text-gray-500" size={18} />;
+    return <Minus className="text-slate-500" size={18} />;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Metrics Tracker</h2>
-          <p className="text-gray-400">Monitor your measurements over time</p>
+          <h2 className="text-2xl font-semibold text-white">Metrics Tracker</h2>
+          <p className="text-slate-400">Monitor your measurements over time</p>
         </div>
         
         <button
           onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/20"
         >
           <Plus size={18} />
           <span>Add Entry</span>
@@ -108,21 +183,21 @@ export default function MetricsTracker() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metricDefinitions.map((metric) => {
           const value = getLatestValue(metric.key as keyof MetricEntry);
           const trend = getTrend(metric.key as keyof MetricEntry);
           
           return (
-            <div key={metric.key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div key={metric.key} className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">{metric.label}</span>
+                <span className="text-slate-300 text-sm">{metric.label}</span>
                 <TrendIcon trend={trend} />
               </div>
               <div className="text-2xl font-bold text-white">
                 {value !== null ? `${value}${metric.unit}` : '—'}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{metric.description}</p>
+              <p className="text-xs text-slate-400 mt-1">{metric.description}</p>
             </div>
           );
         })}
@@ -130,23 +205,23 @@ export default function MetricsTracker() {
 
       {/* Add entry form */}
       {showAddForm && (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 shadow-lg shadow-black/20">
           <h3 className="text-lg font-semibold text-white mb-4">Add New Entry</h3>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date</label>
+              <label className="block text-sm text-slate-300 mb-1">Date</label>
               <input
                 type="date"
                 value={newEntry.date}
                 onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               />
             </div>
             
             {metricDefinitions.map((metric) => (
               <div key={metric.key}>
-                <label className="block text-sm text-gray-400 mb-1">
+                <label className="block text-sm text-slate-300 mb-1">
                   {metric.label} ({metric.unit})
                 </label>
                 <input
@@ -158,32 +233,32 @@ export default function MetricsTracker() {
                     ...prev, 
                     [metric.key]: e.target.value ? parseFloat(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             ))}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Notes</label>
+            <label className="block text-sm text-slate-300 mb-1">Notes</label>
             <textarea
               value={newEntry.notes || ''}
               onChange={(e) => setNewEntry(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any observations, how you feel, etc."
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none resize-none h-20"
+              className="w-full px-3 py-2 bg-slate-900/70 border border-slate-700/70 rounded-xl text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-none h-20"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={addEntry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-400 transition-colors"
             >
               Save Entry
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-slate-800/70 text-slate-300 rounded-xl hover:bg-slate-700/70 transition-colors"
             >
               Cancel
             </button>
@@ -195,20 +270,22 @@ export default function MetricsTracker() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">History</h3>
         
-        {entries.length === 0 ? (
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
-            <p className="text-gray-400">No entries yet. Add your first measurement to start tracking.</p>
+        {isLoading ? (
+          <LoadingState label="Loading metrics..." />
+        ) : entries.length === 0 ? (
+          <div className="bg-slate-900/70 rounded-2xl p-8 border border-slate-800/70 border-dashed text-center">
+            <p className="text-slate-300">No entries yet. Add your first measurement to start tracking.</p>
           </div>
         ) : (
           entries.map((entry) => (
-            <div key={entry.id} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div key={entry.id} className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white font-medium">
                   {format(new Date(entry.date), 'MMMM d, yyyy')}
                 </span>
                 <button
                   onClick={() => deleteEntry(entry.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-800 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/70 rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -220,7 +297,7 @@ export default function MetricsTracker() {
                   if (value === undefined) return null;
                   return (
                     <div key={metric.key}>
-                      <span className="text-gray-400">{metric.label}:</span>{' '}
+                      <span className="text-slate-400">{metric.label}:</span>{' '}
                       <span className="text-white font-medium">{value}{metric.unit}</span>
                     </div>
                   );
@@ -228,7 +305,7 @@ export default function MetricsTracker() {
               </div>
               
               {entry.notes && (
-                <p className="text-gray-400 text-sm mt-2 italic">"{entry.notes}"</p>
+                <p className="text-slate-400 text-sm mt-2 italic">&ldquo;{entry.notes}&rdquo;</p>
               )}
             </div>
           ))

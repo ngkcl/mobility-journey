@@ -1,0 +1,218 @@
+## Codebase Patterns
+- Supabase client uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `src/lib/supabaseClient.ts`.
+- Use `ToastProvider` and `useToast` from `src/components/ToastProvider.tsx` for error notifications.
+
+---
+## 2026-02-07 04:24 - Story 1: Set up Supabase client and database schema
+
+### Completed
+- Added Supabase client wrapper and env example for project configuration.
+- Created initial SQL migration defining photos, metrics, analysis_logs, and todos tables with indexes.
+- Fixed lint errors unrelated to the story to keep checks green.
+
+### Next Up (for next iteration)
+- [ ] Story 2: Persist photos to Supabase Storage and load from database on page load.
+- [ ] Decide on storage bucket naming and public vs signed URL strategy.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx` (not errors).
+
+### Files Changed
+- src/lib/supabaseClient.ts
+- supabase/migrations/20260207120000_init.sql
+- .env.example
+- src/components/MetricsTracker.tsx
+- src/components/PhotoTimeline.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None beyond the pattern noted above.
+---
+---
+## 2026-02-07 04:25 - Story 2: Persist photos to Supabase Storage
+
+### Completed
+- Loaded photos from Supabase `photos` table on mount and normalized URLs.
+- Uploaded images to `progress-photos` storage bucket and saved metadata to Supabase.
+- Added view selector for uploads and wired deletes to remove DB and storage records.
+
+### Next Up (for next iteration)
+- [ ] Story 3: Persist metrics to database and load historical data.
+- [ ] Confirm Supabase storage bucket permissions (public vs signed) and update if needed.
+
+### Blockers/Warnings
+- `pnpm test` reports no tests specified (project has no tests yet).
+
+### Files Changed
+- src/components/PhotoTimeline.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-07 05:27 - Story 3: Persist metrics to database
+
+### Completed
+- Loaded metrics from Supabase on mount and mapped rows into tracker state.
+- Saved new metric entries to Supabase and wired deletions to remove rows.
+- Updated progress charts to fetch metrics from Supabase instead of demo data.
+
+### Next Up (for next iteration)
+- [ ] Story 4: Persist analysis log entries to Supabase.
+- [ ] Story 5: Persist todos/protocol items to Supabase.
+
+### Blockers/Warnings
+- `pnpm typecheck` is not defined in package scripts.
+- `pnpm lint` still reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/MetricsTracker.tsx
+- src/components/ProgressCharts.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-07 05:28 - Story 4: Persist analysis log entries
+
+### Completed
+- Loaded analysis log entries from Supabase on mount and normalized rows.
+- Persisted new analysis entries to Supabase and wired deletions to remove rows.
+
+### Next Up (for next iteration)
+- [ ] Story 5: Persist todos/protocol items to Supabase.
+- [ ] Story 6: Add loading states and error handling.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/AnalysisLog.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-07 05:30 - Story 5: Persist todos/protocol items
+
+### Completed
+- Loaded todos from Supabase on mount and normalized rows for UI.
+- Persisted new todos to Supabase (including due date, category, frequency) and wired completion toggles + deletes.
+- Added migration to store todo frequency.
+
+### Next Up (for next iteration)
+- [ ] Story 6: Add loading states and error handling.
+- [ ] Story 7: Polish UI and mobile responsiveness.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/TodoTracker.tsx
+- supabase/migrations/20260207153000_add_todo_frequency.sql
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-06 19:34 - Story 6: Add loading states and error handling
+
+### Completed
+- Added ToastProvider/useToast for error notifications and wrapped app layout.
+- Added reusable LoadingState component and loading spinners in data fetch views.
+- Wired Supabase error handling to toast notifications across all data modules.
+- Added a typecheck script to package.json for quality checks.
+
+### Next Up (for next iteration)
+- [ ] Story 7: Polish UI and mobile responsiveness.
+- [ ] Story 8: Add data export feature.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/ToastProvider.tsx
+- src/components/LoadingState.tsx
+- src/app/layout.tsx
+- src/components/PhotoTimeline.tsx
+- src/components/MetricsTracker.tsx
+- src/components/AnalysisLog.tsx
+- src/components/TodoTracker.tsx
+- src/components/ProgressCharts.tsx
+- package.json
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None beyond the pattern noted above.
+---
+---
+## 2026-02-06 19:40 - Story 7: Polish UI and mobile responsiveness
+
+### Completed
+- Refined global styling with new fonts, aurora gradient background, grid texture, and fade-up animation utilities.
+- Polished headers, cards, buttons, and empty states across all tabs with consistent teal/amber palette and softer surfaces.
+- Improved mobile layout spacing, responsive grids, and task list stacking for smaller screens.
+
+### Next Up (for next iteration)
+- [ ] Story 8: Add data export feature.
+- [ ] Decide on export scope and UI placement (header action vs settings panel).
+
+### Blockers/Warnings
+- `pnpm lint` still reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/app/layout.tsx
+- src/app/globals.css
+- src/app/page.tsx
+- src/components/LoadingState.tsx
+- src/components/PhotoTimeline.tsx
+- src/components/MetricsTracker.tsx
+- src/components/AnalysisLog.tsx
+- src/components/TodoTracker.tsx
+- src/components/ProgressCharts.tsx
+- src/components/ToastProvider.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-06 19:42 - Story 8: Add data export feature
+
+### Completed
+- Added JSON export action in header to download all Supabase tables.
+- Included exportedAt timestamp and table payloads in the JSON download.
+- Added success/error toast feedback and export loading states for desktop + mobile.
+
+### Next Up (for next iteration)
+- [ ] Consider exporting storage files or signed URLs if needed for photo portability.
+- [ ] Decide if export should live in a settings panel or dedicated tab.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/app/page.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

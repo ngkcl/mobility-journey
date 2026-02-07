@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Upload, ChevronLeft, ChevronRight, Trash2, Calendar } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Upload, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { getSupabase } from '@/lib/supabaseClient';
+import LoadingState from '@/components/LoadingState';
+import { useToast } from '@/components/ToastProvider';
 
 interface Photo {
   id: string;
@@ -10,38 +13,144 @@ interface Photo {
   date: string;
   view: 'front' | 'back' | 'left' | 'right';
   notes?: string;
+  storagePath?: string;
 }
 
 // Demo data - in production this would come from a database
 const demoPhotos: Photo[] = [];
+const PHOTO_BUCKET = 'progress-photos';
 
 export default function PhotoTimeline() {
   const [photos, setPhotos] = useState<Photo[]>(demoPhotos);
   const [selectedView, setSelectedView] = useState<'front' | 'back' | 'left' | 'right' | 'all'>('all');
+  const [uploadView, setUploadView] = useState<'front' | 'back' | 'left' | 'right'>('front');
   const [compareMode, setCompareMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const { pushToast } = useToast();
 
   const filteredPhotos = selectedView === 'all' 
     ? photos 
     : photos.filter(p => p.view === selectedView);
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  useEffect(() => {
+    let isMounted = true;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newPhoto: Photo = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          url: event.target?.result as string,
-          date: new Date().toISOString(),
-          view: 'front', // Default, user can change
-        };
-        setPhotos(prev => [newPhoto, ...prev]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const loadPhotos = async () => {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('photos')
+        .select('id, taken_at, view, public_url, storage_path, notes')
+        .order('taken_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load photos', error);
+        if (isMounted) {
+          setIsLoading(false);
+          pushToast('Failed to load photos. Please try again.', 'error');
+        }
+        return;
+      }
+
+      const normalized = (data ?? [])
+        .map((row) => {
+          const url =
+            row.public_url ??
+            (row.storage_path
+              ? supabase.storage.from(PHOTO_BUCKET).getPublicUrl(row.storage_path).data.publicUrl
+              : '');
+
+          return {
+            id: row.id,
+            url,
+            date: row.taken_at,
+            view: row.view,
+            notes: row.notes ?? undefined,
+            storagePath: row.storage_path ?? undefined,
+          } as Photo;
+        })
+        .filter((photo) => photo.url);
+
+      if (isMounted) {
+        setPhotos(normalized);
+        setIsLoading(false);
+      }
+    };
+
+    loadPhotos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pushToast]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const supabase = getSupabase();
+    setIsUploading(true);
+    let hadUploadError = false;
+    let hadMetadataError = false;
+
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split('.').pop() ?? 'jpg';
+      const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+      const storagePath = `progress/${fileName}`;
+
+      const { error: uploadError } = await supabase
+        .storage
+        .from(PHOTO_BUCKET)
+        .upload(storagePath, file, { upsert: false, contentType: file.type });
+
+      if (uploadError) {
+        console.error('Failed to upload photo', uploadError);
+        hadUploadError = true;
+        continue;
+      }
+
+      const publicUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+      const takenAt = new Date(file.lastModified > 0 ? file.lastModified : Date.now()).toISOString();
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('photos')
+        .insert({
+          taken_at: takenAt,
+          view: uploadView,
+          storage_path: storagePath,
+          public_url: publicUrl,
+        })
+        .select('id, taken_at, view, public_url, storage_path, notes')
+        .single();
+
+      if (insertError || !inserted) {
+        console.error('Failed to save photo metadata', insertError);
+        hadMetadataError = true;
+        continue;
+      }
+
+      setPhotos((prev) => [
+        {
+          id: inserted.id,
+          url: inserted.public_url ?? publicUrl,
+          date: inserted.taken_at,
+          view: inserted.view,
+          notes: inserted.notes ?? undefined,
+          storagePath: inserted.storage_path ?? storagePath,
+        },
+        ...prev,
+      ]);
+    }
+
+    setIsUploading(false);
+    e.target.value = '';
+    if (hadUploadError) {
+      pushToast('Some photos failed to upload. Please retry.', 'error');
+    }
+    if (hadMetadataError) {
+      pushToast('Some photos could not be saved. Please retry.', 'error');
+    }
   };
 
   const togglePhotoSelection = (id: string) => {
@@ -52,41 +161,77 @@ export default function PhotoTimeline() {
     }
   };
 
-  const deletePhoto = (id: string) => {
-    setPhotos(prev => prev.filter(p => p.id !== id));
+  const deletePhoto = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return;
+    const supabase = getSupabase();
+    const target = photos.find((photo) => photo.id === id);
+    const prev = photos;
+    setPhotos((p) => p.filter((photo) => photo.id !== id));
+
+    const { error: deleteError } = await supabase.from('photos').delete().eq('id', id);
+    if (deleteError) {
+      setPhotos(prev);
+      console.error('Failed to delete photo metadata', deleteError);
+      pushToast('Failed to delete photo. Restored.', 'error');
+      return;
+    }
+
+    if (target?.storagePath) {
+      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([target.storagePath]);
+      if (storageError) {
+        console.error('Failed to delete photo file', storageError);
+        pushToast('Failed to delete photo file from storage.', 'error');
+      }
+    }
   };
 
   const views = ['all', 'front', 'back', 'left', 'right'] as const;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Progress Photos</h2>
-          <p className="text-gray-400">Track visual changes over time</p>
+          <h2 className="text-2xl font-semibold text-white">Progress Photos</h2>
+          <p className="text-slate-400">Track visual changes over time</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={uploadView}
+            onChange={(e) => setUploadView(e.target.value as 'front' | 'back' | 'left' | 'right')}
+            className="min-w-[140px] px-3 py-2 rounded-xl bg-slate-900/70 text-slate-200 border border-slate-800/60 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            aria-label="Photo view"
+          >
+            <option value="front">Front</option>
+            <option value="back">Back</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
           <button
             onClick={() => setCompareMode(!compareMode)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-xl transition-all ${
               compareMode 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
+                : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700/70'
             }`}
           >
             {compareMode ? 'Exit Compare' : 'Compare'}
           </button>
           
-          <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors flex items-center gap-2">
+          <label className={`px-4 py-2 rounded-xl cursor-pointer transition-colors flex items-center gap-2 ${
+            isUploading
+              ? 'bg-teal-500/70 text-white'
+              : 'bg-teal-500 text-white hover:bg-teal-400'
+          }`}>
             <Upload size={18} />
-            <span>Upload</span>
+            <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
             <input
               type="file"
               accept="image/*"
               multiple
               onChange={handleUpload}
+              disabled={isUploading}
               className="hidden"
             />
           </label>
@@ -99,10 +244,10 @@ export default function PhotoTimeline() {
           <button
             key={view}
             onClick={() => setSelectedView(view)}
-            className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-full capitalize whitespace-nowrap transition-all ${
               selectedView === view
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                : 'bg-slate-900/70 text-slate-300 hover:bg-slate-800/70'
             }`}
           >
             {view}
@@ -112,7 +257,7 @@ export default function PhotoTimeline() {
 
       {/* Compare view */}
       {compareMode && selectedPhotos.length === 2 && (
-        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
           <h3 className="text-lg font-semibold mb-4 text-white">Comparison</h3>
           <div className="grid grid-cols-2 gap-4">
             {selectedPhotos.map((id) => {
@@ -123,9 +268,9 @@ export default function PhotoTimeline() {
                   <img
                     src={photo.url}
                     alt={`${photo.view} view`}
-                    className="w-full aspect-[3/4] object-cover rounded-lg"
+                    className="w-full aspect-[3/4] object-cover rounded-xl"
                   />
-                  <p className="text-sm text-gray-400 text-center">
+                  <p className="text-sm text-slate-400 text-center">
                     {format(new Date(photo.date), 'MMM d, yyyy')}
                   </p>
                 </div>
@@ -136,12 +281,14 @@ export default function PhotoTimeline() {
       )}
 
       {/* Photo grid */}
-      {filteredPhotos.length === 0 ? (
-        <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 border-dashed text-center">
-          <Upload size={48} className="mx-auto text-gray-600 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-400 mb-2">No photos yet</h3>
-          <p className="text-gray-500 mb-4">Upload your first progress photos to start tracking</p>
-          <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+      {isLoading ? (
+        <LoadingState label="Loading photos..." className="p-12" />
+      ) : filteredPhotos.length === 0 ? (
+        <div className="bg-slate-900/70 rounded-2xl p-12 border border-slate-800/70 border-dashed text-center">
+          <Upload size={48} className="mx-auto text-slate-500 mb-4" />
+          <h3 className="text-lg font-semibold text-slate-200 mb-2">No photos yet</h3>
+          <p className="text-slate-400 mb-4">Upload your first progress photos to start tracking</p>
+          <label className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-xl cursor-pointer hover:bg-teal-400 transition-colors">
             <Upload size={18} />
             <span>Upload Photos</span>
             <input
@@ -159,27 +306,27 @@ export default function PhotoTimeline() {
             <div
               key={photo.id}
               onClick={() => compareMode && togglePhotoSelection(photo.id)}
-              className={`relative group rounded-xl overflow-hidden bg-gray-900 border transition-all ${
+              className={`relative group rounded-2xl overflow-hidden bg-slate-900/70 border transition-all ${
                 compareMode
                   ? selectedPhotos.includes(photo.id)
-                    ? 'border-purple-500 ring-2 ring-purple-500'
-                    : 'border-gray-800 cursor-pointer hover:border-gray-700'
-                  : 'border-gray-800'
+                    ? 'border-amber-400 ring-2 ring-amber-400/80'
+                    : 'border-slate-800/70 cursor-pointer hover:border-slate-700'
+                  : 'border-slate-800/70'
               }`}
             >
               <img
                 src={photo.url}
                 alt={`${photo.view} view`}
-                className="w-full aspect-[3/4] object-cover"
+                className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
               
               {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-white text-sm font-medium capitalize">{photo.view}</p>
-                      <p className="text-gray-300 text-xs flex items-center gap-1">
+                      <p className="text-slate-200 text-xs flex items-center gap-1">
                         <Calendar size={12} />
                         {format(new Date(photo.date), 'MMM d, yyyy')}
                       </p>
@@ -190,7 +337,7 @@ export default function PhotoTimeline() {
                           e.stopPropagation();
                           deletePhoto(photo.id);
                         }}
-                        className="p-2 bg-red-600/80 rounded-lg hover:bg-red-600 transition-colors"
+                        className="p-2 bg-rose-500/80 rounded-lg hover:bg-rose-500 transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -200,7 +347,7 @@ export default function PhotoTimeline() {
               </div>
 
               {/* View badge */}
-              <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded text-xs capitalize text-white">
+              <div className="absolute top-2 left-2 px-2 py-1 bg-slate-950/60 rounded text-xs capitalize text-white">
                 {photo.view}
               </div>
             </div>
@@ -209,7 +356,7 @@ export default function PhotoTimeline() {
       )}
 
       {compareMode && selectedPhotos.length < 2 && (
-        <p className="text-center text-gray-400">
+        <p className="text-center text-slate-400">
           Select {2 - selectedPhotos.length} more photo{selectedPhotos.length === 1 ? '' : 's'} to compare
         </p>
       )}

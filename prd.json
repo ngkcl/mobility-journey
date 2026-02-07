@@ -1,0 +1,63 @@
+{
+  "branchName": "ralph/add-persistence",
+  "projectName": "Mobility Journey Dashboard",
+  "description": "Add Supabase persistence and polish UI for posture/scoliosis tracking app",
+  "userStories": [
+    {
+      "id": "1",
+      "title": "Set up Supabase client and database schema",
+      "description": "Create Supabase project config, define tables for photos, metrics, analysis_logs, and todos. Create migration files.",
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "2",
+      "title": "Persist photos to Supabase Storage",
+      "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
+      "passes": true,
+      "priority": 2
+    },
+    {
+      "id": "3",
+      "title": "Persist metrics to database",
+      "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
+      "passes": true,
+      "priority": 3
+    },
+    {
+      "id": "4",
+      "title": "Persist analysis log entries",
+      "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
+      "passes": true,
+      "priority": 4
+    },
+    {
+      "id": "5",
+      "title": "Persist todos/protocol items",
+      "description": "Save todos to todos table. Track completion status. Load on page load.",
+      "passes": true,
+      "priority": 5
+    },
+    {
+      "id": "6",
+      "title": "Add loading states and error handling",
+      "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
+      "passes": true,
+      "priority": 6
+    },
+    {
+      "id": "7",
+      "title": "Polish UI and mobile responsiveness",
+      "description": "Improve spacing, animations, empty states. Ensure great mobile experience.",
+      "passes": true,
+      "priority": 7
+    },
+    {
+      "id": "8",
+      "title": "Add data export feature",
+      "description": "Allow exporting all data as JSON for backup/portability.",
+      "passes": true,
+      "priority": 8
+    }
+  ]
+}
