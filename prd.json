@@ -1,63 +1,49 @@
 {
-  "branchName": "ralph/add-persistence",
-  "projectName": "Mobility Journey Dashboard",
-  "description": "Add Supabase persistence and polish UI for posture/scoliosis tracking app",
+  "branchName": "ralph/progress-dashboard",
+  "projectName": "Mobility Journey - Progress Dashboard & Trend Detection",
+  "description": "Build a proper progress dashboard with before/after photo comparisons, AI-powered trend detection across metrics over time, and auto-generated weekly summaries.",
   "userStories": [
     {
       "id": "1",
-      "title": "Set up Supabase client and database schema",
-      "description": "Create Supabase project config, define tables for photos, metrics, analysis_logs, and todos. Create migration files.",
+      "title": "Before/after photo comparison view",
+      "description": "Add a comparison mode to PhotoTimeline where user can select two photos (same view type, different dates) and see them side-by-side with a slider overlay. Show date delta and any AI analysis differences.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "Persist photos to Supabase Storage",
-      "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
+      "title": "Trend detection engine",
+      "description": "Create a server-side function that analyzes metrics history and detects trends: improving, worsening, or stable for each metric. Use statistical methods (rolling averages, direction). Store trend summaries in a new trends table.",
       "passes": true,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Persist metrics to database",
-      "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
-      "passes": true,
+      "title": "Progress dashboard overview tab",
+      "description": "Add a new 'Dashboard' tab as the default landing page. Show: days since start, key metrics with trend arrows (↑↓→), latest photo vs earliest photo, recent analysis highlights, protocol compliance percentage.",
+      "passes": false,
       "priority": 3
     },
     {
       "id": "4",
-      "title": "Persist analysis log entries",
-      "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
-      "passes": true,
+      "title": "AI trend insights",
+      "description": "Use Claude to generate natural-language trend insights from metrics data. E.g. 'Your left shoulder elevation has improved 3° over the last 2 weeks' or 'Pain levels trending down since starting new exercises'. Show on dashboard.",
+      "passes": false,
       "priority": 4
     },
     {
       "id": "5",
-      "title": "Persist todos/protocol items",
-      "description": "Save todos to todos table. Track completion status. Load on page load.",
-      "passes": true,
+      "title": "Auto-generated weekly summary",
+      "description": "Create an API endpoint that generates a weekly summary: metrics changes, photos taken, exercises completed, AI analysis highlights. Store in analysis_logs with type 'weekly_summary'. Auto-generate on Sundays or on-demand.",
+      "passes": false,
       "priority": 5
     },
     {
       "id": "6",
-      "title": "Add loading states and error handling",
-      "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
-      "passes": true,
+      "title": "Timeline view",
+      "description": "Add a chronological timeline view that interleaves all events: photos, metric entries, analysis notes, completed exercises, weekly summaries. Filterable by type. Shows the full journey narrative.",
+      "passes": false,
       "priority": 6
-    },
-    {
-      "id": "7",
-      "title": "Polish UI and mobile responsiveness",
-      "description": "Improve spacing, animations, empty states. Ensure great mobile experience.",
-      "passes": true,
-      "priority": 7
-    },
-    {
-      "id": "8",
-      "title": "Add data export feature",
-      "description": "Allow exporting all data as JSON for backup/portability.",
-      "passes": true,
-      "priority": 8
     }
   ]
 }
