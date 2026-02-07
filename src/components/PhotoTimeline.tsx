@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { Upload, Trash2, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
@@ -16,16 +17,39 @@ interface Photo {
   storagePath?: string;
 }
 
+interface AnalysisEntry {
+  id: string;
+  entry_date: string;
+  title?: string;
+  content: string;
+  category: 'ai' | 'personal' | 'specialist';
+}
+
 // Demo data - in production this would come from a database
 const demoPhotos: Photo[] = [];
 const PHOTO_BUCKET = 'progress-photos';
 
+const parseDate = (value?: string | null) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+const formatPhotoDate = (value?: string | null, pattern = 'MMM d, yyyy') => {
+  const date = parseDate(value);
+  if (!date) return 'Unknown date';
+  return format(date, pattern);
+};
+
 export default function PhotoTimeline() {
   const [photos, setPhotos] = useState<Photo[]>(demoPhotos);
+  const [analysisEntries, setAnalysisEntries] = useState<AnalysisEntry[]>([]);
   const [selectedView, setSelectedView] = useState<'front' | 'back' | 'left' | 'right' | 'all'>('all');
   const [uploadView, setUploadView] = useState<'front' | 'back' | 'left' | 'right'>('front');
   const [compareMode, setCompareMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [compareSplit, setCompareSplit] = useState(50);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const { pushToast } = useToast();
@@ -39,13 +63,21 @@ export default function PhotoTimeline() {
 
     const loadPhotos = async () => {
       const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('photos')
-        .select('id, taken_at, view, public_url, storage_path, notes')
-        .order('taken_at', { ascending: false });
+      const [photosResult, analysisResult] = await Promise.all([
+        supabase
+          .from('photos')
+          .select('id, taken_at, view, public_url, storage_path, notes')
+          .order('taken_at', { ascending: false }),
+        supabase
+          .from('analysis_logs')
+          .select('id, entry_date, title, content, category, created_at')
+          .eq('category', 'ai')
+          .order('entry_date', { ascending: false })
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (error) {
-        console.error('Failed to load photos', error);
+      if (photosResult.error) {
+        console.error('Failed to load photos', photosResult.error);
         if (isMounted) {
           setIsLoading(false);
           pushToast('Failed to load photos. Please try again.', 'error');
@@ -53,7 +85,11 @@ export default function PhotoTimeline() {
         return;
       }
 
-      const normalized = (data ?? [])
+      if (analysisResult.error) {
+        console.error('Failed to load analysis logs', analysisResult.error);
+      }
+
+      const normalized = (photosResult.data ?? [])
         .map((row) => {
           const url =
             row.public_url ??
@@ -74,6 +110,7 @@ export default function PhotoTimeline() {
 
       if (isMounted) {
         setPhotos(normalized);
+        setAnalysisEntries((analysisResult.data ?? []) as AnalysisEntry[]);
         setIsLoading(false);
       }
     };
@@ -172,9 +209,39 @@ export default function PhotoTimeline() {
   const togglePhotoSelection = (id: string) => {
     if (selectedPhotos.includes(id)) {
       setSelectedPhotos(prev => prev.filter(p => p !== id));
-    } else if (selectedPhotos.length < 2) {
-      setSelectedPhotos(prev => [...prev, id]);
+      return;
     }
+
+    if (selectedPhotos.length >= 2) {
+      return;
+    }
+
+    const target = photos.find((photo) => photo.id === id);
+    if (!target) return;
+
+    if (selectedPhotos.length === 1) {
+      const first = photos.find((photo) => photo.id === selectedPhotos[0]);
+      if (first && first.view !== target.view) {
+        pushToast('Select a photo with the same view to compare.', 'error');
+        return;
+      }
+    }
+
+    const next = [...selectedPhotos, id];
+    setSelectedPhotos(next);
+    if (next.length === 2) {
+      setCompareSplit(50);
+    }
+  };
+
+  const toggleCompareMode = () => {
+    setCompareMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSelectedPhotos([]);
+      }
+      return next;
+    });
   };
 
   const deletePhoto = async (id: string) => {
@@ -203,6 +270,33 @@ export default function PhotoTimeline() {
 
   const views = ['all', 'front', 'back', 'left', 'right'] as const;
 
+  const selectedPhotoObjects = useMemo(() => {
+    return selectedPhotos
+      .map((id) => photos.find((photo) => photo.id === id))
+      .filter((photo): photo is Photo => Boolean(photo));
+  }, [photos, selectedPhotos]);
+
+  const getAnalysisForPhoto = (photo: Photo) => {
+    const entryDate = parseDate(photo.date);
+    if (!entryDate) return null;
+    const entryDateKey = format(entryDate, 'yyyy-MM-dd');
+    const viewKey = photo.view.toLowerCase();
+    const sameDay = analysisEntries.filter((entry) => entry.entry_date === entryDateKey);
+    const withView = sameDay.filter((entry) => (entry.title ?? '').toLowerCase().includes(viewKey));
+    return withView[0] ?? sameDay[0] ?? null;
+  };
+
+  const parseStructuredData = (entry: AnalysisEntry | null) => {
+    if (!entry?.content) return null;
+    const match = entry.content.match(/```json\n([\s\S]*?)\n```/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -225,7 +319,7 @@ export default function PhotoTimeline() {
             <option value="right">Right</option>
           </select>
           <button
-            onClick={() => setCompareMode(!compareMode)}
+            onClick={toggleCompareMode}
             className={`px-4 py-2 rounded-xl transition-all ${
               compareMode 
                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
@@ -273,27 +367,200 @@ export default function PhotoTimeline() {
 
       {/* Compare view */}
       {compareMode && selectedPhotos.length === 2 && (
-        <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
-          <h3 className="text-lg font-semibold mb-4 text-white">Comparison</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {selectedPhotos.map((id) => {
-              const photo = photos.find(p => p.id === id);
-              if (!photo) return null;
-              return (
-                <div key={id} className="space-y-2">
-                  <img
-                    src={photo.url}
-                    alt={`${photo.view} view`}
-                    className="w-full aspect-[3/4] object-cover rounded-xl"
-                  />
-                  <p className="text-sm text-slate-400 text-center">
-                    {format(new Date(photo.date), 'MMM d, yyyy')}
+        (() => {
+          const sorted = [...selectedPhotoObjects].sort(
+            (a, b) => (parseDate(a.date)?.getTime() ?? 0) - (parseDate(b.date)?.getTime() ?? 0),
+          );
+          const before = sorted[0];
+          const after = sorted[1];
+          if (!before || !after) return null;
+          const beforeDate = parseDate(before.date);
+          const afterDate = parseDate(after.date);
+          if (!beforeDate || !afterDate) {
+            return (
+              <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20 text-slate-300">
+                Unable to compare these photos because one or both dates are missing.
+              </div>
+            );
+          }
+
+          const deltaDays = Math.abs(
+            differenceInCalendarDays(afterDate, beforeDate),
+          );
+          const deltaLabel =
+            deltaDays === 0
+              ? 'Same day'
+              : `${deltaDays} day${deltaDays === 1 ? '' : 's'} apart`;
+
+          const beforeAnalysis = getAnalysisForPhoto(before);
+          const afterAnalysis = getAnalysisForPhoto(after);
+          const beforeStructured = parseStructuredData(beforeAnalysis);
+          const afterStructured = parseStructuredData(afterAnalysis);
+
+          const diffFields: { key: string; label: string; type: 'number' | 'text' }[] = [
+            { key: 'posture_score', label: 'Posture score', type: 'number' },
+            { key: 'symmetry_score', label: 'Symmetry score', type: 'number' },
+            { key: 'rib_hump', label: 'Rib hump', type: 'text' },
+            { key: 'muscle_asymmetry', label: 'Muscle asymmetry', type: 'text' },
+            { key: 'shoulder_level', label: 'Shoulder level', type: 'text' },
+            { key: 'hip_level', label: 'Hip level', type: 'text' },
+            { key: 'head_position', label: 'Head position', type: 'text' },
+            { key: 'confidence', label: 'Confidence', type: 'text' },
+          ];
+
+          const renderDiffValue = (
+            beforeValue: unknown,
+            afterValue: unknown,
+            type: 'number' | 'text',
+          ) => {
+            if (beforeValue == null && afterValue == null) return '—';
+            if (type === 'number') {
+              const beforeNum = Number(beforeValue);
+              const afterNum = Number(afterValue);
+              if (Number.isFinite(beforeNum) && Number.isFinite(afterNum)) {
+                const delta = afterNum - beforeNum;
+                const trend = delta > 0 ? 'up' : delta < 0 ? 'down' : 'no change';
+                const deltaLabel = delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`;
+                return `${beforeNum} → ${afterNum} (${trend} ${deltaLabel})`;
+              }
+            }
+
+            const beforeText = beforeValue ?? '—';
+            const afterText = afterValue ?? '—';
+            if (beforeText === afterText) {
+              return `${beforeText} (no change)`;
+            }
+            return `${beforeText} → ${afterText}`;
+          };
+
+          return (
+            <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20 space-y-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Comparison</h3>
+                  <p className="text-sm text-slate-400 capitalize">
+                    {before.view} view · {deltaLabel}
                   </p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div className="text-sm text-slate-400">
+                  {formatPhotoDate(before.date)} → {formatPhotoDate(after.date)}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-slate-800/70 bg-slate-950">
+                  <Image
+                    src={before.url}
+                    alt={`Before ${before.view} view`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 overflow-hidden relative" style={{ width: `${compareSplit}%` }}>
+                    <Image
+                      src={after.url}
+                      alt={`After ${after.view} view`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div
+                    className="absolute inset-y-0 flex items-center"
+                    style={{ left: `calc(${compareSplit}% - 1px)` }}
+                  >
+                    <div className="h-full w-0.5 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
+                  </div>
+                  <div className="absolute left-3 top-3 rounded-full bg-slate-950/70 px-3 py-1 text-xs uppercase tracking-wide text-slate-200">
+                    Before
+                  </div>
+                  <div className="absolute right-3 top-3 rounded-full bg-slate-950/70 px-3 py-1 text-xs uppercase tracking-wide text-slate-200">
+                    After
+                  </div>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={compareSplit}
+                  onChange={(e) => setCompareSplit(Number(e.target.value))}
+                  className="w-full accent-amber-400"
+                  aria-label="Comparison slider"
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-800/70 bg-slate-950/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">Before</p>
+                  <p className="text-sm text-slate-200">
+                    {formatPhotoDate(before.date)}
+                  </p>
+                  <p className="text-xs text-slate-400 capitalize">{before.view} view</p>
+                </div>
+                <div className="rounded-xl border border-slate-800/70 bg-slate-950/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">After</p>
+                  <p className="text-sm text-slate-200">
+                    {formatPhotoDate(after.date)}
+                  </p>
+                  <p className="text-xs text-slate-400 capitalize">{after.view} view</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-800/70 bg-slate-950/50 p-4 space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">AI analysis differences</h4>
+                  <p className="text-xs text-slate-400">
+                    Based on AI logs from the same day as each photo.
+                  </p>
+                </div>
+
+                {beforeStructured && afterStructured ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {diffFields.map((field) => {
+                      const beforeValue = (beforeStructured as Record<string, unknown>)[field.key];
+                      const afterValue = (afterStructured as Record<string, unknown>)[field.key];
+                      const display = renderDiffValue(beforeValue, afterValue, field.type);
+                      if (display === '—') return null;
+                      return (
+                        <div
+                          key={field.key}
+                          className="rounded-lg border border-slate-800/60 bg-slate-900/70 px-3 py-2"
+                        >
+                          <p className="text-xs text-slate-400">{field.label}</p>
+                          <p className="text-sm text-slate-200">{display}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">
+                    No AI analysis found for one or both photos.
+                  </p>
+                )}
+
+                {(beforeAnalysis || afterAnalysis) && (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-slate-800/60 bg-slate-900/70 px-3 py-2">
+                      <p className="text-xs text-slate-400">Before analysis</p>
+                      <p className="text-sm text-slate-200">
+                        {beforeAnalysis?.title ?? 'No AI analysis logged.'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-800/60 bg-slate-900/70 px-3 py-2">
+                      <p className="text-xs text-slate-400">After analysis</p>
+                      <p className="text-sm text-slate-200">
+                        {afterAnalysis?.title ?? 'No AI analysis logged.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()
       )}
 
       {/* Photo grid */}
@@ -330,11 +597,16 @@ export default function PhotoTimeline() {
                   : 'border-slate-800/70'
               }`}
             >
-              <img
-                src={photo.url}
-                alt={`${photo.view} view`}
-                className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-              />
+              <div className="relative w-full aspect-[3/4] overflow-hidden">
+                <Image
+                  src={photo.url}
+                  alt={`${photo.view} view`}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  unoptimized
+                />
+              </div>
               
               {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -344,7 +616,7 @@ export default function PhotoTimeline() {
                       <p className="text-white text-sm font-medium capitalize">{photo.view}</p>
                       <p className="text-slate-200 text-xs flex items-center gap-1">
                         <Calendar size={12} />
-                        {format(new Date(photo.date), 'MMM d, yyyy')}
+                        {formatPhotoDate(photo.date)}
                       </p>
                     </div>
                     {!compareMode && (

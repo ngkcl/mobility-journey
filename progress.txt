@@ -1,182 +1,46 @@
-# Ralph Loop Progress
-
-## Codebase Patterns (READ THIS FIRST!)
-<!-- 
-Consolidated learnings from all iterations.
-Add REUSABLE patterns here, not story-specific details.
--->
-- 
-
 ---
-
-## Current Goal
-<!-- High-level objective from PRD -->
-
-
-## Metrics
-- **Iteration:** 0 of MAX
-- **Stories Complete:** 0 of TOTAL
-- **Tests:** X passing, Y failing
-- **Coverage:** Z%
-
----
-
-## Last Completed
-<!-- Most recent iteration's work -->
-- [ ] Nothing yet — first iteration
-
-## Next Up (for next iteration)
-<!-- What the next iteration should focus on -->
-- [ ] Start with first story from prd.json
-
-## Blockers/Warnings
-<!-- 
-Things that didn't work — DON'T RETRY THESE
-Document failures so future iterations avoid them
--->
-- None yet
-
----
-
-## Session Log
-
-<!-- 
-Each iteration appends here using this format:
-
----
-## [YYYY-MM-DD HH:MM] - Story [ID]: [Title]
+## 2026-02-07 01:31 - Story 1: Run quality checks and fix failures
 
 ### Completed
-- What was implemented
-- Key decisions made
+- Ran bun typecheck and lint to validate the baseline
+- Replaced raw img tags with next/image for dashboard, photo timeline, and video gallery thumbnails
+- Re-ran lint and typecheck to confirm clean
 
 ### Next Up (for next iteration)
-- [ ] Immediate next task
-- [ ] Following task
-
-### Blockers/Warnings
-- Things that didn't work
-- Edge cases discovered
-
-### Files Changed
-- path/to/file1.ts
-- path/to/file2.ts
-
-### Learnings (add to Codebase Patterns if reusable)
-- Patterns discovered
-- Gotchas encountered
----
-
--->
----
-## 2026-02-07 00:08 - Story 1: Before/after photo comparison view
-
-### Completed
-- Verified PhotoTimeline already includes compare mode with slider overlay, date delta, and AI analysis differences
-- Marked story 1 as passing in `prd.json`
-
-### Next Up (for next iteration)
-- [ ] Start Story 2: trend detection engine
-- [ ] Review database schema for metrics history and trends storage needs
+- [ ] Review dashboard components for correctness (trend logic, empty states, date edge cases)
+- [ ] Review API endpoints and data flow (error handling, query efficiency, AI rate limiting)
 
 ### Blockers/Warnings
 - None
 
 ### Files Changed
-- prd.json
-- progress.txt
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 00:23 - Story 2: Trend detection engine
-
-### Completed
-- Confirmed trend analysis utilities, API route, and trends table migration align with story requirements
-- Marked story 2 as passing in `prd.json`
-
-### Next Up (for next iteration)
-- [ ] Start Story 3: Progress dashboard overview tab
-- [ ] Review existing dashboard-related components for reuse
-
-### Blockers/Warnings
-- None
-
-### Files Changed
-- prd.json
-- progress.txt
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 01:05 - Story 3: Progress dashboard overview tab
-
-### Completed
-- Confirmed Dashboard tab is default landing page and overview UI already covers required stats, trends, photos, highlights, and compliance
-- Marked story 3 as passing in `prd.json`
-
-### Next Up (for next iteration)
-- [ ] Start Story 4: AI trend insights
-- [ ] Review existing analysis/trends data shape for insight prompts
-
-### Blockers/Warnings
-- None
-
-### Files Changed
-- prd.json
-- progress.txt
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 02:05 - Story 4: AI trend insights
-
-### Completed
-- Added `/api/trend-insights` endpoint to generate and cache Claude insights from latest trends
-- Added dashboard section to display AI trend insights alongside other overview content
-- Added parsing helper and tests for insight list handling
-
-### Next Up (for next iteration)
-- [ ] Start Story 5: auto-generated weekly summary endpoint + storage
-- [ ] Review analysis_logs schema for weekly summary storage and scheduling hook
-
-### Blockers/Warnings
-- Lint warnings remain for `@next/next/no-img-element` in existing components
-
-### Files Changed
-- src/app/api/trend-insights/route.ts
 - src/components/DashboardOverview.tsx
-- src/lib/trendInsights.js
-- tests/trendInsights.test.js
+- src/components/PhotoTimeline.tsx
+- src/components/VideoGallery.tsx
 - prd.json
-- progress.txt
 
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
 ---
-## 2026-02-07 01:14 - Story 5: Auto-generated weekly summary
+## 2026-02-07 01:34 - Story 2: Review dashboard components for correctness
 
 ### Completed
-- Added weekly summary API endpoint with Sunday/force gating, Supabase data collection, and Claude-generated or fallback summaries
-- Added weekly summary utilities for metric deltas and summary formatting
-- Added tests for weekly summary helpers
-- Marked story 5 as passing in `prd.json`
+- Added safe date parsing/formatting in photo comparison and overlays to avoid crashes on invalid/missing dates
+- Guarded metric history date rendering against invalid values
+- Prevented chart date formatting from emitting Invalid Date in edge cases
 
 ### Next Up (for next iteration)
-- [ ] Start Story 6: timeline view
-- [ ] Identify reusable timeline components or data fetch patterns
+- [ ] Review API endpoints and data flow (weekly summary + trend insights) for error handling and efficiency
+- [ ] Audit AI rate limiting and response typing
 
 ### Blockers/Warnings
-- Existing lint warnings for `@next/next/no-img-element` in dashboard, photo timeline, and video gallery remain
+- None
 
 ### Files Changed
-- src/app/api/weekly-summary/route.ts
-- src/lib/weeklySummary.js
-- tests/weeklySummary.test.js
+- src/components/PhotoTimeline.tsx
+- src/components/MetricsTracker.tsx
+- src/components/ProgressCharts.tsx
 - prd.json
 - progress.txt
 

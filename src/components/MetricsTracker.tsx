@@ -31,6 +31,12 @@ const quickMetrics = [
   { key: 'energyLevel', label: 'Energy', unit: '/10', icon: Flame, color: 'amber', lowerBetter: false },
 ];
 
+const formatEntryDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  return format(date, 'MMMM d, yyyy');
+};
+
 export default function MetricsTracker() {
   const [entries, setEntries] = useState<MetricEntry[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -413,10 +419,10 @@ export default function MetricsTracker() {
           entries.map((entry) => (
             <div key={entry.id} className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 shadow-lg shadow-black/20">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-white font-medium">
-                    {format(new Date(entry.date), 'MMMM d, yyyy')}
-                  </span>
+              <div className="flex items-center gap-3">
+                <span className="text-white font-medium">
+                    {formatEntryDate(entry.date)}
+                </span>
                   {entry.exerciseDone && (
                     <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs rounded-full flex items-center gap-1">
                       <Dumbbell size={12} /> {entry.exerciseMinutes ? `${entry.exerciseMinutes}min` : '✓'}
