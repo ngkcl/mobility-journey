@@ -45,7 +45,7 @@
 - [ ] Decide if workout history should include detail drill-down view.
 
 ### Blockers/Warnings
-- None.
+- `git push origin ralph/workout-tracker` failed: no `origin` remote configured.
 
 ### Files Changed
 - supabase/migrations/20260207_workouts.sql
