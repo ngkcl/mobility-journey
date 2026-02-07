@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Upload, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import LoadingState from '@/components/LoadingState';
 import { useToast } from '@/components/ToastProvider';
 
@@ -38,6 +38,7 @@ export default function PhotoTimeline() {
     let isMounted = true;
 
     const loadPhotos = async () => {
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('photos')
         .select('id, taken_at, view, public_url, storage_path, notes')
@@ -88,6 +89,7 @@ export default function PhotoTimeline() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const supabase = getSupabase();
     setIsUploading(true);
     let hadUploadError = false;
     let hadMetadataError = false;
@@ -109,7 +111,7 @@ export default function PhotoTimeline() {
       }
 
       const publicUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath).data.publicUrl;
-      const takenAt = new Date(file.lastModified || Date.now()).toISOString();
+      const takenAt = new Date(file.lastModified > 0 ? file.lastModified : Date.now()).toISOString();
 
       const { data: inserted, error: insertError } = await supabase
         .from('photos')
@@ -160,13 +162,18 @@ export default function PhotoTimeline() {
   };
 
   const deletePhoto = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return;
+    const supabase = getSupabase();
     const target = photos.find((photo) => photo.id === id);
-    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
+    const prev = photos;
+    setPhotos((p) => p.filter((photo) => photo.id !== id));
 
     const { error: deleteError } = await supabase.from('photos').delete().eq('id', id);
     if (deleteError) {
+      setPhotos(prev);
       console.error('Failed to delete photo metadata', deleteError);
-      pushToast('Failed to delete photo. Please try again.', 'error');
+      pushToast('Failed to delete photo. Restored.', 'error');
+      return;
     }
 
     if (target?.storagePath) {

@@ -7,7 +7,7 @@ import MetricsTracker from '@/components/MetricsTracker';
 import AnalysisLog from '@/components/AnalysisLog';
 import TodoTracker from '@/components/TodoTracker';
 import ProgressCharts from '@/components/ProgressCharts';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ToastProvider';
 
 type Tab = 'photos' | 'metrics' | 'analysis' | 'todos' | 'charts';
@@ -30,11 +30,12 @@ export default function Home() {
     if (isExporting) return;
     setIsExporting(true);
 
+    const sb = getSupabase();
     const [photosResult, metricsResult, analysisResult, todosResult] = await Promise.all([
-      supabase.from('photos').select('*').order('taken_at', { ascending: false }),
-      supabase.from('metrics').select('*').order('entry_date', { ascending: false }),
-      supabase.from('analysis_logs').select('*').order('entry_date', { ascending: false }),
-      supabase.from('todos').select('*').order('created_at', { ascending: false }),
+      sb.from('photos').select('*').order('taken_at', { ascending: false }),
+      sb.from('metrics').select('*').order('entry_date', { ascending: false }),
+      sb.from('analysis_logs').select('*').order('entry_date', { ascending: false }),
+      sb.from('todos').select('*').order('created_at', { ascending: false }),
     ]);
 
     const errors = [

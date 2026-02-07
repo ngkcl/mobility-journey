@@ -119,11 +119,14 @@ export default function MetricsTracker() {
   };
 
   const deleteEntry = async (id: string) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
+    if (!confirm('Are you sure you want to delete this metric?')) return;
+    const prev = entries;
+    setEntries(p => p.filter(e => e.id !== id));
     const { error } = await supabase.from('metrics').delete().eq('id', id);
     if (error) {
+      setEntries(prev);
       console.error('Failed to delete metric entry', error);
-      pushToast('Failed to delete metric entry. Please refresh.', 'error');
+      pushToast('Failed to delete metric entry. Restored.', 'error');
     }
   };
 

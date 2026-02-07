@@ -106,11 +106,14 @@ export default function AnalysisLog() {
   };
 
   const deleteEntry = async (id: string) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+    const prev = entries;
+    setEntries(p => p.filter(e => e.id !== id));
     const { error } = await supabase.from('analysis_logs').delete().eq('id', id);
     if (error) {
+      setEntries(prev);
       console.error('Failed to delete analysis entry', error);
-      pushToast('Failed to delete analysis entry. Please refresh.', 'error');
+      pushToast('Failed to delete analysis entry. Restored.', 'error');
     }
   };
 

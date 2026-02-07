@@ -150,11 +150,14 @@ export default function TodoTracker() {
   };
 
   const deleteTodo = async (id: string) => {
-    setTodos(prev => prev.filter(t => t.id !== id));
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    const prev = todos;
+    setTodos(p => p.filter(t => t.id !== id));
     const { error } = await supabase.from('todos').delete().eq('id', id);
     if (error) {
+      setTodos(prev);
       console.error('Failed to delete todo', error);
-      pushToast('Failed to delete task. Please refresh.', 'error');
+      pushToast('Failed to delete task. Restored.', 'error');
     }
   };
 
