@@ -15,17 +15,26 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="video/[id]"
-            options={{
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Video Player',
-              headerStyle: { backgroundColor: '#0f172a' },
-              headerTintColor: '#fff',
-            }}
-          />
-        </Stack>
+        <Stack.Screen
+          name="video/[id]"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            headerTitle: 'Video Player',
+            headerStyle: { backgroundColor: '#0f172a' },
+            headerTintColor: '#fff',
+          }}
+        />
+        <Stack.Screen
+          name="workout-schedule"
+          options={{
+            headerShown: true,
+            headerTitle: 'Workout Schedule',
+            headerStyle: { backgroundColor: '#0f172a' },
+            headerTintColor: '#fff',
+          }}
+        />
+      </Stack>
         <StatusBar style="light" />
       </View>
     </ToastProvider>

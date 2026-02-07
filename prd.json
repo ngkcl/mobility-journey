@@ -119,7 +119,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "This replaces the manual cron-based exercise reminders I currently have set up. The app should handle its own notifications."
     }
   ]

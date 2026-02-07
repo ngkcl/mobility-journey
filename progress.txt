@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - When adding new Expo Router routes, update `.expo/types/router.d.ts` so `router.push` stays type-safe.
+- Keep Expo/React Native runtime-only modules (e.g. notifications) isolated from testable logic to avoid Node test loader issues.
 
 ---
 ## 2026-02-07 13:07 - Story WK-001: Exercise library with scoliosis-specific exercises
@@ -138,6 +139,37 @@
 - app/(tabs)/charts.tsx
 - lib/workoutAnalytics.ts
 - lib/workoutAnalytics.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
+---
+## 2026-02-07 14:09 - Story WK-006: Workout reminders and scheduling
+
+### Completed
+- Added workout schedule screen with session times, day toggles, and calendar preview.
+- Implemented AsyncStorage-backed schedule normalization utilities and tests.
+- Wired expo-notifications scheduling for corrective reminders/check-ins and added schedule access from Workouts.
+
+### Next Up (for next iteration)
+- [ ] Verify notification permissions + reminders on device (iOS/Android) and adjust channel config if needed.
+- [ ] Decide if gym day reminders need a configurable time.
+
+### Blockers/Warnings
+- `git push origin ralph/workout-tracker` failed previously: no `origin` remote configured.
+
+### Files Changed
+- app/_layout.tsx
+- app/(tabs)/workouts.tsx
+- app/workout-schedule.tsx
+- lib/workoutSchedule.ts
+- lib/workoutSchedule.test.js
+- lib/workoutNotifications.ts
+- package.json
+- pnpm-lock.yaml
+- .expo/types/router.d.ts
 - prd.json
 - progress.txt
 

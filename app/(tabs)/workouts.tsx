@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
@@ -119,6 +120,7 @@ const buildWorkoutExercisePayload = (exercise: WorkoutExerciseDraft, index: numb
 });
 
 export default function WorkoutsScreen() {
+  const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutHistoryItem[]>([]);
@@ -842,6 +844,24 @@ export default function WorkoutsScreen() {
             <Text className="text-white font-medium text-sm">Start</Text>
           </Pressable>
         )}
+      </View>
+
+      <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
+        <View className="flex-row items-center justify-between mb-2">
+          <View>
+            <Text className="text-lg font-semibold text-white">Schedule and Reminders</Text>
+            <Text className="text-slate-400 text-xs">Set session times and gym days.</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/workout-schedule')}
+            className="px-3 py-2 rounded-xl bg-teal-500"
+          >
+            <Text className="text-white text-xs font-medium">Open</Text>
+          </Pressable>
+        </View>
+        <Text className="text-slate-400 text-xs">
+          Sync notifications for your daily corrective protocol and gym schedule.
+        </Text>
       </View>
 
       {guidedTemplate && guidedExercise && (
