@@ -141,6 +141,22 @@ export default function PhotoTimeline() {
         },
         ...prev,
       ]);
+
+      // Trigger AI analysis in background
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoUrl: publicUrl, photoId: inserted.id }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.analysis) {
+            pushToast('AI analysis complete — check Analysis tab', 'success');
+          }
+        })
+        .catch(() => {
+          // Silent fail — analysis is optional
+        });
     }
 
     setIsUploading(false);
