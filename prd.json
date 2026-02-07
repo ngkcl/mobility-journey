@@ -24,7 +24,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Reference existing types from ../mobility-journey/src/components/*.tsx. Supabase tables: photos (id, taken_at, view, public_url, storage_path, notes), videos (id, recorded_at, duration_seconds, storage_path, public_url, thumbnail_url, label, category, notes, analysis_status, analysis_result, tags), metrics (id, entry_date, pain_level, posture_score, symmetry_score, energy_level, exercise_done, exercise_minutes, exercise_names, functional_milestone, rom_forward_bend, rom_lateral, rib_hump, notes), analysis_logs (id, entry_date, category, title, content), todos (id, title, details, completed, completed_at, due_date, category, frequency)"
     },
     {
@@ -43,7 +43,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Use expo-router's Tabs component. The existing app uses: Camera, Video, Activity, FileText, CheckSquare, TrendingUp icons from lucide-react."
     },
     {

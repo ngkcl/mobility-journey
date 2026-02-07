@@ -1,59 +1,66 @@
-import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+const TEAL = '#14b8a6';
+const SLATE_400 = '#94a3b8';
+const SLATE_900 = '#0f172a';
+const SLATE_950 = '#020617';
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+type TabIcon = React.ComponentProps<typeof Ionicons>['name'];
+
+const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }[] = [
+  { name: 'photos', title: 'Photos', icon: 'camera-outline', iconFocused: 'camera' },
+  { name: 'videos', title: 'Videos', icon: 'videocam-outline', iconFocused: 'videocam' },
+  { name: 'metrics', title: 'Metrics', icon: 'pulse-outline', iconFocused: 'pulse' },
+  { name: 'analysis', title: 'Analysis', icon: 'document-text-outline', iconFocused: 'document-text' },
+  { name: 'todos', title: 'Protocol', icon: 'checkbox-outline', iconFocused: 'checkbox' },
+  { name: 'charts', title: 'Progress', icon: 'trending-up-outline', iconFocused: 'trending-up' },
+];
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
+        tabBarActiveTintColor: TEAL,
+        tabBarInactiveTintColor: SLATE_400,
+        tabBarStyle: {
+          backgroundColor: SLATE_950,
+          borderTopColor: 'rgba(51,65,85,0.5)',
+          borderTopWidth: 1,
+          paddingBottom: 4,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+        },
+        headerStyle: {
+          backgroundColor: SLATE_950,
+        },
+        headerTitleStyle: {
+          color: '#f8fafc',
+          fontWeight: '600',
+        },
+        headerTintColor: '#f8fafc',
+      }}
+    >
+      {tabs.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.title,
+            headerTitle: tab.name === 'photos' ? 'Mobility Journey' : tab.title,
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons
+                name={focused ? tab.iconFocused : tab.icon}
+                size={size ?? 24}
+                color={color}
+              />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

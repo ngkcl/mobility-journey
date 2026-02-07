@@ -1,0 +1,61 @@
+## Codebase Patterns
+- Keep lib/types.ts aligned to Supabase column names; normalize data in screens instead of changing schema types.
+- Define local view-model types in screens when UI uses camelCase fields.
+
+---
+## 2026-02-07 11:25 - Story US-001: Project setup: Expo + NativeWind + dependencies
+
+### Completed
+- Aligned Supabase types to match database columns and updated Photos screen to normalize data to those types.
+- Added Expo app.json dark theme name and camera/photo permissions for iOS/Android.
+- Added pnpm scripts for typecheck/test and fixed typecheck error in +not-found screen.
+
+### Next Up (for next iteration)
+- [ ] Implement US-002 tab navigation layout with dark theme and six tabs.
+- [ ] Verify status bar styling and global background colors.
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- app.json
+- app/+not-found.tsx
+- app/(tabs)/photos.tsx
+- lib/types.ts
+- package.json
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 11:29 - Story US-002: Tab navigation layout with dark theme
+
+### Completed
+- Added missing Protocol and Progress tab screens with dark placeholder content.
+- Aligned global background to #0b1020 and updated tab header text color.
+- Introduced local view-model types for Metrics and Analysis screens to match snake_case Supabase types.
+
+### Next Up (for next iteration)
+- [ ] Start US-003 toast system migration or next highest-priority story.
+- [ ] Verify tab/status bar styling on device/web.
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- app/_layout.tsx
+- app/(tabs)/_layout.tsx
+- app/(tabs)/photos.tsx
+- app/(tabs)/videos.tsx
+- app/(tabs)/metrics.tsx
+- app/(tabs)/analysis.tsx
+- app/(tabs)/todos.tsx
+- app/(tabs)/charts.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
