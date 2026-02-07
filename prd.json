@@ -1,63 +1,49 @@
 {
-  "branchName": "ralph/add-persistence",
-  "projectName": "Mobility Journey Dashboard",
-  "description": "Add Supabase persistence and polish UI for posture/scoliosis tracking app",
+  "branchName": "ralph/tests-and-lint",
+  "projectName": "Mobility Journey - Tests & Code Quality",
+  "description": "Add comprehensive test coverage and fix all lint warnings. Currently zero tests exist and there are @next/next/no-img-element warnings.",
   "userStories": [
     {
       "id": "1",
-      "title": "Set up Supabase client and database schema",
-      "description": "Create Supabase project config, define tables for photos, metrics, analysis_logs, and todos. Create migration files.",
+      "title": "Set up testing infrastructure",
+      "description": "Install vitest + @testing-library/react. Configure vitest.config.ts for Next.js 16 + React 19. Add test script to package.json. Create a sample test that passes.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "Persist photos to Supabase Storage",
-      "description": "Upload photos to Supabase Storage bucket, save metadata to photos table. Load photos on page load.",
-      "passes": true,
+      "title": "Test Supabase client and data layer",
+      "description": "Write unit tests for supabaseClient.ts. Mock Supabase calls. Test CRUD operations for photos, metrics, analysis_logs, todos, videos tables.",
+      "passes": false,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Persist metrics to database",
-      "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
-      "passes": true,
+      "title": "Test API routes",
+      "description": "Write tests for /api/analyze and /api/analyze-video routes. Mock Claude/OpenAI calls. Test error handling, auth middleware, response formats.",
+      "passes": false,
       "priority": 3
     },
     {
       "id": "4",
-      "title": "Persist analysis log entries",
-      "description": "Save analysis entries (AI, personal, specialist) to analysis_logs table. Load on page load.",
-      "passes": true,
+      "title": "Test UI components",
+      "description": "Write component tests for PhotoTimeline, MetricsTracker, AnalysisLog, TodoTracker, ProgressCharts, VideoGallery. Test rendering, user interactions, loading/error states.",
+      "passes": false,
       "priority": 4
     },
     {
       "id": "5",
-      "title": "Persist todos/protocol items",
-      "description": "Save todos to todos table. Track completion status. Load on page load.",
-      "passes": true,
+      "title": "Fix all lint warnings",
+      "description": "Replace <img> with next/image in PhotoTimeline.tsx and any other files. Fix all ESLint warnings. Ensure `pnpm lint` passes clean.",
+      "passes": false,
       "priority": 5
     },
     {
       "id": "6",
-      "title": "Add loading states and error handling",
-      "description": "Show loading spinners during data fetch. Handle errors gracefully with toast notifications.",
-      "passes": true,
+      "title": "Add CI check script",
+      "description": "Create a `check` npm script that runs typecheck + lint + test in sequence. Ensure all pass. Update README with testing docs.",
+      "passes": false,
       "priority": 6
-    },
-    {
-      "id": "7",
-      "title": "Polish UI and mobile responsiveness",
-      "description": "Improve spacing, animations, empty states. Ensure great mobile experience.",
-      "passes": true,
-      "priority": 7
-    },
-    {
-      "id": "8",
-      "title": "Add data export feature",
-      "description": "Allow exporting all data as JSON for backup/portability.",
-      "passes": true,
-      "priority": 8
     }
   ]
 }
