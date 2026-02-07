@@ -100,3 +100,28 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 05:30 - Story 5: Persist todos/protocol items
+
+### Completed
+- Loaded todos from Supabase on mount and normalized rows for UI.
+- Persisted new todos to Supabase (including due date, category, frequency) and wired completion toggles + deletes.
+- Added migration to store todo frequency.
+
+### Next Up (for next iteration)
+- [ ] Story 6: Add loading states and error handling.
+- [ ] Story 7: Polish UI and mobile responsiveness.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/TodoTracker.tsx
+- supabase/migrations/20260207153000_add_todo_frequency.sql
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

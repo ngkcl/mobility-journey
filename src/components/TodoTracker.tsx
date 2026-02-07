@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, Check, Circle, Clock, Calendar, Dumbbell, Stethoscope, Pill } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 
 interface Todo {
   id: string;
@@ -33,19 +34,75 @@ export default function TodoTracker() {
     completed: false,
   });
 
-  const addTodo = () => {
-    if (!newTodo.title) return;
-    
-    const todo: Todo = {
-      id: Date.now().toString(),
-      title: newTodo.title,
-      description: newTodo.description,
-      category: newTodo.category || 'other',
-      frequency: newTodo.frequency,
-      dueDate: newTodo.dueDate,
-      completed: false,
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTodos = async () => {
+      const { data, error } = await supabase
+        .from('todos')
+        .select('id, title, details, completed, completed_at, due_date, category, frequency')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load todos', error);
+        return;
+      }
+
+      const normalized = (data ?? []).map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.details ?? undefined,
+        category: (row.category ?? 'other') as Todo['category'],
+        frequency: (row.frequency ?? undefined) as Todo['frequency'] | undefined,
+        dueDate: row.due_date ?? undefined,
+        completed: row.completed ?? false,
+        completedAt: row.completed_at ?? undefined,
+      }));
+
+      if (isMounted) {
+        setTodos(normalized);
+      }
     };
-    
+
+    loadTodos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const addTodo = async () => {
+    if (!newTodo.title) return;
+
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({
+        title: newTodo.title,
+        details: newTodo.description ?? null,
+        category: newTodo.category ?? 'other',
+        frequency: newTodo.frequency ?? null,
+        due_date: newTodo.dueDate ?? null,
+        completed: false,
+      })
+      .select('id, title, details, completed, completed_at, due_date, category, frequency')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to save todo', error);
+      return;
+    }
+
+    const todo: Todo = {
+      id: data.id,
+      title: data.title,
+      description: data.details ?? undefined,
+      category: (data.category ?? 'other') as Todo['category'],
+      frequency: (data.frequency ?? undefined) as Todo['frequency'] | undefined,
+      dueDate: data.due_date ?? undefined,
+      completed: data.completed ?? false,
+      completedAt: data.completed_at ?? undefined,
+    };
+
     setTodos(prev => [todo, ...prev]);
     setNewTodo({ 
       category: 'exercise',
@@ -55,16 +112,38 @@ export default function TodoTracker() {
     setShowAddForm(false);
   };
 
-  const toggleComplete = (id: string) => {
+  const toggleComplete = async (id: string) => {
+    const target = todos.find(todo => todo.id === id);
+    if (!target) return;
+
+    const isCompleting = !target.completed;
+    const completedAt = isCompleting ? new Date().toISOString() : undefined;
+
     setTodos(prev => prev.map(t => 
       t.id === id 
-        ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString() : undefined }
+        ? { ...t, completed: isCompleting, completedAt }
         : t
     ));
+
+    const { error } = await supabase
+      .from('todos')
+      .update({
+        completed: isCompleting,
+        completed_at: isCompleting ? completedAt : null,
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to update todo', error);
+    }
   };
 
-  const deleteTodo = (id: string) => {
+  const deleteTodo = async (id: string) => {
     setTodos(prev => prev.filter(t => t.id !== id));
+    const { error } = await supabase.from('todos').delete().eq('id', id);
+    if (error) {
+      console.error('Failed to delete todo', error);
+    }
   };
 
   const filteredTodos = todos.filter(todo => {
