@@ -17,6 +17,7 @@
 ### Blockers/Warnings
 - CocoaPods gem install failed; Homebrew install succeeded during prebuild.
 - Native folders `ios/` and `android/` are gitignored; regenerate as needed.
+- `git push` failed because no `origin` remote is configured.
 
 ### Files Changed
 - app.json
