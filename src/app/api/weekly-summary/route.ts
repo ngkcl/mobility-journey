@@ -6,6 +6,7 @@ import {
   buildWeeklySummaryPrompt,
   computeWeeklyMetricChanges,
 } from '@/lib/weeklySummary';
+import { getRequestIp, rateLimit } from '@/lib/rateLimit';
 
 const SUMMARY_TITLE = 'Weekly Summary';
 
@@ -163,11 +164,33 @@ export async function GET(request: NextRequest) {
         .order('entry_date', { ascending: false }),
     ]);
 
+    if (metricsRes.error || photosRes.error || todosRes.error || aiRes.error) {
+      const details = {
+        metrics: metricsRes.error?.message,
+        photos: photosRes.error?.message,
+        todos: todosRes.error?.message,
+        ai: aiRes.error?.message,
+      };
+      return NextResponse.json(
+        { summary: null, error: 'Failed to load weekly summary data', details },
+        { status: 500 },
+      );
+    }
+
     const metricsRows = metricsRes.data ?? [];
     const metricsChanges = computeWeeklyMetricChanges(metricsRows);
     const photosTaken = photosRes.data?.length ?? 0;
     const exercisesCompleted = todosRes.data?.length ?? 0;
     const aiHighlights = extractHighlights(aiRes.data ?? []);
+
+    const ip = getRequestIp(request);
+    const limit = rateLimit(`${ip}:weekly-summary`, { windowMs: 60 * 60 * 1000, max: 2 });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { summary: null, error: 'Rate limit exceeded', retry_after_seconds: limit.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      );
+    }
 
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     let summary = '';
@@ -223,18 +246,32 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    await supabase
+    const { error: deleteError } = await supabase
       .from('analysis_logs')
       .delete()
       .eq('entry_date', weekEnd)
       .eq('title', SUMMARY_TITLE);
 
-    await supabase.from('analysis_logs').insert({
+    if (deleteError) {
+      return NextResponse.json(
+        { summary: null, error: 'Failed to clear previous weekly summary', details: deleteError.message },
+        { status: 500 },
+      );
+    }
+
+    const { error: insertError } = await supabase.from('analysis_logs').insert({
       entry_date: weekEnd,
       category: 'ai',
       title: SUMMARY_TITLE,
       content: summary,
     });
+
+    if (insertError) {
+      return NextResponse.json(
+        { summary: null, error: 'Failed to store weekly summary', details: insertError.message },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       summary,

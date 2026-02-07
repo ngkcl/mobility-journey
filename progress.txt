@@ -1,3 +1,6 @@
+## Codebase Patterns
+- Use `rateLimit` + `getRequestIp` from `src/lib/rateLimit.js` to throttle AI endpoints.
+
 ---
 ## 2026-02-07 01:31 - Story 1: Run quality checks and fix failures
 
@@ -46,4 +49,33 @@
 
 ### Learnings (add to Codebase Patterns if reusable)
 - None
+---
+---
+## 2026-02-07 01:38 - Story 3: Review API endpoints and data flow
+
+### Completed
+- Added in-memory rate limiting for AI endpoints (trend insights, weekly summary, photo/video analysis)
+- Hardened weekly summary Supabase error handling and summary storage failures
+- Added storage warnings for AI analysis endpoints when Supabase writes fail
+- Added rate limiter tests
+
+### Next Up (for next iteration)
+- [ ] Verify production rate limiting strategy (swap in persistent store if needed)
+- [ ] Review any remaining open PR feedback items
+
+### Blockers/Warnings
+- Rate limiting is in-memory per instance; not shared across serverless instances
+
+### Files Changed
+- src/lib/rateLimit.js
+- src/app/api/trend-insights/route.ts
+- src/app/api/weekly-summary/route.ts
+- src/app/api/analyze/route.ts
+- src/app/api/analyze-video/route.ts
+- tests/rateLimit.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- Added `rateLimit` utility for API throttling; see Codebase Patterns
 ---

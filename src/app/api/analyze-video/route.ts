@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { getRequestIp, rateLimit } from '@/lib/rateLimit';
 
 const VIDEO_ANALYSIS_PROMPT = `You are an expert physiotherapist and movement specialist analyzing a sequence of timestamped frames from a video of a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
@@ -72,6 +73,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
     }
 
+    const ip = getRequestIp(request);
+    const limit = rateLimit(`${ip}:video-analysis`, { windowMs: 60 * 60 * 1000, max: 4 });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retry_after_seconds: limit.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      );
+    }
+
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
     // Build content array with timestamped frames
@@ -139,6 +149,8 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+    const storageWarnings: string[] = [];
+
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -150,20 +162,28 @@ export async function POST(request: NextRequest) {
         structuredData?.fatigue_pattern && structuredData.fatigue_pattern !== 'none' ? `Fatigue: ${structuredData.fatigue_pattern}` : null,
       ].filter(Boolean).join(' — ');
 
-      await supabase.from('analysis_logs').insert({
+      const { error: logError } = await supabase.from('analysis_logs').insert({
         entry_date: new Date().toISOString().split('T')[0],
         category: 'ai',
         title,
         content: analysis,
       });
 
-      await supabase
+      if (logError) {
+        storageWarnings.push(`analysis_logs: ${logError.message}`);
+      }
+
+      const { error: updateError } = await supabase
         .from('videos')
         .update({
           analysis_status: 'complete',
           analysis_result: { structuredData, rawAnalysis: analysis, frameCount: frames.length },
         })
         .eq('id', videoId);
+
+      if (updateError) {
+        storageWarnings.push(`videos: ${updateError.message}`);
+      }
     }
 
     return NextResponse.json({
@@ -172,6 +192,7 @@ export async function POST(request: NextRequest) {
       videoId,
       frameCount: frames.length,
       model: 'claude-opus-4-0520',
+      storage_warnings: storageWarnings.length > 0 ? storageWarnings : undefined,
     });
   } catch (error) {
     console.error('Video analysis error:', error);

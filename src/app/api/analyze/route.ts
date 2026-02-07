@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { getRequestIp, rateLimit } from '@/lib/rateLimit';
 
 const ANALYSIS_PROMPT = `You are an expert physiotherapist analyzing a progress photo for a patient with right-thoracic scoliosis and right-side muscular imbalance.
 
@@ -60,6 +61,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
     }
 
+    const ip = getRequestIp(request);
+    const limit = rateLimit(`${ip}:photo-analysis`, { windowMs: 60 * 60 * 1000, max: 6 });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retry_after_seconds: limit.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      );
+    }
+
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
     // Fetch image and convert to base64 for Claude
@@ -111,6 +121,8 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+    const storageWarnings: string[] = [];
+
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -122,22 +134,30 @@ export async function POST(request: NextRequest) {
         structuredData?.symmetry_score ? `Symmetry: ${structuredData.symmetry_score}/10` : null,
       ].filter(Boolean).join(' — ');
 
-      await supabase.from('analysis_logs').insert({
+      const { error: logError } = await supabase.from('analysis_logs').insert({
         entry_date: new Date().toISOString().split('T')[0],
         category: 'ai',
         title,
         content: analysis,
       });
 
+      if (logError) {
+        storageWarnings.push(`analysis_logs: ${logError.message}`);
+      }
+
       // Save scores as metrics
       if (structuredData) {
-        await supabase.from('metrics').insert({
+        const { error: metricsError } = await supabase.from('metrics').insert({
           entry_date: new Date().toISOString().split('T')[0],
           posture_score: structuredData.posture_score ?? null,
           symmetry_score: structuredData.symmetry_score ?? null,
           rib_hump: structuredData.rib_hump ?? null,
           notes: `Auto-extracted from AI photo analysis (confidence: ${structuredData.confidence || 'unknown'})`,
         });
+
+        if (metricsError) {
+          storageWarnings.push(`metrics: ${metricsError.message}`);
+        }
       }
     }
 
@@ -146,6 +166,7 @@ export async function POST(request: NextRequest) {
       structuredData,
       photoId,
       model: 'claude-opus-4-0520',
+      storage_warnings: storageWarnings.length > 0 ? storageWarnings : undefined,
     });
   } catch (error) {
     console.error('Analysis error:', error);
