@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EmitterSubscription } from 'react-native';
-
-// Dynamically import native module — fails gracefully in Expo Go
-let headphoneMotion: any = null;
-try {
-  headphoneMotion = require('react-native-headphone-motion');
-} catch {
-  // Native module not available (Expo Go)
-}
+import Constants from 'expo-constants';
 
 type MotionValue = number | null;
+
+// Only attempt native import in development builds (not Expo Go)
+const isExpoGo = Constants.appOwnership === 'expo';
+
+let headphoneMotion: any = null;
+if (!isExpoGo) {
+  try {
+    headphoneMotion = require('react-native-headphone-motion');
+  } catch {
+    // Native module not available
+  }
+}
 
 const clearSubscription = (subscription: EmitterSubscription | null) => {
   subscription?.remove();
