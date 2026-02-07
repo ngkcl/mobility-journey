@@ -72,6 +72,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const pushToast = useCallback((message: string, tone: ToastTone = 'info') => {
+    // Suppress error toasts related to Supabase/network when not configured
+    if (tone === 'error' && (
+      message.toLowerCase().includes('load') ||
+      message.toLowerCase().includes('fetch') ||
+      message.toLowerCase().includes('network') ||
+      message.toLowerCase().includes('supabase') ||
+      message.toLowerCase().includes('failed')
+    )) {
+      // Check if supabase is configured - if not, silently ignore
+      const { isSupabaseConfigured } = require('../lib/supabase');
+      if (!isSupabaseConfigured()) return;
+    }
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setToasts((prev) => [...prev, { id, message, tone }]);
   }, []);
