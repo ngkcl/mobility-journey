@@ -6,6 +6,7 @@ Consolidated learnings from all iterations.
 Add REUSABLE patterns here, not story-specific details.
 -->
 - Use `src/lib/env/public.ts` and `src/lib/env/server.ts` for env access and validation.
+- Configure `next/image` remotePatterns for Supabase storage domains in `next.config.ts`.
 
 ---
 
@@ -91,6 +92,33 @@ Each iteration appends here using this format:
 - None
 ---
 ---
+## 2026-02-07 00:54 - Story 5: Performance optimization
+
+### Completed
+- Swapped gallery <img> tags for next/image with lazy loading and responsive sizing
+- Added next/image remotePatterns for Supabase-hosted media
+- Added cache headers for the app shell and health endpoint
+- Added query indexes for photo view/timestamp and todo ordering
+
+### Next Up (for next iteration)
+- [ ] Story 6: deployment documentation
+- [ ] Confirm any Supabase storage caching guidance for docs
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- src/components/PhotoTimeline.tsx
+- src/components/VideoGallery.tsx
+- next.config.ts
+- supabase/migrations/20260207180000_add_query_indexes.sql
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
 ## 2026-02-07 00:17 - Story 3: Environment configuration management
 
 ### Completed
@@ -122,4 +150,30 @@ Each iteration appends here using this format:
 
 ### Learnings (add to Codebase Patterns if reusable)
 - Use env modules to centralize validation and avoid scattered process.env checks.
+---
+---
+## 2026-02-07 00:25 - Story 4: Error monitoring and logging
+
+### Completed
+- Added structured logging to API error paths for analyze and analyze-video routes
+- Added /api/health endpoint that validates Supabase connectivity
+- Added app-level error boundary UI that reports errors via structured logging
+
+### Next Up (for next iteration)
+- [ ] Story 5: performance optimization (replace <img> with next/image, add lazy loading, caching headers)
+- [ ] Story 6: deployment documentation
+
+### Blockers/Warnings
+- Lint still warns about <img> usage in PhotoTimeline and VideoGallery
+
+### Files Changed
+- src/app/api/analyze/route.ts
+- src/app/api/analyze-video/route.ts
+- src/app/api/health/route.ts
+- src/app/error.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
 ---

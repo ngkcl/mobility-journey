@@ -28,14 +28,14 @@
       "id": "4",
       "title": "Error monitoring and logging",
       "description": "Add structured error logging to API routes. Create error boundary component for React. Add health check endpoint /api/health that verifies Supabase connectivity.",
-      "passes": false,
+      "passes": true,
       "priority": 4
     },
     {
       "id": "5",
       "title": "Performance optimization",
       "description": "Add next/image for all images (replacing <img> tags). Implement lazy loading for photo/video galleries. Add proper caching headers. Optimize Supabase queries with proper indexing suggestions.",
-      "passes": false,
+      "passes": true,
       "priority": 5
     },
     {
