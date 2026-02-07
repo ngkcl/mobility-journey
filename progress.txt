@@ -140,7 +140,7 @@
 - [ ] Verify todos screen interactions on device/web.
 
 ### Blockers/Warnings
-- None
+- `git push origin ralph/expo-migration` failed: no `origin` remote configured.
 
 ### Files Changed
 - app/(tabs)/todos.tsx
