@@ -110,3 +110,76 @@ Each iteration appends here using this format:
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 01:05 - Story 3: Progress dashboard overview tab
+
+### Completed
+- Confirmed Dashboard tab is default landing page and overview UI already covers required stats, trends, photos, highlights, and compliance
+- Marked story 3 as passing in `prd.json`
+
+### Next Up (for next iteration)
+- [ ] Start Story 4: AI trend insights
+- [ ] Review existing analysis/trends data shape for insight prompts
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 02:05 - Story 4: AI trend insights
+
+### Completed
+- Added `/api/trend-insights` endpoint to generate and cache Claude insights from latest trends
+- Added dashboard section to display AI trend insights alongside other overview content
+- Added parsing helper and tests for insight list handling
+
+### Next Up (for next iteration)
+- [ ] Start Story 5: auto-generated weekly summary endpoint + storage
+- [ ] Review analysis_logs schema for weekly summary storage and scheduling hook
+
+### Blockers/Warnings
+- Lint warnings remain for `@next/next/no-img-element` in existing components
+
+### Files Changed
+- src/app/api/trend-insights/route.ts
+- src/components/DashboardOverview.tsx
+- src/lib/trendInsights.js
+- tests/trendInsights.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 01:14 - Story 5: Auto-generated weekly summary
+
+### Completed
+- Added weekly summary API endpoint with Sunday/force gating, Supabase data collection, and Claude-generated or fallback summaries
+- Added weekly summary utilities for metric deltas and summary formatting
+- Added tests for weekly summary helpers
+- Marked story 5 as passing in `prd.json`
+
+### Next Up (for next iteration)
+- [ ] Start Story 6: timeline view
+- [ ] Identify reusable timeline components or data fetch patterns
+
+### Blockers/Warnings
+- Existing lint warnings for `@next/next/no-img-element` in dashboard, photo timeline, and video gallery remain
+
+### Files Changed
+- src/app/api/weekly-summary/route.ts
+- src/lib/weeklySummary.js
+- tests/weeklySummary.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---

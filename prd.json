@@ -21,21 +21,21 @@
       "id": "3",
       "title": "Progress dashboard overview tab",
       "description": "Add a new 'Dashboard' tab as the default landing page. Show: days since start, key metrics with trend arrows (↑↓→), latest photo vs earliest photo, recent analysis highlights, protocol compliance percentage.",
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
       "id": "4",
       "title": "AI trend insights",
       "description": "Use Claude to generate natural-language trend insights from metrics data. E.g. 'Your left shoulder elevation has improved 3° over the last 2 weeks' or 'Pain levels trending down since starting new exercises'. Show on dashboard.",
-      "passes": false,
+      "passes": true,
       "priority": 4
     },
     {
       "id": "5",
       "title": "Auto-generated weekly summary",
       "description": "Create an API endpoint that generates a weekly summary: metrics changes, photos taken, exercises completed, AI analysis highlights. Store in analysis_logs with type 'weekly_summary'. Auto-generate on Sundays or on-demand.",
-      "passes": false,
+      "passes": true,
       "priority": 5
     },
     {
