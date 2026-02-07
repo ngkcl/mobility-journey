@@ -8,18 +8,18 @@ const SLATE_950 = '#020617';
 
 type TabIcon = React.ComponentProps<typeof Ionicons>['name'];
 
+// Main tabs shown in bottom bar
 const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }[] = [
-  { name: 'photos', title: 'Photos', icon: 'camera-outline', iconFocused: 'camera' },
-  { name: 'videos', title: 'Videos', icon: 'videocam-outline', iconFocused: 'videocam' },
-  { name: 'metrics', title: 'Metrics', icon: 'pulse-outline', iconFocused: 'pulse' },
+  { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
   { name: 'plan', title: 'Plan', icon: 'sparkles-outline', iconFocused: 'sparkles' },
-  { name: 'posture', title: 'Posture', icon: 'body-outline', iconFocused: 'body' },
-  { name: 'posture-camera', title: 'Camera', icon: 'aperture-outline', iconFocused: 'aperture' },
-  { name: 'analysis', title: 'Analysis', icon: 'document-text-outline', iconFocused: 'document-text' },
-  { name: 'todos', title: 'Protocol', icon: 'checkbox-outline', iconFocused: 'checkbox' },
-  { name: 'exercises', title: 'Exercises', icon: 'barbell-outline', iconFocused: 'barbell' },
   { name: 'workouts', title: 'Workouts', icon: 'fitness-outline', iconFocused: 'fitness' },
+  { name: 'posture', title: 'Posture', icon: 'body-outline', iconFocused: 'body' },
   { name: 'charts', title: 'Progress', icon: 'trending-up-outline', iconFocused: 'trending-up' },
+];
+
+// Hidden tabs — accessible from within other screens but not in bottom bar
+const hiddenTabs = [
+  'photos', 'videos', 'metrics', 'posture-camera', 'analysis', 'todos', 'exercises',
 ];
 
 export default function TabLayout() {
@@ -55,7 +55,7 @@ export default function TabLayout() {
           name={tab.name}
           options={{
             title: tab.title,
-            headerTitle: tab.name === 'photos' ? 'Mobility Journey' : tab.title,
+            headerTitle: tab.name === 'index' ? 'Mobility Journey' : tab.title,
             tabBarIcon: ({ focused, color, size }) => (
               <Ionicons
                 name={focused ? tab.iconFocused : tab.icon}
@@ -63,6 +63,15 @@ export default function TabLayout() {
                 color={color}
               />
             ),
+          }}
+        />
+      ))}
+      {hiddenTabs.map((name) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            href: null,
           }}
         />
       ))}
