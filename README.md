@@ -1,4 +1,5 @@
 # Mobility Journey 🏋️
+![CI](https://github.com/ngkcl/mobility-journey/actions/workflows/ci.yml/badge.svg)
 
 A personal dashboard for tracking posture, scoliosis correction, and mobility improvement.
 
@@ -17,6 +18,21 @@ A personal dashboard for tracking posture, scoliosis correction, and mobility im
 - Tailwind CSS
 - Recharts for visualizations
 - Lucide React for icons
+
+## Architecture
+
+```mermaid
+graph TD
+  Browser[User Browser] --> NextApp[Next.js App]
+  NextApp --> ApiRoutes[API Routes]
+  NextApp --> SupabaseClient[Supabase Client SDK]
+  ApiRoutes --> SupabaseAdmin[Supabase Service Role]
+  SupabaseClient --> Supabase[Supabase]
+  SupabaseAdmin --> Supabase
+  Supabase --> Db[Postgres + RLS]
+  Supabase --> Storage[Storage Buckets]
+  ApiRoutes --> AI[AI Providers]
+```
 
 ## Getting Started
 
@@ -51,10 +67,15 @@ src/
 
 ## Data Storage
 
-Currently uses client-side state (demo mode). For production:
-- Add Supabase/Firebase for persistent storage
-- Implement user authentication
-- Add image upload to cloud storage (S3/Cloudinary)
+Supabase provides storage, auth, and RLS-protected Postgres tables. See `docs/deployment.md` and `docs/security.md` for setup details.
+
+## Deployment
+
+See `docs/deployment.md` for Vercel configuration, Supabase setup, and migration steps.
+
+## Contributing
+
+See `CONTRIBUTING.md` for local setup and workflow guidelines.
 
 ## Related
 

@@ -42,7 +42,7 @@
       "id": "6",
       "title": "Deployment documentation",
       "description": "Document full deployment process: Vercel config, Supabase setup, env vars needed, migration steps. Add CONTRIBUTING.md. Update README with architecture diagram (mermaid).",
-      "passes": false,
+      "passes": true,
       "priority": 6
     }
   ]

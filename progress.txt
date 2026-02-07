@@ -177,3 +177,27 @@ Each iteration appends here using this format:
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 00:56 - Story 6: Deployment documentation
+
+### Completed
+- Added deployment guide covering Supabase setup, env vars, Vercel config, and migration steps
+- Added CONTRIBUTING guidelines and updated README with architecture diagram and deployment links
+
+### Next Up (for next iteration)
+- [ ] Confirm remaining stories (if any) in prd.json
+- [ ] Review documentation for accuracy against current infra
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- docs/deployment.md
+- CONTRIBUTING.md
+- README.md
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
