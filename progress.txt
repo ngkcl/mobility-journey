@@ -81,3 +81,29 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 12:40 - Story AP-004: Posture monitor screen with real-time feedback
+
+### Completed
+- Added Posture tab screen with live status indicator, calibration control, angle readouts, session timer, and stats.
+- Wired slouch detector updates into session stats and state transitions.
+- Added posture session formatting helpers with unit tests.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-005: haptic and sound alerts with settings + cooldown.
+- [ ] Start AP-006: Supabase session logging and history view integration.
+
+### Blockers/Warnings
+- `git push` will fail because no `origin` remote is configured.
+
+### Files Changed
+- app/(tabs)/_layout.tsx
+- app/(tabs)/posture.tsx
+- lib/postureSession.ts
+- lib/postureSession.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

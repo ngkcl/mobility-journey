@@ -67,7 +67,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "This is the main screen users will interact with. Keep it simple and glanceable \u2014 big colored circle they can see at a glance."
     },
     {
