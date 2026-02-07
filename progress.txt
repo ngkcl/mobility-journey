@@ -68,7 +68,7 @@
 - [ ] Consider wiring detector into UI state with live stats + session timer.
 
 ### Blockers/Warnings
-- None.
+- `git push` failed because no `origin` remote is configured.
 
 ### Files Changed
 - lib/slouchDetector.ts
