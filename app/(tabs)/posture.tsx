@@ -46,6 +46,7 @@ const SLOUCH_EXTRA_MS = 5000;
 
 export default function PostureScreen() {
   const {
+    nativeAvailable,
     isAvailable,
     isTracking,
     pitch,
@@ -419,7 +420,18 @@ export default function PostureScreen() {
         </View>
       </View>
 
-      {!isAvailable ? (
+      {!nativeAvailable ? (
+        <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
+          <View className="flex-row items-center gap-3 mb-2">
+            <Ionicons name="headset" size={18} color="#ef4444" />
+            <Text className="text-white font-semibold">Development Build Required</Text>
+          </View>
+          <Text className="text-slate-400 text-sm leading-6">
+            AirPods head tracking requires a native development build. This feature
+            is not available in Expo Go. Other features work normally.
+          </Text>
+        </View>
+      ) : !isAvailable ? (
         <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
           <View className="flex-row items-center gap-3 mb-2">
             <Ionicons name="headset" size={18} color="#f59e0b" />

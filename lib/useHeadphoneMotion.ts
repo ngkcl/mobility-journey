@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EmitterSubscription } from 'react-native';
-import {
-  AuthorizationStatus,
-  isHeadphoneMotionAvailable,
-  onDeviceMotionUpdates,
-  onDeviceMotionUpdatesError,
-  onHeadphoneConnected,
-  onHeadphoneDisconnected,
-  requestPermission,
-  startListenDeviceMotionUpdates,
-  stopDeviceMotionUpdates,
-} from 'react-native-headphone-motion';
+
+// Dynamically import native module — fails gracefully in Expo Go
+let headphoneMotion: any = null;
+try {
+  headphoneMotion = require('react-native-headphone-motion');
+} catch {
+  // Native module not available (Expo Go)
+}
 
 type MotionValue = number | null;
 
@@ -19,7 +16,10 @@ const clearSubscription = (subscription: EmitterSubscription | null) => {
 };
 
 export function useHeadphoneMotion() {
-  const [isAvailable, setIsAvailable] = useState(isHeadphoneMotionAvailable);
+  const nativeAvailable = !!headphoneMotion;
+  const [isAvailable, setIsAvailable] = useState(
+    nativeAvailable ? headphoneMotion.isHeadphoneMotionAvailable : false
+  );
   const [isTracking, setIsTracking] = useState(false);
   const [pitch, setPitch] = useState<MotionValue>(null);
   const [roll, setRoll] = useState<MotionValue>(null);
@@ -38,16 +38,14 @@ export function useHeadphoneMotion() {
   }, []);
 
   const stopTracking = useCallback(async () => {
-    if (!isTrackingRef.current) {
-      return;
-    }
+    if (!isTrackingRef.current || !headphoneMotion) return;
 
     isTrackingRef.current = false;
     setIsTracking(false);
     resetMotion();
 
     try {
-      await stopDeviceMotionUpdates();
+      await headphoneMotion.stopDeviceMotionUpdates();
     } catch {
       // Ignore native teardown errors.
     }
@@ -59,22 +57,22 @@ export function useHeadphoneMotion() {
   }, [resetMotion]);
 
   const startTracking = useCallback(async () => {
-    if (!isHeadphoneMotionAvailable) {
+    if (!headphoneMotion) return;
+
+    if (!headphoneMotion.isHeadphoneMotionAvailable) {
       setIsAvailable(false);
       return;
     }
 
-    if (isTrackingRef.current) {
-      return;
-    }
+    if (isTrackingRef.current) return;
 
-    const status = await requestPermission();
-    if (status !== AuthorizationStatus.authorized) {
+    const status = await headphoneMotion.requestPermission();
+    if (status !== headphoneMotion.AuthorizationStatus.authorized) {
       setIsTracking(false);
       return;
     }
 
-    await startListenDeviceMotionUpdates();
+    await headphoneMotion.startListenDeviceMotionUpdates();
 
     isTrackingRef.current = true;
     setIsTracking(true);
@@ -82,23 +80,25 @@ export function useHeadphoneMotion() {
     clearSubscription(motionSubRef.current);
     clearSubscription(errorSubRef.current);
 
-    motionSubRef.current = onDeviceMotionUpdates((data) => {
+    motionSubRef.current = headphoneMotion.onDeviceMotionUpdates((data: any) => {
       setPitch(data.attitude.pitchDeg);
       setRoll(data.attitude.rollDeg);
       setYaw(data.attitude.yawDeg);
     });
 
-    errorSubRef.current = onDeviceMotionUpdatesError(() => {
+    errorSubRef.current = headphoneMotion.onDeviceMotionUpdatesError(() => {
       stopTracking();
     });
   }, [stopTracking]);
 
   useEffect(() => {
-    connectSubRef.current = onHeadphoneConnected(() => {
+    if (!headphoneMotion) return;
+
+    connectSubRef.current = headphoneMotion.onHeadphoneConnected(() => {
       setIsAvailable(true);
     });
 
-    disconnectSubRef.current = onHeadphoneDisconnected(() => {
+    disconnectSubRef.current = headphoneMotion.onHeadphoneDisconnected(() => {
       setIsAvailable(false);
       stopTracking();
     });
@@ -113,6 +113,7 @@ export function useHeadphoneMotion() {
   }, [stopTracking]);
 
   return {
+    nativeAvailable,
     isAvailable,
     isTracking,
     pitch,
