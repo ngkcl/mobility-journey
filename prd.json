@@ -31,7 +31,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Library: https://github.com/XHMM/react-native-headphone-motion. Requires iOS 14+. pitch = forward/back head tilt (slouching indicator), roll = side tilt, yaw = left/right rotation."
     },
     {

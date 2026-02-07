@@ -2,6 +2,30 @@
 - Use valid expo-router typed routes (e.g. /analysis) for Link hrefs to satisfy typecheck.
 
 ---
+## 2026-02-07 12:32 - Story AP-002: Install and configure react-native-headphone-motion
+
+### Completed
+- Installed react-native-headphone-motion dependency.
+- Added `useHeadphoneMotion` hook with permission handling, subscriptions, and graceful fallback.
+- Marked AP-002 as passing in `prd.json`.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-003: slouch detection engine with calibration and debouncing.
+- [ ] Wire slouch detection into a new posture monitor screen.
+
+### Blockers/Warnings
+- None.
+
+### Files Changed
+- lib/useHeadphoneMotion.ts
+- package.json
+- pnpm-lock.yaml
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
 ## 2026-02-07 12:29 - Story AP-001: Switch to development build with expo-dev-client
 
 ### Completed
