@@ -1,49 +1,28 @@
 {
   "branchName": "ralph/devops-security",
-  "projectName": "Mobility Journey - DevOps & Security Hardening",
-  "description": "Set up CI/CD pipeline, review and harden RLS policies, add proper environment management, and improve deployment configuration.",
+  "projectName": "Mobility Journey - DevOps & Security (Review & Fix)",
+  "description": "Review PR #5 code quality. Run typecheck and lint. Verify CI workflow syntax, RLS policies, env validation, and error boundaries work correctly.",
   "userStories": [
     {
       "id": "1",
-      "title": "GitHub Actions CI pipeline",
-      "description": "Create .github/workflows/ci.yml that runs on push and PR: install deps, typecheck, lint, test (when tests exist). Add status badge to README.",
+      "title": "Run quality checks and fix failures",
+      "description": "Run bun run typecheck and bun run lint. Fix any failures. Check for unused imports, dead code, missing types, build errors.",
       "passes": true,
       "priority": 1
     },
     {
       "id": "2",
-      "title": "RLS policies audit and hardening",
-      "description": "Review all Supabase RLS policies. Currently using basic auth middleware - ensure RLS policies are properly restrictive. Add migration for any missing policies. Document the security model.",
+      "title": "Review CI and deployment config",
+      "description": "Validate GitHub Actions workflow YAML syntax. Ensure CI steps are correct for bun/pnpm. Review Vercel config if present. Check env validation logic for correctness. Fix anything found.",
       "passes": true,
       "priority": 2
     },
     {
       "id": "3",
-      "title": "Environment configuration management",
-      "description": "Create proper .env.local.example with all required vars documented. Add runtime validation that fails fast if required env vars are missing. Add environment-specific configs (dev/staging/prod).",
-      "passes": true,
+      "title": "Review security hardening",
+      "description": "Review RLS policy migrations for correctness. Check error boundary component catches all cases. Verify health check endpoint works. Review any auth changes. Fix anything found.",
+      "passes": false,
       "priority": 3
-    },
-    {
-      "id": "4",
-      "title": "Error monitoring and logging",
-      "description": "Add structured error logging to API routes. Create error boundary component for React. Add health check endpoint /api/health that verifies Supabase connectivity.",
-      "passes": true,
-      "priority": 4
-    },
-    {
-      "id": "5",
-      "title": "Performance optimization",
-      "description": "Add next/image for all images (replacing <img> tags). Implement lazy loading for photo/video galleries. Add proper caching headers. Optimize Supabase queries with proper indexing suggestions.",
-      "passes": true,
-      "priority": 5
-    },
-    {
-      "id": "6",
-      "title": "Deployment documentation",
-      "description": "Document full deployment process: Vercel config, Supabase setup, env vars needed, migration steps. Add CONTRIBUTING.md. Update README with architecture diagram (mermaid).",
-      "passes": true,
-      "priority": 6
     }
   ]
 }

@@ -46,7 +46,7 @@ Notes:
 
 ## Health Check
 After deploy, verify:
-- `GET /api/health` returns `{ "ok": true }` and a Supabase connectivity check.
+- `GET /api/health` returns `{ "status": "ok", "supabase": "connected", "durationMs": <number> }` when Supabase is reachable.
 
 ## Migration Steps (Deployments)
 1. Review new migration files under `supabase/migrations`.

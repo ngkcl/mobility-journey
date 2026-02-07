@@ -1,203 +1,45 @@
-# Ralph Loop Progress
-
-## Codebase Patterns (READ THIS FIRST!)
-<!-- 
-Consolidated learnings from all iterations.
-Add REUSABLE patterns here, not story-specific details.
--->
-- Use `src/lib/env/public.ts` and `src/lib/env/server.ts` for env access and validation.
-- Configure `next/image` remotePatterns for Supabase storage domains in `next.config.ts`.
-
+## Codebase Patterns
+- No reusable patterns noted yet.
 ---
-
-## Current Goal
-<!-- High-level objective from PRD -->
-
-
-## Metrics
-- **Iteration:** 0 of MAX
-- **Stories Complete:** 0 of TOTAL
-- **Tests:** X passing, Y failing
-- **Coverage:** Z%
-
----
-
-## Last Completed
-<!-- Most recent iteration's work -->
-- [ ] Nothing yet — first iteration
-
-## Next Up (for next iteration)
-<!-- What the next iteration should focus on -->
-- [ ] Start with first story from prd.json
-
-## Blockers/Warnings
-<!-- 
-Things that didn't work — DON'T RETRY THESE
-Document failures so future iterations avoid them
--->
-- None yet
-
----
-
-## Session Log
-
-<!-- 
-Each iteration appends here using this format:
-
----
-## [YYYY-MM-DD HH:MM] - Story [ID]: [Title]
+## 2026-02-07 01:23 - Story 1: Run quality checks and fix failures
 
 ### Completed
-- What was implemented
-- Key decisions made
+- Ran `bun run typecheck` and `bun run lint`; no failures found
+- Confirmed baseline tests (`pnpm test`) report no configured tests
 
 ### Next Up (for next iteration)
-- [ ] Immediate next task
-- [ ] Following task
-
-### Blockers/Warnings
-- Things that didn't work
-- Edge cases discovered
-
-### Files Changed
-- path/to/file1.ts
-- path/to/file2.ts
-
-### Learnings (add to Codebase Patterns if reusable)
-- Patterns discovered
-- Gotchas encountered
----
-
--->
----
-## 2026-02-07 00:08 - Story 2: RLS policies audit and hardening
-
-### Completed
-- Added hardened RLS policies requiring `authenticated` role for all app tables
-- Dropped permissive allow-all policies and documented the security model
-
-### Next Up (for next iteration)
-- [ ] Story 3: environment configuration management
-- [ ] Story 4: error monitoring and logging
-
-### Blockers/Warnings
-- RLS now blocks `anon` access; client must authenticate with Supabase Auth to query data
-
-### Files Changed
-- supabase/migrations/20260207170000_harden_rls_policies.sql
-- docs/security.md
-- prd.json
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 00:54 - Story 5: Performance optimization
-
-### Completed
-- Swapped gallery <img> tags for next/image with lazy loading and responsive sizing
-- Added next/image remotePatterns for Supabase-hosted media
-- Added cache headers for the app shell and health endpoint
-- Added query indexes for photo view/timestamp and todo ordering
-
-### Next Up (for next iteration)
-- [ ] Story 6: deployment documentation
-- [ ] Confirm any Supabase storage caching guidance for docs
+- [ ] Story 2: Review CI and deployment config
+- [ ] Story 3: Review security hardening
 
 ### Blockers/Warnings
 - None
 
 ### Files Changed
-- src/components/PhotoTimeline.tsx
-- src/components/VideoGallery.tsx
-- next.config.ts
-- supabase/migrations/20260207180000_add_query_indexes.sql
 - prd.json
 - progress.txt
 
 ### Learnings (add to Codebase Patterns if reusable)
-- None
+- No new patterns discovered
 ---
 ---
-## 2026-02-07 00:17 - Story 3: Environment configuration management
+## 2026-02-07 01:26 - Story 2: Review CI and deployment config
 
 ### Completed
-- Added environment validation modules for public/server env usage
-- Updated API routes and middleware to use validated env values
-- Added .env.local.example plus env-specific example files for dev/staging/prod
+- Reviewed CI workflow and env validation logic; no CI changes needed
+- Updated deployment health check docs to match API response
 
 ### Next Up (for next iteration)
-- [ ] Story 4: error monitoring and logging
-- [ ] Story 5: performance optimization
-
-### Blockers/Warnings
-- Lint still warns about <img> usage in PhotoTimeline and VideoGallery (performance story).
-
-### Files Changed
-- src/lib/env/public.ts
-- src/lib/env/server.ts
-- src/lib/supabaseClient.ts
-- src/middleware.ts
-- src/app/api/analyze/route.ts
-- src/app/api/analyze-video/route.ts
-- .env.local.example
-- .env.development.example
-- .env.staging.example
-- .env.production.example
-- .env.example
-- prd.json
-- progress.txt
-
-### Learnings (add to Codebase Patterns if reusable)
-- Use env modules to centralize validation and avoid scattered process.env checks.
----
----
-## 2026-02-07 00:25 - Story 4: Error monitoring and logging
-
-### Completed
-- Added structured logging to API error paths for analyze and analyze-video routes
-- Added /api/health endpoint that validates Supabase connectivity
-- Added app-level error boundary UI that reports errors via structured logging
-
-### Next Up (for next iteration)
-- [ ] Story 5: performance optimization (replace <img> with next/image, add lazy loading, caching headers)
-- [ ] Story 6: deployment documentation
-
-### Blockers/Warnings
-- Lint still warns about <img> usage in PhotoTimeline and VideoGallery
-
-### Files Changed
-- src/app/api/analyze/route.ts
-- src/app/api/analyze-video/route.ts
-- src/app/api/health/route.ts
-- src/app/error.tsx
-- prd.json
-- progress.txt
-
-### Learnings (add to Codebase Patterns if reusable)
-- None
----
----
-## 2026-02-07 00:56 - Story 6: Deployment documentation
-
-### Completed
-- Added deployment guide covering Supabase setup, env vars, Vercel config, and migration steps
-- Added CONTRIBUTING guidelines and updated README with architecture diagram and deployment links
-
-### Next Up (for next iteration)
-- [ ] Confirm remaining stories (if any) in prd.json
-- [ ] Review documentation for accuracy against current infra
+- [ ] Story 3: Review security hardening
+- [ ] Verify RLS migration, error boundary, and auth changes
 
 ### Blockers/Warnings
 - None
 
 ### Files Changed
 - docs/deployment.md
-- CONTRIBUTING.md
-- README.md
 - prd.json
 - progress.txt
 
 ### Learnings (add to Codebase Patterns if reusable)
-- None
+- No new patterns discovered
 ---
