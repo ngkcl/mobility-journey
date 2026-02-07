@@ -59,7 +59,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Port from existing ToastProvider.tsx but use React Native Animated API instead of CSS."
     },
     {

@@ -59,3 +59,24 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 11:32 - Story US-003: Toast notification system
+
+### Completed
+- Verified ToastProvider + Animated toast implementation already meets acceptance criteria.
+- Marked US-003 as passing in PRD.
+
+### Next Up (for next iteration)
+- [ ] Implement US-004 photo timeline with upload flow and filters.
+- [ ] Verify toast styling on web/native if any UI regressions appear.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` still fails: no `origin` remote configured.
+
+### Files Changed
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
