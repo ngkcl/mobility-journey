@@ -228,7 +228,7 @@ export default function MetricsTracker() {
               </div>
               
               {entry.notes && (
-                <p className="text-gray-400 text-sm mt-2 italic">"{entry.notes}"</p>
+                <p className="text-gray-400 text-sm mt-2 italic">&ldquo;{entry.notes}&rdquo;</p>
               )}
             </div>
           ))

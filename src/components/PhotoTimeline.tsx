@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, ChevronLeft, ChevronRight, Trash2, Calendar } from 'lucide-react';
+import { Upload, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Photo {

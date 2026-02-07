@@ -1,0 +1,30 @@
+## Codebase Patterns
+- Supabase client uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `src/lib/supabaseClient.ts`.
+
+---
+## 2026-02-07 04:24 - Story 1: Set up Supabase client and database schema
+
+### Completed
+- Added Supabase client wrapper and env example for project configuration.
+- Created initial SQL migration defining photos, metrics, analysis_logs, and todos tables with indexes.
+- Fixed lint errors unrelated to the story to keep checks green.
+
+### Next Up (for next iteration)
+- [ ] Story 2: Persist photos to Supabase Storage and load from database on page load.
+- [ ] Decide on storage bucket naming and public vs signed URL strategy.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx` (not errors).
+
+### Files Changed
+- src/lib/supabaseClient.ts
+- supabase/migrations/20260207120000_init.sql
+- .env.example
+- src/components/MetricsTracker.tsx
+- src/components/PhotoTimeline.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None beyond the pattern noted above.
+---
