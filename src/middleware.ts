@@ -4,15 +4,23 @@ import { serverEnv } from './lib/env/server';
 const { AUTH_USER, AUTH_PASS } = serverEnv;
 
 export function middleware(req: NextRequest) {
+  if (req.nextUrl.pathname === '/api/health') {
+    return NextResponse.next();
+  }
+
   const authHeader = req.headers.get('authorization');
 
   if (authHeader) {
     const [scheme, encoded] = authHeader.split(' ');
     if (scheme === 'Basic' && encoded) {
-      const decoded = atob(encoded);
-      const [user, pass] = decoded.split(':');
-      if (user === AUTH_USER && pass === AUTH_PASS) {
-        return NextResponse.next();
+      try {
+        const decoded = atob(encoded);
+        const [user, pass] = decoded.split(':');
+        if (user === AUTH_USER && pass === AUTH_PASS) {
+          return NextResponse.next();
+        }
+      } catch {
+        // Ignore invalid base64 and fall through to 401.
       }
     }
   }

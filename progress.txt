@@ -43,3 +43,26 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - No new patterns discovered
 ---
+---
+## 2026-02-07 01:29 - Story 3: Review security hardening
+
+### Completed
+- Allowed unauthenticated access to `/api/health` so deployments can hit the health check without Basic Auth
+- Hardened middleware Basic Auth parsing to avoid crashes on malformed headers
+- Re-ran typecheck, lint, and tests
+
+### Next Up (for next iteration)
+- [ ] Verify end-to-end Supabase auth flow if required by product scope
+- [ ] Revisit security docs for any follow-up clarifications
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- src/middleware.ts
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- No new patterns discovered
+---
