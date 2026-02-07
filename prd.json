@@ -56,7 +56,7 @@
       "id": "8",
       "title": "Add data export feature",
       "description": "Allow exporting all data as JSON for backup/portability.",
-      "passes": false,
+      "passes": true,
       "priority": 8
     }
   ]

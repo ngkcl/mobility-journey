@@ -192,3 +192,27 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-06 19:42 - Story 8: Add data export feature
+
+### Completed
+- Added JSON export action in header to download all Supabase tables.
+- Included exportedAt timestamp and table payloads in the JSON download.
+- Added success/error toast feedback and export loading states for desktop + mobile.
+
+### Next Up (for next iteration)
+- [ ] Consider exporting storage files or signed URLs if needed for photo portability.
+- [ ] Decide if export should live in a settings panel or dedicated tab.
+
+### Blockers/Warnings
+- `pnpm lint` reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/app/page.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

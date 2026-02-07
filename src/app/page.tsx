@@ -7,12 +7,16 @@ import MetricsTracker from '@/components/MetricsTracker';
 import AnalysisLog from '@/components/AnalysisLog';
 import TodoTracker from '@/components/TodoTracker';
 import ProgressCharts from '@/components/ProgressCharts';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ToastProvider';
 
 type Tab = 'photos' | 'metrics' | 'analysis' | 'todos' | 'charts';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('photos');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { pushToast } = useToast();
 
   const tabs = [
     { id: 'photos' as Tab, label: 'Photos', icon: Camera },
@@ -21,6 +25,54 @@ export default function Home() {
     { id: 'todos' as Tab, label: 'Protocol', icon: CheckSquare },
     { id: 'charts' as Tab, label: 'Progress', icon: TrendingUp },
   ];
+
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+
+    const [photosResult, metricsResult, analysisResult, todosResult] = await Promise.all([
+      supabase.from('photos').select('*').order('taken_at', { ascending: false }),
+      supabase.from('metrics').select('*').order('entry_date', { ascending: false }),
+      supabase.from('analysis_logs').select('*').order('entry_date', { ascending: false }),
+      supabase.from('todos').select('*').order('created_at', { ascending: false }),
+    ]);
+
+    const errors = [
+      photosResult.error,
+      metricsResult.error,
+      analysisResult.error,
+      todosResult.error,
+    ].filter(Boolean);
+
+    if (errors.length > 0) {
+      console.error('Failed to export data', errors);
+      pushToast('Failed to export data. Please try again.', 'error');
+      setIsExporting(false);
+      return;
+    }
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      photos: photosResult.data ?? [],
+      metrics: metricsResult.data ?? [],
+      analysisLogs: analysisResult.data ?? [],
+      todos: todosResult.data ?? [],
+    };
+
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `mobility-journey-export-${dateStamp}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    setIsExporting(false);
+    pushToast('Export ready! Downloading your data now.', 'success');
+  };
 
   return (
     <div className="relative min-h-screen text-slate-100">
@@ -41,33 +93,58 @@ export default function Home() {
               </div>
               <p className="text-sm text-slate-400">Posture & scoliosis tracking dashboard</p>
             </div>
-            
-            {/* Mobile menu button */}
-            <button 
-              className="md:hidden rounded-lg border border-slate-800/60 bg-slate-900/70 p-2 text-slate-300 hover:text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle navigation"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-2 rounded-full border border-slate-800/60 bg-slate-900/60 p-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <tab.icon size={18} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </nav>
+            <div className="hidden md:flex items-center gap-3">
+              <nav className="flex items-center gap-2 rounded-full border border-slate-800/60 bg-slate-900/60 p-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <tab.icon size={18} />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  isExporting
+                    ? 'bg-slate-800/70 text-slate-400'
+                    : 'bg-emerald-500/90 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400'
+                }`}
+              >
+                {isExporting ? 'Exporting...' : 'Export JSON'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 md:hidden">
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className={`rounded-lg border border-slate-800/60 px-3 py-2 text-xs font-medium transition-all ${
+                  isExporting
+                    ? 'bg-slate-900/70 text-slate-400'
+                    : 'bg-emerald-500/90 text-white hover:bg-emerald-400'
+                }`}
+              >
+                {isExporting ? 'Exporting...' : 'Export'}
+              </button>
+              <button 
+                className="rounded-lg border border-slate-800/60 bg-slate-900/70 p-2 text-slate-300 hover:text-white"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle navigation"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
 
           {/* Mobile nav */}
