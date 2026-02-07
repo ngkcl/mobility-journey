@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
-import type { Video, VideoCategory } from '../../lib/types';
+import type { Video, VideoCategory, VideoAnalysisResult } from '../../lib/types';
 
 const VIDEO_BUCKET = 'progress-videos';
 const CATEGORIES: readonly VideoCategory[] = ['exercise', 'posture', 'mobility', 'daily', 'other'];
@@ -26,6 +26,30 @@ const screenWidth = Dimensions.get('window').width;
 const numColumns = screenWidth > 600 ? 3 : 2;
 const gap = 8;
 const cardWidth = (screenWidth - gap * (numColumns + 1)) / numColumns;
+
+const normalizeAnalysisResult = (result: unknown): VideoAnalysisResult | null => {
+  if (!result) return null;
+  if (typeof result === 'string') {
+    try {
+      const parsed = JSON.parse(result);
+      return normalizeAnalysisResult(parsed);
+    } catch {
+      return { structuredData: null, rawAnalysis: result };
+    }
+  }
+
+  const obj = result as Record<string, unknown>;
+  const structuredData =
+    (obj.structuredData as VideoAnalysisResult['structuredData']) ??
+    (obj.structured_data as VideoAnalysisResult['structuredData']) ??
+    null;
+  const rawAnalysis =
+    (obj.rawAnalysis as string | undefined) ??
+    (obj.analysis as string | undefined) ??
+    '';
+
+  return { structuredData, rawAnalysis };
+};
 
 export default function VideosScreen() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -42,6 +66,35 @@ export default function VideosScreen() {
       ? videos
       : videos.filter((v) => v.category === selectedCategory);
 
+  const normalizeVideo = (row: any): Video => {
+    const supabase = getSupabase();
+    const publicUrl =
+      row.public_url ??
+      (row.storage_path
+        ? supabase.storage.from(VIDEO_BUCKET).getPublicUrl(row.storage_path).data.publicUrl
+        : '');
+    const thumbnailUrl =
+      row.thumbnail_url ??
+      (row.thumbnail_path
+        ? supabase.storage.from(VIDEO_BUCKET).getPublicUrl(row.thumbnail_path).data.publicUrl
+        : null);
+
+    return {
+      id: row.id,
+      recorded_at: row.recorded_at,
+      duration_seconds: row.duration_seconds ?? null,
+      storage_path: row.storage_path ?? '',
+      public_url: publicUrl,
+      thumbnail_url: thumbnailUrl,
+      label: row.label ?? null,
+      category: (row.category ?? 'other') as VideoCategory,
+      notes: row.notes ?? null,
+      analysis_status: row.analysis_status ?? 'pending',
+      analysis_result: normalizeAnalysisResult(row.analysis_result),
+      tags: row.tags ?? null,
+    };
+  };
+
   const loadVideos = async () => {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -55,7 +108,8 @@ export default function VideosScreen() {
       return;
     }
 
-    setVideos((data ?? []) as Video[]);
+    const normalized = (data ?? []).map((row) => normalizeVideo(row));
+    setVideos(normalized);
     setIsLoading(false);
   };
 
@@ -122,7 +176,7 @@ export default function VideosScreen() {
           continue;
         }
 
-        setVideos((prev) => [inserted as Video, ...prev]);
+        setVideos((prev) => [normalizeVideo(inserted), ...prev]);
         pushToast('Video uploaded!', 'success');
       } catch (err) {
         pushToast('Upload failed.', 'error');
