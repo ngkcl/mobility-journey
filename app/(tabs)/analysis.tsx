@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -37,6 +38,7 @@ export default function AnalysisScreen() {
   const [filter, setFilter] = useState<'all' | AnalysisType>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedEntries, setExpandedEntries] = useState<Record<string, boolean>>({});
   const { pushToast } = useToast();
   const [newEntry, setNewEntry] = useState<Partial<AnalysisEntryView>>({
     date: new Date().toISOString().split('T')[0],
@@ -141,6 +143,7 @@ export default function AnalysisScreen() {
     filter === 'all' ? entries : entries.filter((e) => e.type === filter);
 
   const typeButtons: AnalysisType[] = ['personal', 'ai', 'specialist'];
+  const contentStyle = Platform.OS === 'web' ? ({ whiteSpace: 'pre-wrap' } as any) : undefined;
 
   return (
     <ScrollView
@@ -282,6 +285,9 @@ export default function AnalysisScreen() {
       ) : (
         filteredEntries.map((entry) => {
           const config = typeConfig[entry.type];
+          const isExpanded = expandedEntries[entry.id] ?? false;
+          const isLong =
+            entry.content.length > 240 || entry.content.split('\n').length > 6;
           return (
             <View
               key={entry.id}
@@ -314,9 +320,25 @@ export default function AnalysisScreen() {
                 </Pressable>
               </View>
 
-              <Text className="text-slate-200 text-sm leading-6" numberOfLines={10}>
+              <Text
+                className="text-slate-200 text-sm leading-6"
+                numberOfLines={isExpanded ? undefined : 8}
+                style={contentStyle}
+              >
                 {entry.content}
               </Text>
+              {isLong ? (
+                <Pressable
+                  onPress={() =>
+                    setExpandedEntries((prev) => ({ ...prev, [entry.id]: !isExpanded }))
+                  }
+                  className="mt-3"
+                >
+                  <Text className="text-teal-400 text-sm font-medium">
+                    {isExpanded ? 'Show less' : 'Show more'}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           );
         })

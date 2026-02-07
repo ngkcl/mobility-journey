@@ -150,3 +150,25 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None
 ---
+---
+## 2026-02-07 11:40 - Story US-007: Analysis Log tab
+
+### Completed
+- Added expandable analysis content with show more/less toggles for long entries.
+- Preserved whitespace formatting for analysis content (pre-wrap on web).
+
+### Next Up (for next iteration)
+- [ ] Implement US-008 video gallery with playback and analysis status.
+- [ ] Verify analysis log expand/collapse behavior on device/web.
+
+### Blockers/Warnings
+- None
+
+### Files Changed
+- app/(tabs)/analysis.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
