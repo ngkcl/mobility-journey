@@ -13,6 +13,7 @@ const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }
   { name: 'videos', title: 'Videos', icon: 'videocam-outline', iconFocused: 'videocam' },
   { name: 'metrics', title: 'Metrics', icon: 'pulse-outline', iconFocused: 'pulse' },
   { name: 'posture', title: 'Posture', icon: 'body-outline', iconFocused: 'body' },
+  { name: 'posture-camera', title: 'Camera', icon: 'aperture-outline', iconFocused: 'aperture' },
   { name: 'analysis', title: 'Analysis', icon: 'document-text-outline', iconFocused: 'document-text' },
   { name: 'todos', title: 'Protocol', icon: 'checkbox-outline', iconFocused: 'checkbox' },
   { name: 'charts', title: 'Progress', icon: 'trending-up-outline', iconFocused: 'trending-up' },

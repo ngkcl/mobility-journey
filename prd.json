@@ -68,7 +68,7 @@
       ],
       "priority": 4,
       "passes": true,
-      "notes": "This is the main screen users will interact with. Keep it simple and glanceable \u2014 big colored circle they can see at a glance."
+      "notes": "This is the main screen users will interact with. Keep it simple and glanceable — big colored circle they can see at a glance."
     },
     {
       "id": "AP-005",
@@ -101,7 +101,7 @@
       ],
       "priority": 6,
       "passes": true,
-      "notes": "This connects the real-time monitoring to the existing tracking dashboard. The posture_sessions table might need to be created via Supabase dashboard \u2014 just document the schema in a migration file."
+      "notes": "This connects the real-time monitoring to the existing tracking dashboard. The posture_sessions table might need to be created via Supabase dashboard — just document the schema in a migration file."
     },
     {
       "id": "AP-007",
@@ -111,7 +111,7 @@
         "Create a web-compatible posture detection module using MediaPipe Pose or TensorFlow.js BlazePose",
         "Track key landmarks: nose, ears, shoulders, and estimate head-forward angle and shoulder levelness",
         "Calibration: user sits in good posture, captures baseline landmark positions",
-        "Slouch detection: compare current pose to baseline \u2014 flag when head moves forward, shoulders round, or spine curves",
+        "Slouch detection: compare current pose to baseline — flag when head moves forward, shoulders round, or spine curves",
         "Shoulder asymmetry detection: flag when one shoulder is consistently higher (scoliosis indicator)",
         "Visual overlay showing skeleton/landmarks on camera feed (optional, togglable)",
         "Same alert system as AirPods: green/yellow/red states with haptic-equivalent notifications",
@@ -119,8 +119,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "MediaPipe Pose runs client-side in browser, no server needed. For React Native, use expo-camera + @mediapipe/pose or react-native-vision-camera with frame processors. This complements AirPods tracking \u2014 camera for desk work, AirPods for mobile."
+      "passes": true,
+      "notes": "MediaPipe Pose runs client-side in browser, no server needed. For React Native, use expo-camera + @mediapipe/pose or react-native-vision-camera with frame processors. This complements AirPods tracking — camera for desk work, AirPods for mobile."
     }
   ]
 }

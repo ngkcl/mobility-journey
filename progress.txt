@@ -165,3 +165,33 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 12:58 - Story AP-007: Camera-based posture detection (Mac webcam)
+
+### Completed
+- Added camera posture detection module with calibration, thresholds, and eventing.
+- Implemented camera posture screen with web + native camera support and overlay option.
+- Added camera posture unit tests and wired new tab.
+
+### Next Up (for next iteration)
+- [ ] Verify camera posture pipeline on device/web and tune thresholds.
+- [ ] Decide whether to reuse alert settings from AirPods posture screen.
+
+### Blockers/Warnings
+- `git push` will fail because no `origin` remote is configured.
+- tfjs-react-native reports peer dependency warnings for expo-camera/expo-gl versions.
+
+### Files Changed
+- lib/cameraPosture.ts
+- lib/cameraPosture.test.js
+- components/CameraPostureMonitor.tsx
+- app/(tabs)/posture-camera.tsx
+- app/(tabs)/_layout.tsx
+- package.json
+- pnpm-lock.yaml
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
