@@ -1,9 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 import { useHeadphoneMotion } from '../../lib/useHeadphoneMotion';
 import { createSlouchDetector, SlouchState } from '../../lib/slouchDetector';
 import { computePercentage, formatAngle, formatDuration } from '../../lib/postureSession';
+import {
+  DEFAULT_POSTURE_SETTINGS,
+  POSTURE_SETTINGS_LIMITS,
+  loadPostureSettings,
+  normalizePostureSettings,
+  savePostureSettings,
+} from '../../lib/postureSettings';
 
 const STATUS_CONFIG = {
   [SlouchState.GOOD_POSTURE]: {
@@ -29,6 +38,9 @@ const ANGLE_HELP = {
   yaw: 'Left/right turn',
 };
 
+const ALERT_COOLDOWN_MS = 30000;
+const SLOUCH_EXTRA_MS = 5000;
+
 export default function PostureScreen() {
   const {
     isAvailable,
@@ -44,6 +56,8 @@ export default function PostureScreen() {
   const wasTrackingRef = useRef(false);
   const lastSampleRef = useRef<number | null>(null);
   const lastStateRef = useRef<SlouchState>(SlouchState.GOOD_POSTURE);
+  const lastAlertRef = useRef<number | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
   const goodMsRef = useRef(0);
   const goodStreakRef = useRef(0);
   const longestGoodMsRef = useRef(0);
@@ -56,6 +70,8 @@ export default function PostureScreen() {
   const [goodMs, setGoodMs] = useState(0);
   const [longestGoodMs, setLongestGoodMs] = useState(0);
   const [slouchCount, setSlouchCount] = useState(0);
+  const [settings, setSettings] = useState(DEFAULT_POSTURE_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const resetSessionStats = () => {
     lastSampleRef.current = null;
@@ -93,6 +109,111 @@ export default function PostureScreen() {
     const baseline = detectorRef.current.calibrate(pitch);
     setBaselinePitch(baseline);
     setSlouchState(SlouchState.GOOD_POSTURE);
+  };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const stored = await loadPostureSettings();
+      setSettings(stored);
+      setSettingsLoaded(true);
+    };
+
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) {
+      return;
+    }
+
+    savePostureSettings(settings);
+  }, [settings, settingsLoaded]);
+
+  useEffect(() => {
+    const warningMs = settings.alertDelaySec * 1000;
+    const slouchMs = warningMs + SLOUCH_EXTRA_MS;
+    const baseline = detectorRef.current.getBaseline();
+    detectorRef.current = createSlouchDetector({
+      thresholdDeg: settings.thresholdDeg,
+      warningMs,
+      slouchMs,
+    });
+
+    if (baseline !== null) {
+      detectorRef.current.calibrate(baseline);
+    }
+  }, [settings.alertDelaySec, settings.thresholdDeg]);
+
+  useEffect(() => {
+    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => null);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const syncSound = async () => {
+      if (!settings.soundEnabled) {
+        if (soundRef.current) {
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+        return;
+      }
+
+      if (soundRef.current) {
+        return;
+      }
+
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/sounds/alert.wav'),
+      );
+      if (!active) {
+        await sound.unloadAsync();
+        return;
+      }
+      await sound.setVolumeAsync(0.7);
+      soundRef.current = sound;
+    };
+
+    syncSound().catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, [settings.soundEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => null);
+      }
+    };
+  }, []);
+
+  const triggerAlert = async (severity: 'warning' | 'slouching') => {
+    if (settings.hapticsEnabled) {
+      const style =
+        severity === 'slouching'
+          ? Haptics.ImpactFeedbackStyle.Heavy
+          : Haptics.ImpactFeedbackStyle.Light;
+      await Haptics.impactAsync(style);
+    }
+
+    if (settings.soundEnabled && soundRef.current) {
+      await soundRef.current.replayAsync();
+    }
+  };
+
+  const updateSettings = (partial: Partial<typeof settings>) => {
+    setSettings((prev) => normalizePostureSettings({ ...prev, ...partial }));
+  };
+
+  const adjustSetting = (key: 'thresholdDeg' | 'alertDelaySec', delta: number) => {
+    if (key === 'thresholdDeg') {
+      updateSettings({ thresholdDeg: settings.thresholdDeg + delta });
+      return;
+    }
+
+    updateSettings({ alertDelaySec: settings.alertDelaySec + delta });
   };
 
   useEffect(() => {
@@ -156,11 +277,22 @@ export default function PostureScreen() {
       setSlouchCount(slouchCountRef.current);
     }
 
+    if (result.event) {
+      const now = result.event.timestamp;
+      const lastAlert = lastAlertRef.current ?? 0;
+      if (now - lastAlert >= ALERT_COOLDOWN_MS) {
+        lastAlertRef.current = now;
+        triggerAlert(result.event.severity).catch(() => null);
+      }
+    }
+
     lastSampleRef.current = now;
   }, [pitch, isTracking, sessionStart]);
 
   const status = STATUS_CONFIG[slouchState];
   const goodPct = useMemo(() => computePercentage(goodMs, elapsedMs), [goodMs, elapsedMs]);
+  const thresholdLimits = POSTURE_SETTINGS_LIMITS.threshold;
+  const alertDelayLimits = POSTURE_SETTINGS_LIMITS.alertDelay;
 
   const angles = [
     { key: 'pitch', label: 'Pitch', value: pitch, hint: ANGLE_HELP.pitch },
@@ -275,6 +407,78 @@ export default function PostureScreen() {
         <View className="flex-row items-center justify-between">
           <Text className="text-slate-400 text-sm">Longest good streak</Text>
           <Text className="text-white font-semibold">{formatDuration(longestGoodMs)}</Text>
+        </View>
+      </View>
+
+      <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
+        <Text className="text-white font-semibold mb-4">Alerts & sensitivity</Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="text-slate-400 text-xs">Sensitivity</Text>
+            <Text className="text-white text-lg font-semibold">
+              {settings.thresholdDeg} deg
+            </Text>
+            <Text className="text-slate-500 text-xs mt-1">
+              {thresholdLimits.min}-{thresholdLimits.max} deg
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => adjustSetting('thresholdDeg', -1)}
+              className="bg-slate-800 px-3 py-2 rounded-xl"
+            >
+              <Text className="text-white text-lg">-</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => adjustSetting('thresholdDeg', 1)}
+              className="bg-slate-800 px-3 py-2 rounded-xl"
+            >
+              <Text className="text-white text-lg">+</Text>
+            </Pressable>
+          </View>
+        </View>
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="text-slate-400 text-xs">Alert delay</Text>
+            <Text className="text-white text-lg font-semibold">
+              {settings.alertDelaySec}s
+            </Text>
+            <Text className="text-slate-500 text-xs mt-1">
+              {alertDelayLimits.min}-{alertDelayLimits.max} seconds
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => adjustSetting('alertDelaySec', -1)}
+              className="bg-slate-800 px-3 py-2 rounded-xl"
+            >
+              <Text className="text-white text-lg">-</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => adjustSetting('alertDelaySec', 1)}
+              className="bg-slate-800 px-3 py-2 rounded-xl"
+            >
+              <Text className="text-white text-lg">+</Text>
+            </Pressable>
+          </View>
+        </View>
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="text-slate-400 text-sm">Haptics</Text>
+          <Switch
+            value={settings.hapticsEnabled}
+            onValueChange={(value) => updateSettings({ hapticsEnabled: value })}
+            trackColor={{ false: '#334155', true: '#14b8a6' }}
+            thumbColor="#fff"
+          />
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-slate-400 text-sm">Sound alert</Text>
+          <Switch
+            value={settings.soundEnabled}
+            onValueChange={(value) => updateSettings({ soundEnabled: value })}
+            trackColor={{ false: '#334155', true: '#14b8a6' }}
+            thumbColor="#fff"
+          />
         </View>
       </View>
 

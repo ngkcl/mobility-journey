@@ -84,7 +84,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Use expo-haptics for haptic feedback. Key UX: alerts should be noticeable but not annoying. The cooldown prevents alert fatigue."
     },
     {

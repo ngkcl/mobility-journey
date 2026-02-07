@@ -107,3 +107,31 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 12:43 - Story AP-005: Slouch alerts with haptic and sound
+
+### Completed
+- Added posture alert settings (sensitivity, alert delay, haptics, sound) with AsyncStorage persistence.
+- Wired haptic + optional sound alerts with 30s cooldown into posture monitoring.
+- Added alert tone asset and settings normalization tests.
+
+### Next Up (for next iteration)
+- [ ] Implement AP-006: Supabase session logging and posture history view.
+- [ ] Integrate posture data into Progress Charts tab.
+
+### Blockers/Warnings
+- `git push` will fail because no `origin` remote is configured.
+
+### Files Changed
+- app/(tabs)/posture.tsx
+- lib/postureSettings.ts
+- lib/postureSettings.test.js
+- assets/sounds/alert.wav
+- package.json
+- pnpm-lock.yaml
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---
