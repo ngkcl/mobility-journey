@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,16 @@ import {
   Dimensions,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import type { ChartPoint } from '../../lib/types';
+import { useNavigation } from 'expo-router';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -67,7 +71,9 @@ export default function ChartsScreen() {
   const [data, setData] = useState<ChartPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { pushToast } = useToast();
+  const navigation = useNavigation();
 
   const loadMetrics = async () => {
     const supabase = getSupabase();
@@ -111,6 +117,101 @@ export default function ChartsScreen() {
     await loadMetrics();
     setRefreshing(false);
   };
+
+  const handleExport = useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const supabase = getSupabase();
+      const [photos, videos, metricsRows, analysisLogs, todos] = await Promise.all([
+        supabase.from('photos').select('*').order('taken_at', { ascending: true }),
+        supabase.from('videos').select('*').order('recorded_at', { ascending: true }),
+        supabase.from('metrics').select('*').order('entry_date', { ascending: true }),
+        supabase.from('analysis_logs').select('*').order('entry_date', { ascending: true }),
+        supabase.from('todos').select('*').order('due_date', { ascending: true }),
+      ]);
+
+      const errors = [
+        photos.error,
+        videos.error,
+        metricsRows.error,
+        analysisLogs.error,
+        todos.error,
+      ].filter(Boolean);
+
+      if (errors.length > 0) {
+        pushToast('Failed to export data. Please try again.', 'error');
+        return;
+      }
+
+      const exportPayload = {
+        exportedAt: new Date().toISOString(),
+        photos: photos.data ?? [],
+        videos: videos.data ?? [],
+        metrics: metricsRows.data ?? [],
+        analysisLogs: analysisLogs.data ?? [],
+        todos: todos.data ?? [],
+      };
+
+      const fileName = `mobility-export-${exportPayload.exportedAt.replace(
+        /[:.]/g,
+        '-',
+      )}.json`;
+      const json = JSON.stringify(exportPayload, null, 2);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        pushToast('Export ready for download.', 'success');
+      } else {
+        const fileUri = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory}${fileName}`;
+        await FileSystem.writeAsStringAsync(fileUri, json, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        const canShare = await Sharing.isAvailableAsync();
+        if (!canShare) {
+          pushToast('Sharing is unavailable on this device.', 'error');
+          return;
+        }
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export Mobility Data',
+          UTI: 'public.json',
+        });
+        pushToast('Export ready to share.', 'success');
+      }
+    } catch (error) {
+      pushToast('Failed to export data. Please try again.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, pushToast]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={handleExport}
+          disabled={isExporting}
+          className="mr-4 flex-row items-center rounded-full bg-slate-900 px-3 py-1.5 border border-slate-800"
+        >
+          {isExporting ? (
+            <ActivityIndicator color="#5eead4" />
+          ) : (
+            <Ionicons name="download-outline" size={16} color="#5eead4" />
+          )}
+          <Text className="text-sm text-teal-200 ml-2">Export</Text>
+        </Pressable>
+      ),
+    });
+  }, [handleExport, isExporting, navigation]);
 
   const selectedConfig = metrics.find((m) => m.key === selectedMetric)!;
 
@@ -175,6 +276,34 @@ export default function ChartsScreen() {
       <View className="mb-6">
         <Text className="text-2xl font-semibold text-white">Progress Charts</Text>
         <Text className="text-slate-400 text-sm">Visualize your improvement over time</Text>
+      </View>
+
+      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 pr-4">
+            <Text className="text-lg font-semibold text-white">Data Export</Text>
+            <Text className="text-sm text-slate-400 mt-1">
+              Share a JSON backup of all your mobility data.
+            </Text>
+          </View>
+          <Pressable
+            onPress={handleExport}
+            disabled={isExporting}
+            className="bg-teal-500/20 border border-teal-400/40 rounded-full px-4 py-2"
+          >
+            {isExporting ? (
+              <View className="flex-row items-center gap-2">
+                <ActivityIndicator color="#5eead4" />
+                <Text className="text-sm text-teal-100">Exporting</Text>
+              </View>
+            ) : (
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="download-outline" size={16} color="#5eead4" />
+                <Text className="text-sm text-teal-100">Export</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Metric selector cards */}

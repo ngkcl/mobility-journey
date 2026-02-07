@@ -155,7 +155,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Reference ../mobility-journey/src/components/VideoGallery.tsx. Storage bucket 'progress-videos', paths 'videos/{timestamp}-{uuid}.{ext}' and 'thumbnails/{name}.jpg'. Analysis result shape: { structuredData: { movement_quality_score, posture_score, symmetry_score, ... }, rawAnalysis: string }."
     },
     {
@@ -174,7 +174,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Reference ../mobility-journey/src/components/ProgressCharts.tsx. Existing app uses Recharts which is web-only. Need a cross-platform alternative. victory-native is recommended. Data comes from 'metrics' table: entry_date, pain_level, posture_score, symmetry_score, energy_level."
     },
     {
@@ -191,7 +191,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Reference the handleExport function in ../mobility-journey/src/app/page.tsx. Use expo-file-system to write temp file, then expo-sharing to share it."
     }
   ]

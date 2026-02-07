@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Keep lib/types.ts aligned to Supabase column names; normalize data in screens instead of changing schema types.
 - Define local view-model types in screens when UI uses camelCase fields.
+- Use `expo-file-system/legacy` for cacheDirectory/writeAsStringAsync with SDK 54 exports.
 
 ---
 ## 2026-02-07 11:25 - Story US-001: Project setup: Expo + NativeWind + dependencies
@@ -166,6 +167,76 @@
 
 ### Files Changed
 - app/(tabs)/analysis.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 11:43 - Story US-008: Videos tab - video gallery with playback
+
+### Completed
+- Normalized video data to ensure public URLs and parsed analysis results.
+- Added video detail screen with expo-av playback, editable notes, analysis scores, and raw analysis toggle.
+- Added delete flow from detail screen with storage cleanup.
+
+### Next Up (for next iteration)
+- [ ] Implement US-009 progress charts with a cross-platform charting library.
+- [ ] Decide on chart library (victory-native vs chart-kit) and wire metrics data.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` failed previously: no `origin` remote configured.
+
+### Files Changed
+- app/(tabs)/videos.tsx
+- app/video/[id].tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 11:45 - Story US-009: Progress Charts tab
+
+### Completed
+- Verified Progress charts screen meets acceptance criteria (summary cards, selectable metric chart, comparison chart).
+- Marked US-009 as passing in PRD.
+
+### Next Up (for next iteration)
+- [ ] Implement US-010 data export with expo-file-system + expo-sharing.
+- [ ] Verify charts rendering on device/web if any UI regressions appear.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` previously failed: no `origin` remote configured.
+
+### Files Changed
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None
+---
+---
+## 2026-02-07 11:48 - Story US-010: Data export functionality
+
+### Completed
+- Added data export card and header action in Progress tab with loading state.
+- Implemented JSON export from Supabase tables and native/web sharing/download flows.
+- Installed expo-file-system and expo-sharing dependencies.
+
+### Next Up (for next iteration)
+- [ ] Verify export flow on device and web download behavior.
+- [ ] Add a dedicated settings screen if product requirements expand.
+
+### Blockers/Warnings
+- `git push origin ralph/expo-migration` may fail: no `origin` remote configured.
+
+### Files Changed
+- app/(tabs)/charts.tsx
+- package.json
+- pnpm-lock.yaml
 - prd.json
 - progress.txt
 
