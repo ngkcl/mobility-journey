@@ -1,126 +1,126 @@
 {
   "project": "mobility-app",
-  "branchName": "ralph/airpods-posture",
-  "description": "Add AirPods head tracking for real-time slouch detection. Uses CMHeadphoneMotionManager via react-native-headphone-motion to monitor head pitch and alert when slouching.",
+  "branchName": "ralph/workout-tracker",
+  "description": "Full workout tracker with AI daily plan generation. Tracks home corrective exercises (scoliosis protocol), gym sessions, and any other activity. Generates personalized daily plans based on posture data, pain levels, and training history.",
+  "context": {
+    "scoliosisProtocol": "3x daily corrective sessions: Morning 20min, Midday 15min, Evening 20min",
+    "knownIssues": "Right-side muscular imbalance, right-thoracic scoliosis, right shoulder dropped/rolled forward",
+    "tightMuscles": "Right QL, right hip flexors, right erector spinae, right lat",
+    "weakMuscles": "Left glute med, left QL, core (obliques), left-side stabilizers",
+    "correctionStrategy": "Release tight muscles → Activate weak muscles → Integrate functional movements → Maintain posture awareness"
+  },
   "userStories": [
     {
-      "id": "AP-001",
-      "title": "Switch to development build with expo-dev-client",
-      "description": "Replace Expo Go with a custom development build so we can use native modules like headphone motion.",
+      "id": "WK-001",
+      "title": "Exercise library with scoliosis-specific exercises",
+      "description": "Create a built-in exercise library seeded with corrective exercises for Nick's specific imbalance pattern.",
       "acceptanceCriteria": [
-        "Install expo-dev-client",
-        "Run npx expo prebuild to generate ios/ directory",
-        "Update app.json with proper iOS bundle identifier (com.mandel.mobilityjourney)",
-        "Add NSMotionUsageDescription to Info.plist: 'Mobility Journey uses AirPods motion to track your posture'",
-        "Typecheck passes",
-        "Project builds with npx expo run:ios (or at minimum prebuild succeeds)"
+        "Create Supabase table: exercises (id, name, category, target_muscles, description, instructions, sets_default, reps_default, duration_seconds_default, side_specific, video_url, image_url)",
+        "Categories: corrective, stretching, strengthening, warmup, cooldown, gym_compound, gym_isolation, cardio, mobility",
+        "Seed with Nick's corrective exercises: bird dogs, cat-cow, dead bugs, side planks (left-focused), clamshells, hip flexor stretches, thoracic rotations, foam rolling (right QL, right lat), schroth breathing, wall angels, band pull-aparts, single-leg glute bridges",
+        "Exercise detail view showing: name, target muscles, instructions, sets/reps, whether it's side-specific (left vs right emphasis)",
+        "Search and filter by category and target muscle",
+        "Ability to add custom exercises",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "This is required before any native module can work. Expo Go doesn't support custom native modules."
+      "passes": false,
+      "notes": "The side_specific flag is important — many corrective exercises should be done more on the weak (left) side. Include common gym exercises too (squat, bench, deadlift, rows, etc.) for gym tracking."
     },
     {
-      "id": "AP-002",
-      "title": "Install and configure react-native-headphone-motion",
-      "description": "Add the AirPods head tracking library and create a reusable hook for accessing motion data.",
+      "id": "WK-002",
+      "title": "Workout logging with sets, reps, weight",
+      "description": "Log individual workouts with detailed exercise tracking including asymmetry awareness.",
       "acceptanceCriteria": [
-        "Install react-native-headphone-motion",
-        "Create lib/useHeadphoneMotion.ts hook that: checks if headphone motion is available, requests permission, provides real-time pitch/roll/yaw data",
-        "Hook returns: { isAvailable, isTracking, pitch, roll, yaw, startTracking, stopTracking }",
-        "Graceful fallback when AirPods not connected or device doesn't support it",
+        "Create Supabase table: workouts (id, date, type [corrective|gym|cardio|other], started_at, ended_at, duration_minutes, notes, energy_level_before, energy_level_after, pain_level_before, pain_level_after)",
+        "Create Supabase table: workout_exercises (id, workout_id, exercise_id, order_index, sets JSON array [{reps, weight_kg, duration_seconds, side, rpe, notes}])",
+        "New Workouts tab (or sub-tab within existing structure)",
+        "Start Workout flow: pick type → add exercises → log sets in real-time",
+        "For side-specific exercises: separate logging for left and right with asymmetry indicator",
+        "Rest timer between sets with configurable duration",
+        "Quick-add from recent/favorite exercises",
+        "Workout summary on completion: total volume, duration, exercises done, left/right comparison",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Library: https://github.com/XHMM/react-native-headphone-motion. Requires iOS 14+. pitch = forward/back head tilt (slouching indicator), roll = side tilt, yaw = left/right rotation."
+      "passes": false,
+      "notes": "The left/right tracking is key — for unilateral exercises (single arm rows, clamshells, etc.), we want to see if the imbalance is improving over time. RPE (rate of perceived exertion) per set helps track fatigue."
     },
     {
-      "id": "AP-003",
-      "title": "Slouch detection engine",
-      "description": "Build the core slouch detection logic that analyzes head pitch to determine if user is slouching.",
+      "id": "WK-003",
+      "title": "Corrective protocol templates (morning/midday/evening)",
+      "description": "Pre-built workout templates for the 3x daily scoliosis corrective sessions.",
       "acceptanceCriteria": [
-        "Create lib/slouchDetector.ts with configurable thresholds",
-        "Calibration: user sets their 'good posture' baseline pitch angle",
-        "Slouch detected when pitch deviates beyond threshold (default: 15 degrees) for sustained period (default: 10 seconds)",
-        "Three states: GOOD_POSTURE, WARNING (5-10 sec of bad posture), SLOUCHING (>10 sec)",
-        "Debouncing to avoid false positives from quick glances down",
-        "Export slouch events with timestamp, duration, and severity",
+        "Create Supabase table: workout_templates (id, name, type, exercises JSON array [{exercise_id, sets, reps, duration, side, order}], estimated_duration_minutes)",
+        "Three default templates: Morning Corrective (20min), Midday Corrective (15min), Evening Corrective (20min)",
+        "Morning template: foam rolling (right side focus), thoracic mobility, schroth breathing, bird dogs, dead bugs, wall angels",
+        "Midday template: hip flexor stretch, thoracic rotations, side planks (left focus), band pull-aparts, posture reset",
+        "Evening template: full body stretch, foam rolling, cat-cow, clamshells (left focus), single-leg glute bridges, schroth breathing",
+        "One-tap 'Start Protocol' button to begin a template workout",
+        "Guided mode: shows current exercise with timer/rep counter, auto-advances to next",
+        "Can customize templates (reorder, swap exercises, adjust sets/reps)",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Key insight: forward head tilt (pitch going negative/down) correlates with slouching. The calibration step is critical because everyone sits differently."
+      "passes": false,
+      "notes": "The guided mode is important — Nick should be able to tap 'Morning Protocol' and just follow along without thinking. Timer beeps when rest is over, shows next exercise, etc."
     },
     {
-      "id": "AP-004",
-      "title": "Posture monitor screen with real-time feedback",
-      "description": "Create a new tab/screen that shows real-time posture status with visual feedback.",
+      "id": "WK-004",
+      "title": "AI daily plan generator",
+      "description": "Generate a personalized daily workout plan using AI based on current state, history, and goals.",
       "acceptanceCriteria": [
-        "New 'Posture' tab in bottom navigation (replace or add alongside existing tabs)",
-        "Large visual indicator: green circle = good posture, yellow = warning, red = slouching",
-        "Real-time head angle display (pitch/roll gauges or simple numbers)",
-        "Calibrate button: 'Sit up straight and tap to set your baseline'",
-        "Session timer showing how long you've been monitoring",
-        "Session stats: % time in good posture, number of slouch events, longest good streak",
-        "Start/Stop monitoring toggle",
-        "Works in background (keep tracking when app is minimized)",
+        "Daily plan screen showing today's recommended workout plan",
+        "Plan considers: yesterday's workouts, current pain level (from metrics), posture score trends, which corrective sessions were done, gym schedule, energy level",
+        "AI generates plan via configurable API endpoint (same pattern as photo/video analysis)",
+        "Plan includes: which corrective sessions to prioritize, gym workout suggestion if it's a gym day, specific exercise swaps based on pain/fatigue",
+        "Plan output: structured JSON with exercises, sets, reps, reasoning for each recommendation",
+        "Display as a clean daily card: 'Today's Plan' with morning/afternoon/evening sections",
+        "User can accept plan, modify it, or regenerate",
+        "Save generated plans to Supabase for history",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "This is the main screen users will interact with. Keep it simple and glanceable — big colored circle they can see at a glance."
+      "passes": false,
+      "notes": "The AI prompt should include Nick's specific condition (right-thoracic scoliosis, right-side imbalance), his correction strategy (release tight → activate weak → integrate → maintain), and recent data. Use the existing API pattern from lib/api.ts."
     },
     {
-      "id": "AP-005",
-      "title": "Slouch alerts with haptic and sound",
-      "description": "Alert the user when slouching is detected via haptic feedback and optional sound.",
+      "id": "WK-005",
+      "title": "Workout history and progress analytics",
+      "description": "View past workouts, track consistency, and see strength/volume trends.",
       "acceptanceCriteria": [
-        "Haptic feedback (gentle vibration) when slouch WARNING state is entered",
-        "Stronger haptic when SLOUCHING state is entered",
-        "Optional sound alert (can be toggled on/off in settings)",
-        "Alert cooldown: don't spam alerts more than once per 30 seconds",
-        "Settings: adjust sensitivity (threshold degrees), alert delay (seconds before alerting), enable/disable haptics, enable/disable sound",
-        "Save settings to AsyncStorage",
+        "Workout history list with filters: date range, type (corrective/gym/all), and search",
+        "Each workout card shows: date, type badge, duration, exercise count, key stats",
+        "Tap to expand and see full workout details (exercises, sets, weights)",
+        "Weekly consistency tracker: how many of 21 corrective sessions (3x7) were completed",
+        "Streak counter for consecutive days with at least one session",
+        "For gym exercises: weight progression charts (per exercise over time)",
+        "Left vs right strength comparison charts for unilateral exercises",
+        "Volume trends: weekly total sets, total reps, total weight lifted",
+        "Integration with existing Progress Charts tab",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Use expo-haptics for haptic feedback. Key UX: alerts should be noticeable but not annoying. The cooldown prevents alert fatigue."
+      "passes": false,
+      "notes": "The left/right comparison over time is the most valuable analytics feature — shows if the muscular imbalance is actually improving."
     },
     {
-      "id": "AP-006",
-      "title": "Posture session history and Supabase logging",
-      "description": "Save posture monitoring sessions to Supabase and show history.",
+      "id": "WK-006",
+      "title": "Workout reminders and scheduling",
+      "description": "Configurable reminders for corrective sessions and gym days.",
       "acceptanceCriteria": [
-        "Create Supabase table schema for posture_sessions: id, started_at, ended_at, duration_seconds, good_posture_pct, slouch_count, avg_pitch, baseline_pitch",
-        "Auto-save session when monitoring stops",
-        "Posture history list showing past sessions with key stats",
-        "Daily/weekly posture score trend (aggregate good_posture_pct over time)",
-        "Integrate posture data into existing Progress Charts tab",
+        "Settings screen for workout schedule: which days, what times for each session",
+        "Default schedule: Morning 9:00, Midday 13:30, Evening 21:00",
+        "Push notifications via expo-notifications: reminder 20 min before each session",
+        "Post-session check-in notification if session wasn't logged (30 min after scheduled time)",
+        "Gym day scheduling: mark which days are gym days",
+        "Calendar view showing scheduled vs completed workouts",
+        "Save schedule to AsyncStorage",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "This connects the real-time monitoring to the existing tracking dashboard. The posture_sessions table might need to be created via Supabase dashboard — just document the schema in a migration file."
-    },
-    {
-      "id": "AP-007",
-      "title": "Camera-based posture detection (Mac webcam)",
-      "description": "Use the device camera with pose estimation to detect slouching, forward head position, and shoulder asymmetry.",
-      "acceptanceCriteria": [
-        "Create a web-compatible posture detection module using MediaPipe Pose or TensorFlow.js BlazePose",
-        "Track key landmarks: nose, ears, shoulders, and estimate head-forward angle and shoulder levelness",
-        "Calibration: user sits in good posture, captures baseline landmark positions",
-        "Slouch detection: compare current pose to baseline — flag when head moves forward, shoulders round, or spine curves",
-        "Shoulder asymmetry detection: flag when one shoulder is consistently higher (scoliosis indicator)",
-        "Visual overlay showing skeleton/landmarks on camera feed (optional, togglable)",
-        "Same alert system as AirPods: green/yellow/red states with haptic-equivalent notifications",
-        "Works on web (Mac webcam) and native (phone front camera for self-checks)",
-        "Typecheck passes"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "MediaPipe Pose runs client-side in browser, no server needed. For React Native, use expo-camera + @mediapipe/pose or react-native-vision-camera with frame processors. This complements AirPods tracking — camera for desk work, AirPods for mobile."
+      "passes": false,
+      "notes": "This replaces the manual cron-based exercise reminders I currently have set up. The app should handle its own notifications."
     }
   ]
 }
