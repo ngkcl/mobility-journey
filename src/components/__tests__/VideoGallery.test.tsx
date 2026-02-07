@@ -38,6 +38,21 @@ describe('VideoGallery', () => {
     expect(await screen.findByText('No videos yet')).toBeInTheDocument();
   });
 
+  it('shows a toast when loading videos fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockVideoQuery([], new Error('boom'));
+
+    render(<VideoGallery />);
+
+    expect(await screen.findByText('No videos yet')).toBeInTheDocument();
+    expect(pushToast).toHaveBeenCalledWith(
+      'Failed to load videos. Please try again.',
+      'error'
+    );
+
+    consoleError.mockRestore();
+  });
+
   it('opens the expanded video modal', async () => {
     mockVideoQuery([
       {

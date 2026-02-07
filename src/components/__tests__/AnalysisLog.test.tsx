@@ -40,6 +40,23 @@ describe('AnalysisLog', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows a toast when loading entries fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockAnalysisQuery([], new Error('boom'));
+
+    render(<AnalysisLog />);
+
+    expect(
+      await screen.findByText('No entries yet. Add your first analysis to start documenting your journey.')
+    ).toBeInTheDocument();
+    expect(pushToast).toHaveBeenCalledWith(
+      'Failed to load analysis entries. Please try again.',
+      'error'
+    );
+
+    consoleError.mockRestore();
+  });
+
   it('filters entries by type', async () => {
     mockAnalysisQuery([
       {
