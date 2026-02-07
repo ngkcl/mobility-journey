@@ -51,3 +51,29 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+---
+## 2026-02-07 05:27 - Story 3: Persist metrics to database
+
+### Completed
+- Loaded metrics from Supabase on mount and mapped rows into tracker state.
+- Saved new metric entries to Supabase and wired deletions to remove rows.
+- Updated progress charts to fetch metrics from Supabase instead of demo data.
+
+### Next Up (for next iteration)
+- [ ] Story 4: Persist analysis log entries to Supabase.
+- [ ] Story 5: Persist todos/protocol items to Supabase.
+
+### Blockers/Warnings
+- `pnpm typecheck` is not defined in package scripts.
+- `pnpm lint` still reports `@next/next/no-img-element` warnings in `src/components/PhotoTimeline.tsx`.
+- `pnpm test` reports no tests specified.
+
+### Files Changed
+- src/components/MetricsTracker.tsx
+- src/components/ProgressCharts.tsx
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- None.
+---

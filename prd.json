@@ -21,7 +21,7 @@
       "id": "3",
       "title": "Persist metrics to database",
       "description": "Save metric entries to metrics table. Load and display historical data. Sync with charts.",
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {

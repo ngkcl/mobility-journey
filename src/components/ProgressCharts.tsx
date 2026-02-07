@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
-// Demo data - in production this would come from the metrics tracker
-const demoData = [
-  { date: '2026-02-01', cobbAngle: 18, painLevel: 5, flexibility: 6 },
-  { date: '2026-02-08', cobbAngle: 17.5, painLevel: 4, flexibility: 6.5 },
-  { date: '2026-02-15', cobbAngle: 17, painLevel: 4, flexibility: 7 },
-  { date: '2026-02-22', cobbAngle: 16.5, painLevel: 3, flexibility: 7 },
-  { date: '2026-03-01', cobbAngle: 16, painLevel: 3, flexibility: 7.5 },
-];
+type ChartPoint = {
+  date: string;
+  cobbAngle?: number;
+  painLevel?: number;
+  flexibility?: number;
+};
 
 const metrics = [
   { 
@@ -42,12 +41,16 @@ const metrics = [
 
 export default function ProgressCharts() {
   const [selectedMetric, setSelectedMetric] = useState('cobbAngle');
-  const [data] = useState(demoData);
+  const [data, setData] = useState<ChartPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const getChange = (key: string) => {
-    if (data.length < 2) return { value: 0, trend: 'neutral' };
-    const first = data[0][key as keyof typeof data[0]] as number;
-    const last = data[data.length - 1][key as keyof typeof data[0]] as number;
+    const values = data
+      .map((point) => point[key as keyof ChartPoint])
+      .filter((value): value is number => typeof value === 'number');
+    if (values.length < 2) return { value: 0, trend: 'neutral' };
+    const first = values[0];
+    const last = values[values.length - 1];
     const change = last - first;
     const metric = metrics.find(m => m.key === key);
     
@@ -76,6 +79,47 @@ export default function ProgressCharts() {
     return <Minus className="text-gray-500" size={20} />;
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMetrics = async () => {
+      const { data: rows, error } = await supabase
+        .from('metrics')
+        .select('entry_date, cobb_angle, pain_level, flexibility')
+        .order('entry_date', { ascending: true });
+
+      if (error) {
+        console.error('Failed to load chart metrics', error);
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
+      const normalized = (rows ?? [])
+        .map((row) => ({
+          date: row.entry_date,
+          cobbAngle: row.cobb_angle ?? undefined,
+          painLevel: row.pain_level ?? undefined,
+          flexibility: row.flexibility ?? undefined,
+        }))
+        .filter((point) =>
+          typeof point.cobbAngle === 'number' ||
+          typeof point.painLevel === 'number' ||
+          typeof point.flexibility === 'number'
+        );
+
+      if (isMounted) {
+        setData(normalized);
+        setIsLoading(false);
+      }
+    };
+
+    loadMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -88,7 +132,10 @@ export default function ProgressCharts() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {metrics.map((metric) => {
           const { value, trend } = getChange(metric.key);
-          const latestValue = data.length > 0 ? data[data.length - 1][metric.key as keyof typeof data[0]] : 0;
+          const latestValue = [...data]
+            .reverse()
+            .map((point) => point[metric.key as keyof ChartPoint])
+            .find((val): val is number => typeof val === 'number');
           
           return (
             <button
@@ -105,7 +152,7 @@ export default function ProgressCharts() {
                 <TrendIcon trend={trend} />
               </div>
               <div className="text-3xl font-bold" style={{ color: metric.color }}>
-                {latestValue}{metric.unit}
+                {latestValue !== undefined ? `${latestValue}${metric.unit}` : '—'}
               </div>
               <div className={`text-sm mt-1 ${
                 trend === 'improving' ? 'text-green-400' : 
@@ -131,7 +178,11 @@ export default function ProgressCharts() {
           </div>
         </div>
         
-        {data.length === 0 ? (
+        {isLoading ? (
+          <div className="h-64 flex items-center justify-center text-gray-400">
+            Loading chart data...
+          </div>
+        ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No data yet. Add metrics to see your progress chart.
           </div>
@@ -184,7 +235,11 @@ export default function ProgressCharts() {
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
         <h3 className="text-lg font-semibold text-white mb-6">All Metrics Comparison</h3>
         
-        {data.length === 0 ? (
+        {isLoading ? (
+          <div className="h-64 flex items-center justify-center text-gray-400">
+            Loading chart data...
+          </div>
+        ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No data yet. Add metrics to see comparison chart.
           </div>

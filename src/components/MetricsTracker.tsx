@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 
 interface MetricEntry {
   id: string;
@@ -26,33 +27,96 @@ const metricDefinitions = [
 export default function MetricsTracker() {
   const [entries, setEntries] = useState<MetricEntry[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [newEntry, setNewEntry] = useState<Partial<MetricEntry>>({
     date: new Date().toISOString().split('T')[0],
   });
 
-  const addEntry = () => {
-    if (!newEntry.date) return;
-    
-    const entry: MetricEntry = {
-      id: Date.now().toString(),
-      date: newEntry.date,
-      cobbAngle: newEntry.cobbAngle,
-      painLevel: newEntry.painLevel,
-      shoulderDiff: newEntry.shoulderDiff,
-      hipDiff: newEntry.hipDiff,
-      flexibility: newEntry.flexibility,
-      notes: newEntry.notes,
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntries = async () => {
+      const { data, error } = await supabase
+        .from('metrics')
+        .select('id, entry_date, cobb_angle, pain_level, shoulder_diff, hip_diff, flexibility, notes')
+        .order('entry_date', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load metrics', error);
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
+      const normalized = (data ?? []).map((row) => ({
+        id: row.id,
+        date: row.entry_date,
+        cobbAngle: row.cobb_angle ?? undefined,
+        painLevel: row.pain_level ?? undefined,
+        shoulderDiff: row.shoulder_diff ?? undefined,
+        hipDiff: row.hip_diff ?? undefined,
+        flexibility: row.flexibility ?? undefined,
+        notes: row.notes ?? undefined,
+      }));
+
+      if (isMounted) {
+        setEntries(normalized);
+        setIsLoading(false);
+      }
     };
-    
-    setEntries(prev => [entry, ...prev].sort((a, b) => 
+
+    loadEntries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const addEntry = async () => {
+    if (!newEntry.date) return;
+
+    const { data, error } = await supabase
+      .from('metrics')
+      .insert({
+        entry_date: newEntry.date,
+        cobb_angle: newEntry.cobbAngle ?? null,
+        pain_level: newEntry.painLevel ?? null,
+        shoulder_diff: newEntry.shoulderDiff ?? null,
+        hip_diff: newEntry.hipDiff ?? null,
+        flexibility: newEntry.flexibility ?? null,
+        notes: newEntry.notes ?? null,
+      })
+      .select('id, entry_date, cobb_angle, pain_level, shoulder_diff, hip_diff, flexibility, notes')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to save metric entry', error);
+      return;
+    }
+
+    const entry: MetricEntry = {
+      id: data.id,
+      date: data.entry_date,
+      cobbAngle: data.cobb_angle ?? undefined,
+      painLevel: data.pain_level ?? undefined,
+      shoulderDiff: data.shoulder_diff ?? undefined,
+      hipDiff: data.hip_diff ?? undefined,
+      flexibility: data.flexibility ?? undefined,
+      notes: data.notes ?? undefined,
+    };
+
+    setEntries(prev => [entry, ...prev].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     ));
     setNewEntry({ date: new Date().toISOString().split('T')[0] });
     setShowAddForm(false);
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
+    const { error } = await supabase.from('metrics').delete().eq('id', id);
+    if (error) {
+      console.error('Failed to delete metric entry', error);
+    }
   };
 
   const getLatestValue = (key: keyof MetricEntry) => {
@@ -195,7 +259,11 @@ export default function MetricsTracker() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">History</h3>
         
-        {entries.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 text-center text-gray-400">
+            Loading metrics...
+          </div>
+        ) : entries.length === 0 ? (
           <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 border-dashed text-center">
             <p className="text-gray-400">No entries yet. Add your first measurement to start tracking.</p>
           </div>
