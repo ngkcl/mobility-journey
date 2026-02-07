@@ -162,7 +162,7 @@ export default function PhotoTimeline() {
   };
 
   const deletePhoto = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this photo?')) return;
+    if (!confirm('Are you sure?')) return;
     const supabase = getSupabase();
     const target = photos.find((photo) => photo.id === id);
     const prev = photos;

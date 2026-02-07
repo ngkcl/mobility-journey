@@ -23,6 +23,7 @@ export function getSupabase(): SupabaseClient {
  * Every runtime call-site that actually needs the client should call
  * `getSupabase()` instead.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const supabase: SupabaseClient =
-  typeof window !== 'undefined' ? getSupabase() : (null as any);
+  typeof window !== 'undefined'
+    ? getSupabase()
+    : (null as unknown as SupabaseClient);

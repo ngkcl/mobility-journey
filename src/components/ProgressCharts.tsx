@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ToastProvider';
 
 type ChartPoint = {
@@ -100,6 +100,7 @@ export default function ProgressCharts() {
     let isMounted = true;
 
     const loadMetrics = async () => {
+      const supabase = getSupabase();
       const { data: rows, error } = await supabase
         .from('metrics')
         .select('entry_date, cobb_angle, pain_level, flexibility')
