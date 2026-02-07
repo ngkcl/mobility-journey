@@ -1,6 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+let Notifications: any = null;
+try {
+  Notifications = require('expo-notifications');
+} catch {
+  // Not available on web or in some environments
+}
 import {
   DAY_ORDER,
   SESSION_LABELS,
