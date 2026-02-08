@@ -16,6 +16,24 @@ let currentPostureState = POSTURE_STATES.GOOD;
 let lastNotificationTime = 0;
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
+// Create a fallback icon if image files don't exist
+function getIcon(state) {
+  const iconPath = getTrayIconPath(state);
+  try {
+    const icon = nativeImage.createFromPath(iconPath);
+    if (icon.isEmpty()) throw new Error('empty');
+    return icon.resize({ width: 22, height: 22 });
+  } catch (e) {
+    // Fallback: create a colored circle programmatically
+    const colors = {
+      [POSTURE_STATES.GOOD]: '#14b8a6',
+      [POSTURE_STATES.WARNING]: '#eab308',
+      [POSTURE_STATES.SLOUCHING]: '#ef4444'
+    };
+    return null; // Will use title fallback
+  }
+}
+
 // Create menubar app
 const mb = menubar({
   index: `file://${path.join(__dirname, 'index.html')}`,
@@ -52,12 +70,25 @@ function getTrayIconPath(state) {
 function updateTrayIcon(state) {
   if (!mb.tray) return;
 
-  const iconPath = getTrayIconPath(state);
-  const icon = nativeImage.createFromPath(iconPath);
+  // Update emoji title (always visible)
+  const emojiMap = {
+    [POSTURE_STATES.GOOD]: '🟢',
+    [POSTURE_STATES.WARNING]: '🟡',
+    [POSTURE_STATES.SLOUCHING]: '🔴'
+  };
+  mb.tray.setTitle(emojiMap[state] || '🟢');
 
-  // Resize to 22x22 for menu bar (standard macOS size)
-  const resizedIcon = icon.resize({ width: 22, height: 22 });
-  mb.tray.setImage(resizedIcon);
+  // Also try to update the icon image
+  try {
+    const iconPath = getTrayIconPath(state);
+    const icon = nativeImage.createFromPath(iconPath);
+    if (!icon.isEmpty()) {
+      const resizedIcon = icon.resize({ width: 22, height: 22 });
+      mb.tray.setImage(resizedIcon);
+    }
+  } catch (e) {
+    // Emoji title is the fallback
+  }
 }
 
 // Show notification
@@ -85,6 +116,7 @@ function showSlouchNotification() {
 mb.on('ready', () => {
   console.log('Menubar app is ready');
   mb.tray.setToolTip('Posture Monitor');
+  mb.tray.setTitle('🟢');  // Shows text next to icon in menu bar
 
   // Set auto-start on login
   app.setLoginItemSettings({
