@@ -83,6 +83,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('get-posture-improvement');
   },
 
+  // Stats
+  getStats: () => {
+    return ipcRenderer.invoke('get-stats');
+  },
+
+  resetStats: () => {
+    return ipcRenderer.invoke('reset-stats');
+  },
+
   // Platform info
   platform: process.platform
 });

@@ -151,17 +151,25 @@ function initMediaPipe() {
   detectLoop();
 }
 
+let detectLoopCount = 0;
+
 async function detectLoop() {
   if (!pose || !cameraPreview || cameraPreview.readyState < 2) {
+    console.log('[DetectLoop] Waiting for camera... readyState:', cameraPreview?.readyState);
     setTimeout(detectLoop, 500);
     return;
   }
 
-  if (!isPaused) {
+  // Only process if not paused and not in calibration mode
+  if (!isPaused && !isCalibrating) {
     try {
+      detectLoopCount++;
+      if (detectLoopCount % 10 === 1) {
+        console.log('[DetectLoop] Frame', detectLoopCount, 'isCalibrated:', isCalibrated, 'totalFrames:', stats.totalFrames);
+      }
       await pose.send({ image: cameraPreview });
     } catch (e) {
-      console.warn('Pose send error:', e);
+      console.warn('[DetectLoop] Pose send error:', e);
     }
   }
 
@@ -366,35 +374,51 @@ function handleCalibrate() {
   calibrateBtn.disabled = true;
   calibrateBtn.classList.add('calibrating');
   statusMessage.textContent = '📸 Sit up straight... capturing in 3s';
+  console.log('[Calibration] Starting calibration...');
 
   // Wait 3 seconds then capture baseline
-  setTimeout(() => {
-    // Get current frame landmarks
-    if (pose && cameraPreview && cameraPreview.readyState >= 2) {
-      pose.send({ image: cameraPreview }).then(() => {
-        // The onPoseResults callback will have updated currentLandmarks
-        // We need to capture on next result
-      });
+  setTimeout(async () => {
+    if (!pose || !cameraPreview || cameraPreview.readyState < 2) {
+      console.error('[Calibration] Camera or pose not ready');
+      statusMessage.textContent = '❌ Camera not ready. Try again.';
+      isCalibrating = false;
+      calibrateBtn.disabled = false;
+      calibrateBtn.classList.remove('calibrating');
+      return;
     }
 
-    // Use a one-shot results handler for calibration
+    console.log('[Calibration] Capturing calibration frame...');
+    
+    // Set up one-shot calibration handler BEFORE sending frame
+    let calibrationProcessed = false;
+    
     const calibrationHandler = (results) => {
+      // Prevent double-processing
+      if (calibrationProcessed) {
+        console.log('[Calibration] Already processed, ignoring');
+        return;
+      }
+      calibrationProcessed = true;
+      
+      // Immediately restore normal handler to prevent race conditions
+      pose.onResults(onPoseResults);
+      
       if (!results.poseLandmarks) {
+        console.error('[Calibration] No pose landmarks detected');
         statusMessage.textContent = '❌ No pose detected. Try again.';
         isCalibrating = false;
         calibrateBtn.disabled = false;
         calibrateBtn.classList.remove('calibrating');
-        pose.onResults(onPoseResults);
         return;
       }
 
       const landmarks = extractLandmarks(results.poseLandmarks);
       if (!landmarks) {
+        console.error('[Calibration] Could not extract landmarks');
         statusMessage.textContent = '❌ Could not detect shoulders. Try again.';
         isCalibrating = false;
         calibrateBtn.disabled = false;
         calibrateBtn.classList.remove('calibrating');
-        pose.onResults(onPoseResults);
         return;
       }
 
@@ -402,6 +426,8 @@ function handleCalibrate() {
         headForwardDeg: computeHeadForwardDeg(landmarks),
         shoulderTiltDeg: computeShoulderTiltDeg(landmarks)
       };
+      
+      console.log('[Calibration] Baseline captured:', baseline);
 
       isCalibrated = true;
       isCalibrating = false;
@@ -415,16 +441,25 @@ function handleCalibrate() {
       stats.slouches = 0;
       stats.currentStreakSec = 0;
       stats.lastGoodTime = Date.now();
-
-      // Restore normal handler
-      pose.onResults(onPoseResults);
+      
+      // Force an immediate stats update
+      updateStats();
+      console.log('[Calibration] Complete, monitoring started');
     };
 
+    // Set the calibration handler
     pose.onResults(calibrationHandler);
 
-    // Trigger a frame
-    if (cameraPreview.readyState >= 2) {
-      pose.send({ image: cameraPreview });
+    // Trigger calibration frame
+    try {
+      await pose.send({ image: cameraPreview });
+    } catch (e) {
+      console.error('[Calibration] Error sending frame:', e);
+      pose.onResults(onPoseResults);
+      isCalibrating = false;
+      calibrateBtn.disabled = false;
+      calibrateBtn.classList.remove('calibrating');
+      statusMessage.textContent = '❌ Calibration error. Try again.';
     }
   }, 3000);
 }
