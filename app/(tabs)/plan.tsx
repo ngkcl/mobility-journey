@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Switch, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { generateDailyPlan } from '../../lib/api';
@@ -111,6 +112,7 @@ const categorizeSession = (startedAt: string | null) => {
 };
 
 export default function DailyPlanScreen() {
+  const router = useRouter();
   const { pushToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -622,6 +624,24 @@ export default function DailyPlanScreen() {
           <Text style={{ ...typography.captionMedium, color: '#fff' }}>
             {isGenerating ? 'Generating...' : 'Generate'}
           </Text>
+        </Pressable>
+      </View>
+
+      {/* Quick access sub-pages */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+        <Pressable
+          onPress={() => router.push('/todos')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="checkbox" size={18} color={colors.warning} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Protocol Tasks</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/exercises')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="barbell" size={18} color={colors.midday} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Exercise Library</Text>
         </Pressable>
       </View>
 

@@ -16,7 +16,7 @@ import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
 import { computeWorkoutSummary } from '../../lib/workouts';
 import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
-import { colors, getSideColor } from '@/lib/theme';
+import { colors, typography, spacing, radii, shared, getSideColor } from '@/lib/theme';
 import type {
   Exercise,
   ExerciseCategory,
@@ -845,6 +845,31 @@ export default function WorkoutsScreen() {
             <Text className="text-white font-medium text-sm">Start</Text>
           </Pressable>
         )}
+      </View>
+
+      {/* Quick access sub-pages */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+        <Pressable
+          onPress={() => router.push('/posture')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="body" size={18} color={colors.teal} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Posture</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/posture-camera')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="aperture" size={18} color={colors.evening} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Camera</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/exercises')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="barbell" size={18} color={colors.midday} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Exercises</Text>
+        </Pressable>
       </View>
 
       <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">

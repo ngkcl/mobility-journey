@@ -18,7 +18,7 @@ import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { ChartPoint, Exercise, PostureSession, Workout, WorkoutExercise } from '../../lib/types';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { buildPostureTrend, type PostureTrendMode } from '../../lib/postureSessions';
 import {
   buildExerciseWeightTrend,
@@ -91,6 +91,7 @@ export default function ChartsScreen() {
   const [selectedSideExerciseId, setSelectedSideExerciseId] = useState<string | null>(null);
   const { pushToast } = useToast();
   const navigation = useNavigation();
+  const router = useRouter();
 
   const gymExercises = useMemo(
     () =>
@@ -419,6 +420,38 @@ export default function ChartsScreen() {
       <View style={{ marginBottom: spacing['2xl'] }}>
         <Text style={shared.pageTitle}>Progress Charts</Text>
         <Text style={shared.pageSubtitle}>Visualize your improvement over time</Text>
+      </View>
+
+      {/* Quick access sub-pages */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+        <Pressable
+          onPress={() => router.push('/photos')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="camera" size={18} color={colors.teal} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Photos</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/videos')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="videocam" size={18} color={colors.evening} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Videos</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/analysis')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="document-text" size={18} color={colors.warning} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Analysis</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/metrics')}
+          style={[shared.card, { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }]}
+        >
+          <Ionicons name="pulse" size={18} color={colors.pain} />
+          <Text style={{ ...typography.captionMedium, color: colors.textPrimary }}>Metrics</Text>
+        </Pressable>
       </View>
 
       <View style={[shared.card, { marginBottom: spacing.lg }]}>
