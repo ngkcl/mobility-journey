@@ -30,7 +30,7 @@ export class PostureMonitor {
   private detector: MediaPipeDetector;
   private postureDetector: ReturnType<typeof createCameraPostureDetector>;
   private videoElement: HTMLVideoElement | null = null;
-  private analysisInterval: NodeJS.Timeout | null = null;
+  private analysisInterval: ReturnType<typeof setInterval> | null = null;
   private currentLandmarks: CameraPoseLandmarks | null = null;
   private isRunning = false;
   private options: Required<PostureMonitorOptions>;

@@ -1,4 +1,4 @@
-import type { Workout, WorkoutExercise, WorkoutSet, WorkoutSetSide } from './types';
+import type { Workout, WorkoutExercise, WorkoutSet, WorkoutSetSide, WorkoutType } from './types';
 
 const normalizeSide = (side?: WorkoutSetSide | null): WorkoutSetSide | null => {
   if (!side) return null;
@@ -225,4 +225,196 @@ export const buildSideVolumeTrend = (
   return Array.from(buckets.values()).sort(
     (a, b) => new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime(),
   );
+};
+
+// ─── Asymmetry Analysis ────────────────────────────────────────────────────────
+
+export type AsymmetryTrendPoint = {
+  weekStart: string;
+  leftVolumeKg: number;
+  rightVolumeKg: number;
+  imbalancePct: number; // Positive = left bias, Negative = right bias
+  totalVolumeKg: number;
+};
+
+export type AsymmetrySummary = {
+  currentImbalancePct: number;
+  trendDirection: 'improving' | 'worsening' | 'stable';
+  weeklyTrend: AsymmetryTrendPoint[];
+  dominantSide: 'left' | 'right' | 'balanced';
+  avgImbalanceLast4Weeks: number;
+  avgImbalancePrior4Weeks: number;
+};
+
+/**
+ * Build asymmetry trend across ALL side-specific exercises.
+ * This gives a holistic view of left/right balance improvement.
+ */
+export const buildOverallAsymmetryTrend = (
+  history: WorkoutHistoryItem[],
+): AsymmetryTrendPoint[] => {
+  const buckets = new Map<string, { left: number; right: number }>();
+
+  history.forEach((item) => {
+    const weekKey = getWorkoutWeekKey(item.workout);
+    if (!weekKey) return;
+    
+    const existing = buckets.get(weekKey) ?? { left: 0, right: 0 };
+
+    item.exercises.forEach((exercise) => {
+      if (!Array.isArray(exercise.sets)) return;
+      exercise.sets.forEach((set) => {
+        const side = normalizeSide(set.side);
+        const volume = computeSetVolume(set);
+        if (side === 'left') {
+          existing.left += volume;
+        } else if (side === 'right') {
+          existing.right += volume;
+        }
+      });
+    });
+
+    buckets.set(weekKey, existing);
+  });
+
+  return Array.from(buckets.entries())
+    .map(([weekStart, { left, right }]) => {
+      const total = left + right;
+      const imbalancePct = total > 0 
+        ? Math.round(((left - right) / total) * 100)
+        : 0;
+      return {
+        weekStart,
+        leftVolumeKg: Math.round(left * 10) / 10,
+        rightVolumeKg: Math.round(right * 10) / 10,
+        imbalancePct,
+        totalVolumeKg: Math.round(total * 10) / 10,
+      };
+    })
+    .sort((a, b) => new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime());
+};
+
+/**
+ * Compute asymmetry summary with trend analysis.
+ * Useful for showing if the user is improving their balance over time.
+ */
+export const computeAsymmetrySummary = (
+  history: WorkoutHistoryItem[],
+): AsymmetrySummary | null => {
+  const trend = buildOverallAsymmetryTrend(history);
+  
+  if (trend.length === 0) {
+    return null;
+  }
+
+  const current = trend[trend.length - 1];
+  
+  // Calculate averages for last 4 weeks and prior 4 weeks
+  const last4 = trend.slice(-4);
+  const prior4 = trend.slice(-8, -4);
+
+  const avgLast4 = last4.length > 0
+    ? last4.reduce((sum, p) => sum + Math.abs(p.imbalancePct), 0) / last4.length
+    : 0;
+  
+  const avgPrior4 = prior4.length > 0
+    ? prior4.reduce((sum, p) => sum + Math.abs(p.imbalancePct), 0) / prior4.length
+    : avgLast4; // If no prior data, use current as baseline
+
+  // Determine trend direction
+  let trendDirection: 'improving' | 'worsening' | 'stable';
+  const improvement = avgPrior4 - avgLast4;
+  if (improvement > 3) {
+    trendDirection = 'improving';
+  } else if (improvement < -3) {
+    trendDirection = 'worsening';
+  } else {
+    trendDirection = 'stable';
+  }
+
+  // Determine dominant side
+  let dominantSide: 'left' | 'right' | 'balanced';
+  if (Math.abs(current.imbalancePct) <= 5) {
+    dominantSide = 'balanced';
+  } else if (current.imbalancePct > 0) {
+    dominantSide = 'left';
+  } else {
+    dominantSide = 'right';
+  }
+
+  return {
+    currentImbalancePct: current.imbalancePct,
+    trendDirection,
+    weeklyTrend: trend,
+    dominantSide,
+    avgImbalanceLast4Weeks: Math.round(avgLast4),
+    avgImbalancePrior4Weeks: Math.round(avgPrior4),
+  };
+};
+
+// ─── Pain & Energy Correlation ─────────────────────────────────────────────────
+
+export type WorkoutPainPoint = {
+  date: string;
+  painBefore: number | null;
+  painAfter: number | null;
+  energyBefore: number | null;
+  energyAfter: number | null;
+  durationMinutes: number;
+  type: WorkoutType;
+};
+
+/**
+ * Build pain and energy levels around workouts.
+ * Helps identify if workouts are helping or hurting.
+ */
+export const buildWorkoutPainTrend = (
+  history: WorkoutHistoryItem[],
+): WorkoutPainPoint[] => {
+  const results: WorkoutPainPoint[] = [];
+  
+  for (const item of history) {
+    const dateKey = getWorkoutDateKey(item.workout);
+    if (!dateKey) continue;
+    
+    results.push({
+      date: dateKey,
+      painBefore: item.workout.pain_level_before ?? null,
+      painAfter: item.workout.pain_level_after ?? null,
+      energyBefore: item.workout.energy_level_before ?? null,
+      energyAfter: item.workout.energy_level_after ?? null,
+      durationMinutes: item.workout.duration_minutes ?? 0,
+      type: item.workout.type ?? 'other',
+    });
+  }
+  
+  return results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+};
+
+/**
+ * Calculate average pain change after workouts.
+ * Negative = pain decreases (good), Positive = pain increases (concerning)
+ */
+export const computePainImpact = (
+  history: WorkoutHistoryItem[],
+): { avgPainChange: number; workoutsWithPainData: number } => {
+  const painChanges: number[] = [];
+  
+  history.forEach((item) => {
+    const before = item.workout.pain_level_before;
+    const after = item.workout.pain_level_after;
+    if (before != null && after != null) {
+      painChanges.push(after - before);
+    }
+  });
+
+  if (painChanges.length === 0) {
+    return { avgPainChange: 0, workoutsWithPainData: 0 };
+  }
+
+  const avg = painChanges.reduce((sum, c) => sum + c, 0) / painChanges.length;
+  return {
+    avgPainChange: Math.round(avg * 10) / 10,
+    workoutsWithPainData: painChanges.length,
+  };
 };
