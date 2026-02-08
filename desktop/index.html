@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posture Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Camera Preview Section -->
+        <div class="camera-section">
+            <video id="camera-preview" autoplay playsinline muted></video>
+            <canvas id="pose-canvas"></canvas>
+            <div class="camera-status" id="camera-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Initializing...</span>
+            </div>
+        </div>
+
+        <!-- Posture Score Display -->
+        <div class="score-section">
+            <div class="score-ring" id="score-ring">
+                <svg viewBox="0 0 120 120">
+                    <circle class="score-ring-bg" cx="60" cy="60" r="52" />
+                    <circle class="score-ring-progress" id="score-progress" cx="60" cy="60" r="52" />
+                </svg>
+                <div class="score-content">
+                    <div class="score-value" id="score-value">--</div>
+                    <div class="score-label">Posture</div>
+                </div>
+            </div>
+            <div class="posture-status" id="posture-status">
+                <span class="status-indicator" id="status-indicator"></span>
+                <span class="status-message" id="status-message">Calibration needed</span>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="good-posture-percent">--</div>
+                    <div class="stat-label">Good Posture</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚠</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="slouch-count">--</div>
+                    <div class="stat-label">Slouches</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="streak-count">--</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls-section">
+            <button class="btn btn-primary" id="calibrate-btn">
+                <span class="btn-icon">⚙️</span>
+                <span class="btn-text">Calibrate Posture</span>
+            </button>
+            <button class="btn btn-secondary" id="pause-btn">
+                <span class="btn-icon" id="pause-icon">⏸</span>
+                <span class="btn-text" id="pause-text">Pause</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
