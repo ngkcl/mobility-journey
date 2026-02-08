@@ -16,6 +16,8 @@ export type CameraPoseLandmarks = {
 export type CameraPostureBaseline = {
   headForwardDeg: number;
   shoulderTiltDeg: number;
+  shoulderSymmetryDeg: number;
+  backRoundingDeg: number;
 };
 
 export type CameraPostureMetrics = {
@@ -23,6 +25,11 @@ export type CameraPostureMetrics = {
   shoulderTiltDeg: number;
   headForwardDeltaDeg: number;
   shoulderTiltDeltaDeg: number;
+  shoulderSymmetryDeg: number;
+  shoulderSymmetryDeltaDeg: number;
+  backRoundingDeg: number;
+  backRoundingDeltaDeg: number;
+  compositeScore: number;
 };
 
 export enum CameraPostureState {
@@ -48,15 +55,21 @@ export type CameraPostureUpdate = {
 export type CameraPostureOptions = {
   headForwardThresholdDeg?: number;
   shoulderTiltThresholdDeg?: number;
+  shoulderSymmetryThresholdDeg?: number;
+  backRoundingThresholdDeg?: number;
   warningMs?: number;
   slouchMs?: number;
+  adaptiveThresholds?: boolean;
 };
 
 const DEFAULT_OPTIONS: Required<CameraPostureOptions> = {
   headForwardThresholdDeg: 12,
   shoulderTiltThresholdDeg: 8,
+  shoulderSymmetryThresholdDeg: 5,
+  backRoundingThresholdDeg: 15,
   warningMs: 5000,
   slouchMs: 10000,
+  adaptiveThresholds: false,
 };
 
 const toDegrees = (radians: number) => (radians * 180) / Math.PI;
@@ -75,13 +88,26 @@ export const computePoseMetrics = (
   baseline?: CameraPostureBaseline | null,
 ): CameraPostureMetrics => {
   const shoulderMid = midpoint(landmarks.leftShoulder, landmarks.rightShoulder);
+  const earMid = midpoint(landmarks.leftEar, landmarks.rightEar);
+
+  // Head forward calculation (ear to shoulder alignment)
   const dz = (landmarks.nose.z ?? 0) - (shoulderMid.z ?? 0);
   const dy = landmarks.nose.y - shoulderMid.y;
+  const headForwardDeg = toDegrees(Math.atan2(Math.abs(dz), Math.abs(dy || 1e-5)));
+
+  // Shoulder tilt (left vs right shoulder height difference)
   const dx = landmarks.leftShoulder.x - landmarks.rightShoulder.x;
   const dyShoulder = landmarks.leftShoulder.y - landmarks.rightShoulder.y;
-
-  const headForwardDeg = toDegrees(Math.atan2(Math.abs(dz), Math.abs(dy || 1e-5)));
   const shoulderTiltDeg = toDegrees(Math.atan2(dyShoulder, dx || 1e-5));
+
+  // Shoulder symmetry (absolute height difference between shoulders)
+  const shoulderSymmetryDeg = Math.abs(shoulderTiltDeg);
+
+  // Back rounding (ear-to-shoulder angle - estimates spine curvature)
+  // When slouching, ear moves forward relative to shoulder
+  const earToShoulderDx = (earMid.z ?? 0) - (shoulderMid.z ?? 0);
+  const earToShoulderDy = earMid.y - shoulderMid.y;
+  const backRoundingDeg = toDegrees(Math.atan2(Math.abs(earToShoulderDx), Math.abs(earToShoulderDy || 1e-5)));
 
   const headForwardDeltaDeg = baseline
     ? Math.abs(headForwardDeg - baseline.headForwardDeg)
@@ -89,12 +115,35 @@ export const computePoseMetrics = (
   const shoulderTiltDeltaDeg = baseline
     ? Math.abs(shoulderTiltDeg - baseline.shoulderTiltDeg)
     : 0;
+  const shoulderSymmetryDeltaDeg = baseline
+    ? Math.abs(shoulderSymmetryDeg - baseline.shoulderSymmetryDeg)
+    : 0;
+  const backRoundingDeltaDeg = baseline
+    ? Math.abs(backRoundingDeg - baseline.backRoundingDeg)
+    : 0;
+
+  // Composite score: weighted average (head 40%, shoulder symmetry 30%, back rounding 30%)
+  // Score is 100 - weighted sum of deltas (clamped to 0-100)
+  const compositeScore = baseline
+    ? Math.max(0, Math.min(100,
+        100 - (
+          headForwardDeltaDeg * 0.4 * 2 +
+          shoulderSymmetryDeltaDeg * 0.3 * 3 +
+          backRoundingDeltaDeg * 0.3 * 2
+        )
+      ))
+    : 100;
 
   return {
     headForwardDeg,
     shoulderTiltDeg,
     headForwardDeltaDeg,
     shoulderTiltDeltaDeg,
+    shoulderSymmetryDeg,
+    shoulderSymmetryDeltaDeg,
+    backRoundingDeg,
+    backRoundingDeltaDeg,
+    compositeScore,
   };
 };
 
@@ -109,6 +158,8 @@ export const createCameraPostureDetector = (options: CameraPostureOptions = {}) 
     baseline = {
       headForwardDeg: metrics.headForwardDeg,
       shoulderTiltDeg: metrics.shoulderTiltDeg,
+      shoulderSymmetryDeg: metrics.shoulderSymmetryDeg,
+      backRoundingDeg: metrics.backRoundingDeg,
     };
     badStart = null;
     state = CameraPostureState.GOOD_POSTURE;
@@ -123,7 +174,8 @@ export const createCameraPostureDetector = (options: CameraPostureOptions = {}) 
     const metrics = computePoseMetrics(landmarks, baseline);
     const isBad =
       metrics.headForwardDeltaDeg >= config.headForwardThresholdDeg ||
-      metrics.shoulderTiltDeltaDeg >= config.shoulderTiltThresholdDeg;
+      metrics.shoulderSymmetryDeltaDeg >= config.shoulderSymmetryThresholdDeg ||
+      metrics.backRoundingDeltaDeg >= config.backRoundingThresholdDeg;
 
     if (!isBad) {
       badStart = null;

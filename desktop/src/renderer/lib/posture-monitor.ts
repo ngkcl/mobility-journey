@@ -114,6 +114,8 @@ export class PostureMonitor {
     return {
       headForwardDeg: baseline.headForwardDeg,
       shoulderTiltDeg: baseline.shoulderTiltDeg,
+      shoulderSymmetryDeg: baseline.shoulderSymmetryDeg,
+      backRoundingDeg: baseline.backRoundingDeg,
       timestamp: Date.now(),
     };
   }

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "shoulder-rolls",
+    "name": "Shoulder Rolls",
+    "description": "Roll your shoulders backwards in a circular motion, 10 repetitions.",
+    "duration": 30,
+    "illustration": "Sit up straight. Lift shoulders up toward ears, roll them back and down in a smooth circular motion. Complete 10 full circles."
+  },
+  {
+    "id": "neck-stretch-left",
+    "name": "Neck Stretch (Left)",
+    "description": "Gently tilt your head to the left, hold for 15 seconds.",
+    "duration": 20,
+    "illustration": "Sit tall with shoulders relaxed. Slowly tilt head toward left shoulder until you feel a gentle stretch on the right side of neck. Hold for 15 seconds."
+  },
+  {
+    "id": "neck-stretch-right",
+    "name": "Neck Stretch (Right)",
+    "description": "Gently tilt your head to the right, hold for 15 seconds.",
+    "duration": 20,
+    "illustration": "Sit tall with shoulders relaxed. Slowly tilt head toward right shoulder until you feel a gentle stretch on the left side of neck. Hold for 15 seconds."
+  },
+  {
+    "id": "spine-extension",
+    "name": "Standing Spine Extension",
+    "description": "Stand and gently arch your back, hands on lower back for support.",
+    "duration": 30,
+    "illustration": "Stand with feet hip-width apart. Place hands on lower back. Gently arch backwards, looking up toward the ceiling. Hold for 10 seconds, repeat 3 times."
+  },
+  {
+    "id": "chest-opener",
+    "name": "Chest Opener Stretch",
+    "description": "Clasp hands behind your back and lift, opening your chest.",
+    "duration": 30,
+    "illustration": "Stand or sit tall. Clasp hands behind your back with arms straight. Gently lift hands up and away from body while squeezing shoulder blades together. Hold for 15-20 seconds."
+  },
+  {
+    "id": "seated-twist",
+    "name": "Seated Spinal Twist",
+    "description": "Twist your torso gently to each side while seated.",
+    "duration": 40,
+    "illustration": "Sit tall in your chair. Place right hand on left knee, left hand behind you. Gently twist left, hold 15 seconds. Repeat on right side."
+  }
+]

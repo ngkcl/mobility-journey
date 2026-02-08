@@ -5,6 +5,11 @@ export interface PostureMetrics {
   shoulderTiltDeg: number;
   headForwardDeltaDeg: number;
   shoulderTiltDeltaDeg: number;
+  shoulderSymmetryDeg: number;
+  shoulderSymmetryDeltaDeg: number;
+  backRoundingDeg: number;
+  backRoundingDeltaDeg: number;
+  compositeScore: number;
 }
 
 export interface PostureEvent {
@@ -24,6 +29,8 @@ export interface PostureUpdate {
 export interface CalibrationData {
   headForwardDeg: number;
   shoulderTiltDeg: number;
+  shoulderSymmetryDeg: number;
+  backRoundingDeg: number;
   timestamp: number;
 }
 

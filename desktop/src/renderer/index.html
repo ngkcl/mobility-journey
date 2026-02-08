@@ -149,6 +149,252 @@
       margin-top: 16px;
       line-height: 1.5;
     }
+
+    .settings-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(100, 116, 139, 0.2);
+    }
+
+    .settings-section h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #14b8a6;
+      margin-bottom: 12px;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .setting-item label {
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+
+    .setting-item select {
+      background: rgba(30, 41, 59, 0.8);
+      color: #e2e8f0;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .setting-item select:hover {
+      border-color: #14b8a6;
+    }
+
+    .setting-item select:focus {
+      outline: none;
+      border-color: #14b8a6;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(100, 116, 139, 0.3);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #94a3b8;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #14b8a6;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+      background-color: #0b1020;
+    }
+
+    .camera-preview {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    #video-preview {
+      width: 100%;
+      max-height: 180px;
+      border-radius: 8px;
+      object-fit: cover;
+      display: none;
+      margin-top: 8px;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+    }
+
+    #video-preview.visible {
+      display: block;
+    }
+
+    /* Stats view styles */
+    #stats-view {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0b1020;
+      padding: 16px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    #stats-view.visible {
+      display: block;
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .stats-header h2 {
+      font-size: 18px;
+      color: #14b8a6;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .close-stats-btn {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .close-stats-btn:hover {
+      background: rgba(148, 163, 184, 0.1);
+      transform: none;
+    }
+
+    .stat-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card-title {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #14b8a6;
+      line-height: 1;
+    }
+
+    .stat-card-label {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+
+    .weekly-trend {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 12px;
+    }
+
+    .trend-bar {
+      flex: 1;
+      text-align: center;
+    }
+
+    .trend-bar-fill {
+      height: 60px;
+      background: rgba(20, 184, 166, 0.3);
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .trend-bar-fill.has-data {
+      background: linear-gradient(to top, #14b8a6, rgba(20, 184, 166, 0.5));
+    }
+
+    .trend-bar-label {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .trend-bar-value {
+      font-size: 11px;
+      color: #e2e8f0;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .reset-stats-btn {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .reset-stats-btn:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .view-stats-btn {
+      background: rgba(20, 184, 166, 0.15);
+      color: #14b8a6;
+      border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+
+    .view-stats-btn:hover {
+      background: rgba(20, 184, 166, 0.25);
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -167,6 +413,7 @@
 
   <div class="controls">
     <button id="calibrate-btn">Calibrate Posture</button>
+    <button id="view-stats-btn" class="view-stats-btn">View Stats</button>
     <div id="calibration-status"></div>
   </div>
 
@@ -176,7 +423,117 @@
     Sit up straight and click "Calibrate Posture" to set your baseline.
   </div>
 
+  <div class="settings-section">
+    <h2>Settings</h2>
+
+    <div class="setting-item">
+      <label for="notification-frequency">Notification Frequency</label>
+      <select id="notification-frequency">
+        <option value="30000">30 seconds</option>
+        <option value="60000">1 minute</option>
+        <option value="120000">2 minutes</option>
+        <option value="300000" selected>5 minutes</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label for="slouch-sensitivity">Slouch Sensitivity</label>
+      <select id="slouch-sensitivity">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label for="sound-alerts">Sound Alerts</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="sound-alerts">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <label for="auto-start">Auto-start on Login</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="auto-start">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <label for="camera-preview">Show Camera Preview</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="camera-preview">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <label for="breaks-enabled">Break Reminders</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="breaks-enabled" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <label for="break-interval">Break Interval</label>
+      <select id="break-interval">
+        <option value="1800000">30 minutes</option>
+        <option value="2700000" selected>45 minutes</option>
+        <option value="3600000">60 minutes</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="camera-preview">
+    <video id="video-preview" autoplay playsinline></video>
+  </div>
+
   <video id="video" autoplay playsinline></video>
+
+  <!-- Stats View -->
+  <div id="stats-view">
+    <div class="stats-header">
+      <h2>Posture Stats</h2>
+      <button class="close-stats-btn" id="close-stats-btn">Close</button>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-title">Today's Score</div>
+      <div class="stat-card-value" id="today-score">--%</div>
+      <div class="stat-card-label">Good Posture</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-title">Today's Slouch Count</div>
+      <div class="stat-card-value" id="slouch-count">--</div>
+      <div class="stat-card-label">Slouch Events</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-title">Current Streak</div>
+      <div class="stat-card-value" id="current-streak">--</div>
+      <div class="stat-card-label">Days with >70% Good Posture</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-title">Best Streak</div>
+      <div class="stat-card-value" id="best-streak">--</div>
+      <div class="stat-card-label">All-Time Record</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-title">Weekly Trend</div>
+      <div class="stat-card-label" id="weekly-average" style="margin-bottom: 8px;">Average: --%</div>
+      <div class="weekly-trend" id="weekly-trend">
+        <!-- Weekly bars will be inserted here -->
+      </div>
+    </div>
+
+    <button class="reset-stats-btn" id="reset-stats-btn">Reset All Stats</button>
+  </div>
 
   <script src="index.js"></script>
 </body>
