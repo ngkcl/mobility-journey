@@ -263,3 +263,59 @@
 ### Learnings
 - Browser setInterval returns number, not NodeJS.Timeout. Use ReturnType<typeof setInterval> for cross-platform compatibility.
 - For packages without @types, create src/types/package.d.ts and add typeRoots to tsconfig.
+
+---
+## 2026-02-08 - Desktop Posture App: Stats & Calibration Fixes
+
+### Problem Diagnosed
+Nick reported that after calibrating the posture monitor, stats stay at 0 and nothing happens.
+
+**Root cause analysis:**
+1. The app structure has TWO architectures:
+   - Root-level JS files (main.js, preload.js, renderer.js) - ACTIVE, using MediaPipe via CDN
+   - TypeScript in src/ - partially complete, src/main/ is EMPTY
+   
+2. Camera permission issues on macOS - the app wasn't properly requesting camera access.
+
+3. Race condition in calibration - the calibration handler could be called multiple times if detectLoop continued running during calibration.
+
+4. On systems without a camera (like Mac Mini), the app fails silently.
+
+### Fixes Applied
+1. **Camera permission handling** (main.js)
+   - Added systemPreferences.askForMediaAccess('camera') on app ready
+   - Shows notification if permission denied with instructions
+
+2. **Better error messages** (renderer.js)
+   - Camera errors now show specific messages (NotAllowedError, NotFoundError)
+   - Added logging throughout for debugging
+
+3. **Calibration race condition fix** (renderer.js)
+   - Added `calibrationProcessed` flag to prevent double-processing
+   - Skip detectLoop frames during calibration (isCalibrating check)
+   - Restore normal handler BEFORE processing to prevent race
+
+4. **Console logging from renderer** (main.js)
+   - Added webContents.on('console-message') to forward renderer logs to main
+
+5. **Stats API in preload** (preload.js)
+   - Added getStats() and resetStats() to electronAPI for UI stats fetching
+
+### Testing Notes
+- Mac Mini has no camera, so app fails with "NotFoundError Requested device not found"
+- On a device with camera (like Nick's laptop), the flow should work:
+  1. App requests camera permission
+  2. Camera initializes, MediaPipe loads
+  3. Calibrate captures baseline
+  4. detectLoop sends frames every 1.5s
+  5. Stats accumulate in ~/.posture-data/stats.json
+
+### Files Changed
+- desktop/main.js (camera permission, logging)
+- desktop/renderer.js (calibration fix, logging, error handling)
+- desktop/preload.js (stats API)
+
+### Next Steps
+- [ ] Test on Nick's laptop with camera to verify full flow
+- [ ] Consider adding a "mock camera" mode for development on devices without camera
+- [ ] Add visual feedback when calibration countdown is happening
