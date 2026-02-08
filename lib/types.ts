@@ -226,5 +226,52 @@ export interface ChartPoint {
   energyLevel?: number;
 }
 
+// ─── Monthly Programs ─────────────────────────────────
+export interface MonthlyProgram {
+  id: string;
+  month: string;
+  name: string;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ProgramExercise {
+  id: string;
+  program_id: string;
+  exercise_id: string;
+  session_slot: 'morning' | 'midday' | 'evening' | 'gym';
+  sets: number;
+  reps: number | null;
+  hold_seconds: number | null;
+  side: string;
+  order_index: number;
+  mandatory: boolean;
+  notes: string | null;
+  created_at: string;
+  exercises?: Exercise;
+}
+
+export type CoachAssignmentPriority = 'high' | 'normal';
+export type CoachAssignmentSource = 'coach' | 'physio' | 'self';
+
+export interface CoachAssignment {
+  id: string;
+  assigned_date: string | null;
+  expires_date: string | null;
+  exercise_id: string;
+  session_slot: string | null;
+  sets: number | null;
+  reps: number | null;
+  hold_seconds: number | null;
+  side: string | null;
+  priority: CoachAssignmentPriority;
+  coach_notes: string | null;
+  source: CoachAssignmentSource;
+  completed: boolean;
+  created_at: string;
+  exercises?: Exercise;
+}
+
 // ─── Toast ────────────────────────────────────────────
 export type ToastTone = 'error' | 'success' | 'info';

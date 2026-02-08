@@ -8,10 +8,128 @@ app.use(express.json({ limit: '50mb' }));
 
 const anthropic = new Anthropic();
 
+// ==================== SUPABASE HELPERS ====================
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+async function supabaseFetch(path, options = {}) {
+  const url = `${SUPABASE_URL}/rest/v1/${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase ${path}: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+async function fetchActiveProgram() {
+  try {
+    // Get the active monthly program
+    const programs = await supabaseFetch('monthly_programs?active=eq.true&order=created_at.desc&limit=1');
+    if (!programs.length) return null;
+    const program = programs[0];
+
+    // Get program exercises with exercise details
+    const exercises = await supabaseFetch(
+      `program_exercises?program_id=eq.${program.id}&order=order_index.asc&select=*,exercises(id,name,category)`
+    );
+
+    return { ...program, exercises };
+  } catch (err) {
+    console.error('Failed to fetch active program:', err.message);
+    return null;
+  }
+}
+
+async function fetchCoachAssignments() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    // Get active coach assignments: ongoing (no dates) or within date range
+    const assignments = await supabaseFetch(
+      `coach_assignments?completed=eq.false&or=(assigned_date.is.null,assigned_date.lte.${today})&or=(expires_date.is.null,expires_date.gte.${today})&select=*,exercises(id,name,category)`
+    );
+    return assignments;
+  } catch (err) {
+    console.error('Failed to fetch coach assignments:', err.message);
+    return [];
+  }
+}
+
+function formatProgramForPrompt(program) {
+  if (!program) return 'No active monthly program.';
+
+  const bySlot = {};
+  for (const pe of program.exercises) {
+    const slot = pe.session_slot;
+    if (!bySlot[slot]) bySlot[slot] = [];
+    const exName = pe.exercises?.name || 'Unknown';
+    bySlot[slot].push({
+      name: exName,
+      sets: pe.sets,
+      reps: pe.reps,
+      hold_seconds: pe.hold_seconds,
+      side: pe.side,
+      mandatory: pe.mandatory,
+      notes: pe.notes,
+    });
+  }
+
+  let text = `MONTHLY BASE PROGRAM: "${program.name}" (${program.month})\n`;
+  if (program.notes) text += `Program notes: ${program.notes}\n`;
+  for (const [slot, exs] of Object.entries(bySlot)) {
+    text += `\n${slot.toUpperCase()} SESSION:\n`;
+    for (const ex of exs) {
+      const details = [];
+      if (ex.sets) details.push(`${ex.sets} sets`);
+      if (ex.reps) details.push(`${ex.reps} reps`);
+      if (ex.hold_seconds) details.push(`${ex.hold_seconds}s hold`);
+      if (ex.side !== 'bilateral') details.push(`side: ${ex.side}`);
+      text += `  - ${ex.name} (${details.join(', ')})${ex.mandatory ? ' [MANDATORY]' : ''} ${ex.notes ? '— ' + ex.notes : ''}\n`;
+    }
+  }
+  return text;
+}
+
+function formatCoachAssignmentsForPrompt(assignments) {
+  if (!assignments.length) return 'No active coach assignments.';
+
+  let text = 'COACH ASSIGNMENTS (must be included):\n';
+  for (const a of assignments) {
+    const exName = a.exercises?.name || 'Unknown';
+    const details = [];
+    if (a.sets) details.push(`${a.sets} sets`);
+    if (a.reps) details.push(`${a.reps} reps`);
+    if (a.hold_seconds) details.push(`${a.hold_seconds}s hold`);
+    if (a.side) details.push(`side: ${a.side}`);
+    if (a.session_slot) details.push(`session: ${a.session_slot}`);
+    text += `  - ${exName} (${details.join(', ')}) [${a.priority?.toUpperCase()}] source: ${a.source}`;
+    if (a.coach_notes) text += ` — ${a.coach_notes}`;
+    text += '\n';
+  }
+  return text;
+}
+
 // ==================== DAILY PLAN ====================
 app.post('/api/daily-plan', async (req, res) => {
   try {
     const { date, context, metrics, postureTrend, workouts, correctiveSessions, gymDay, gymFocus } = req.body;
+
+    // Fetch monthly program and coach assignments from Supabase
+    const [activeProgram, coachAssignments] = await Promise.all([
+      fetchActiveProgram(),
+      fetchCoachAssignments(),
+    ]);
+
+    const programText = formatProgramForPrompt(activeProgram);
+    const coachText = formatCoachAssignmentsForPrompt(coachAssignments);
 
     const systemPrompt = `You are a corrective exercise and posture specialist AI. You create daily movement plans for someone with scoliosis and right-side muscular imbalance.
 
@@ -21,6 +139,15 @@ CONTEXT:
 - They do 3 corrective sessions daily (morning, midday, evening)
 - Some days are gym days (compound + isolation work)
 - Track pain (1-10) and energy (1-10) daily
+
+CRITICAL RULES:
+1. You MUST include ALL mandatory exercises from the monthly base program in their assigned session slots
+2. You MUST include ALL coach assignments, respecting their session slot preferences
+3. High-priority coach assignments MUST appear first in their session
+4. You may adjust the ORDER of exercises within a session for optimal flow
+5. You may adjust INTENSITY (sets/reps) based on pain/energy levels, but never remove mandatory exercises
+6. You may ADD supplementary exercises if there's room, but the base program exercises are non-negotiable
+7. For each exercise, include the notes from the program as form cues
 
 YOUR RESPONSE must be valid JSON with this structure:
 {
@@ -50,10 +177,13 @@ YOUR RESPONSE must be valid JSON with this structure:
   "reasoning": ["reason 1", "reason 2"]
 }
 
-If gymDay is true, include a "gym" object instead of null with exercises, sets, reps, weight suggestions.
-Use exercises from this library when possible: Bird Dogs, Cat-Cow, Dead Bugs, Clamshells, Side Plank, Foam Rolling, Diaphragmatic Breathing, Wall Angels, Thread the Needle, Hip Flexor Stretch, Single-Leg Glute Bridges, Band Pull-Aparts, Pallof Press, Walking Lunges, Back Squat, Bench Press, Barbell Row, Deadlift, Overhead Press, Lat Pulldown, Hip Thrust, Bicep Curl, Triceps Extension, Calf Raise.`;
+If gymDay is true, include a "gym" object instead of null with exercises, sets, reps, weight suggestions.`;
 
     const userMessage = `Generate today's plan for ${date}.
+
+${programText}
+
+${coachText}
 
 CURRENT STATE:
 - Pain level: ${metrics?.pain_level ?? 'not reported'}/10
@@ -67,7 +197,7 @@ RECENT DATA:
 - Posture trend: ${JSON.stringify(postureTrend ?? 'no data')}
 ${context ? `- Notes: ${JSON.stringify(context)}` : ''}
 
-Generate the optimal plan. High pain (>6) = reduce intensity. Low energy (<4) = lighter sessions. Always prioritize scoliosis correction and right-side imbalance work.
+REMEMBER: Include ALL mandatory base program exercises and ALL coach assignments. You may adjust intensity for pain/energy but NEVER remove mandatory exercises. Add supplementary work if appropriate.
 
 Respond with ONLY valid JSON, no markdown.`;
 
@@ -83,7 +213,13 @@ Respond with ONLY valid JSON, no markdown.`;
     if (!jsonMatch) throw new Error('No JSON in response');
 
     const parsed = JSON.parse(jsonMatch[0]);
-    res.json({ plan: parsed.plan, reasoning: parsed.reasoning || [], model: response.model });
+    res.json({
+      plan: parsed.plan,
+      reasoning: parsed.reasoning || [],
+      model: response.model,
+      programName: activeProgram?.name || null,
+      coachAssignmentCount: coachAssignments.length,
+    });
   } catch (err) {
     console.error('Plan error:', err.message);
     res.status(500).json({ error: err.message });

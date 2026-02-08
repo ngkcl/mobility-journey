@@ -23,9 +23,15 @@ const sections: { title: string; items: { label: string; icon: IconName; route: 
     ],
   },
   {
+    title: 'Program',
+    items: [
+      { label: 'Monthly Program', icon: 'calendar', route: '/(tabs)/program', color: '#14b8a6' },
+      { label: 'Exercise Library', icon: 'barbell', route: '/(tabs)/exercises', color: '#f97316' },
+    ],
+  },
+  {
     title: 'Review',
     items: [
-      { label: 'Exercise Library', icon: 'barbell', route: '/(tabs)/exercises', color: '#f97316' },
       { label: 'Protocol', icon: 'checkbox', route: '/(tabs)/todos', color: '#06b6d4' },
       { label: 'Analysis', icon: 'document-text', route: '/(tabs)/analysis', color: '#8b5cf6' },
       { label: 'Camera Posture', icon: 'aperture', route: '/(tabs)/posture-camera', color: '#ec4899' },

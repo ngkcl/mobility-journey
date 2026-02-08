@@ -20,8 +20,17 @@
         "NSCameraUsageDescription": "Allow Mobility Journey to access your camera for progress photos.",
         "NSMotionUsageDescription": "Mobility Journey uses AirPods motion to track your posture",
         "NSPhotoLibraryUsageDescription": "Allow Mobility Journey to access your photo library for progress photos.",
-        "NSPhotoLibraryAddUsageDescription": "Allow Mobility Journey to save photos to your library."
-      }
+        "NSPhotoLibraryAddUsageDescription": "Allow Mobility Journey to save photos to your library.",
+        "NSHealthShareUsageDescription": "Mobility Journey reads your health data (sleep, HRV, heart rate, steps) to personalize your corrective exercise plans and track recovery.",
+        "NSHealthUpdateUsageDescription": "Mobility Journey can save your workout data to Apple Health."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": [
+          "health-records"
+        ]
+      },
+      "backgroundColor": "#0b1020"
     },
     "android": {
       "adaptiveIcon": {
@@ -49,7 +58,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true
