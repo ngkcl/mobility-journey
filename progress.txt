@@ -1,6 +1,48 @@
 ## Codebase Patterns
 - When adding new Expo Router routes, update `.expo/types/router.d.ts` so `router.push` stays type-safe.
 - Keep Expo/React Native runtime-only modules (e.g. notifications) isolated from testable logic to avoid Node test loader issues.
+- For streak calculations that check "active" status, use relative dates (today/yesterday) in tests.
+- CSV export: escape commas/quotes properly, use native share sheet on mobile.
+
+---
+## 2025-02-10 - Overnight Feature Sprint: Streak Tracking + Data Export
+
+### Completed
+1. **Workout Streak Tracking with Calendar Heat Map**
+   - Added `computeStreakStats()` to calculate current streak, best streak, and total workout days
+   - Added `buildCalendarHeatMap()` for visual activity tracking (last 2 months)
+   - Added `getStreakMessage()` for motivational messages based on streak status
+   - Created `StreakCard` component with:
+     - Current/Best/Total workout day statistics
+     - Month-by-month calendar heat map (green = workout, gray = missed)
+     - Motivational emoji + messages (🔥 On Fire, 🏆 Legendary, etc.)
+     - CTA button to start workout when streak is broken
+   - Integrated StreakCard into Charts screen
+   - Updated consistency chart to show best streak instead of current
+
+2. **Export Workout Data**
+   - Created `lib/exportData.ts` with:
+     - `buildWorkoutCSV()` - generates CSV with all workout details
+     - `computeWorkoutSummary()` - calculates totals and statistics
+     - `buildWorkoutExportPayload()` - structured JSON export
+   - Added export UI in workouts.tsx:
+     - Export button in workout history header
+     - CSV/JSON format toggle selector
+     - Native share sheet on mobile, download on web
+   - CSV includes: dates, exercises, sets, reps, weight, pain levels, volume, asymmetry
+
+### Files Changed
+- lib/workoutAnalytics.ts (streak stats, heat map, messages)
+- lib/workoutAnalytics.test.js (relative date tests)
+- lib/exportData.ts (new - CSV/JSON export)
+- lib/exportData.test.js (new - export tests)
+- components/StreakCard.tsx (new - streak visualization)
+- app/(tabs)/charts.tsx (integrated StreakCard)
+- app/(tabs)/workouts.tsx (export functionality)
+
+### Learnings
+- Streak "active" status should check if most recent workout is today or yesterday
+- Test streak calculations with relative dates, not hardcoded future dates
 
 ---
 ## 2026-02-07 13:07 - Story WK-001: Exercise library with scoliosis-specific exercises
