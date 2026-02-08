@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   RefreshControl,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,6 +18,15 @@ import {
 } from '../../lib/homeSummary';
 import { loadWorkoutSchedule } from '../../lib/workoutSchedule';
 import { computeWorkoutStreak, type WorkoutHistoryItem } from '../../lib/workoutAnalytics';
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  shared,
+  getGreeting as getThemeGreeting,
+  getDailyTip,
+} from '@/lib/theme';
 import type { Workout, WorkoutTemplate } from '../../lib/types';
 
 const DAILY_TIPS = [
@@ -31,22 +39,10 @@ const DAILY_TIPS = [
   'Keep the ribs stacked over the pelvis during holds.',
 ];
 
-const TITLE_FONT = Platform.select({
-  ios: 'AvenirNext-DemiBold',
-  android: 'serif',
-  default: 'serif',
-});
-
-const BODY_FONT = Platform.select({
-  ios: 'AvenirNext-Regular',
-  android: 'sans-serif',
-  default: 'sans-serif',
-});
-
 const getAccentForTime = (greeting: string) => {
-  if (greeting.includes('morning')) return '#f59e0b';
-  if (greeting.includes('afternoon')) return '#38bdf8';
-  return '#a855f7';
+  if (greeting.includes('morning')) return colors.morning;
+  if (greeting.includes('afternoon')) return colors.midday;
+  return colors.evening;
 };
 
 export default function HomeScreen() {
@@ -57,7 +53,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const greeting = useMemo(() => buildGreeting(new Date()), []);
-  const tip = useMemo(() => pickDailyTip(DAILY_TIPS, new Date()), []);
+  const tip = useMemo(() => getDailyTip(), []);
   const accent = useMemo(() => getAccentForTime(greeting), [greeting]);
 
   const loadSummary = async () => {
@@ -103,14 +99,15 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const primaryCardAccent = nextSession?.sessionKey === 'gym' ? '#f97316' : accent;
+  const primaryCardAccent = nextSession?.sessionKey === 'gym' ? colors.rightSide : accent;
 
   return (
-    <View style={styles.root}>
+    <View style={shared.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#38bdf8" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.teal} />}
       >
+        {/* Hero Card */}
         <View style={styles.heroCard}>
           <View style={[styles.heroGlow, { backgroundColor: accent }]} />
           <View style={styles.heroGlowAlt} />
@@ -118,17 +115,18 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.subtitle}>Your posture plan for today is ready.</Text>
           <View style={styles.streakRow}>
-            <View style={[styles.streakBadge, { borderColor: accent }]}> 
+            <View style={[styles.streakBadge, { borderColor: accent }]}>
               <Ionicons name="flame" size={16} color={accent} />
               <Text style={styles.streakText}>{streak} day streak</Text>
             </View>
             <View style={styles.streakBadgeMuted}>
-              <Ionicons name="pulse" size={16} color="#38bdf8" />
+              <Ionicons name="pulse" size={16} color={colors.midday} />
               <Text style={styles.streakTextMuted}>Consistency focus</Text>
             </View>
           </View>
         </View>
 
+        {/* Today's Workout Card */}
         <Pressable
           onPress={() => router.push('/workouts')}
           style={({ pressed, hovered }) => [
@@ -147,7 +145,7 @@ export default function HomeScreen() {
                 {nextSession?.label ?? (isLoading ? 'Loading plan...' : 'No session scheduled')}
               </Text>
             </View>
-            <View style={[styles.badge, { borderColor: primaryCardAccent }]}> 
+            <View style={[styles.badge, { borderColor: primaryCardAccent }]}>
               <Ionicons name="time" size={14} color={primaryCardAccent} />
               <Text style={[styles.badgeText, { color: primaryCardAccent }]}>Next up</Text>
             </View>
@@ -155,20 +153,20 @@ export default function HomeScreen() {
 
           <View style={styles.summaryDetails}>
             <View style={styles.detailPill}>
-              <Ionicons name="sunny" size={16} color="#fbbf24" />
+              <Ionicons name="sunny" size={16} color={colors.morning} />
               <Text style={styles.detailText}>
                 {nextSession?.timeLabel ?? '--'}
                 {nextSession?.isTomorrow ? ' tomorrow' : ''}
               </Text>
             </View>
             <View style={styles.detailPill}>
-              <Ionicons name="list" size={16} color="#38bdf8" />
+              <Ionicons name="list" size={16} color={colors.midday} />
               <Text style={styles.detailText}>
                 {nextSession?.exerciseCount ?? 0} exercises
               </Text>
             </View>
             <View style={styles.detailPill}>
-              <Ionicons name="timer" size={16} color="#a855f7" />
+              <Ionicons name="timer" size={16} color={colors.evening} />
               <Text style={styles.detailText}>
                 {nextSession?.estimatedMinutes ?? '--'} min
               </Text>
@@ -178,6 +176,7 @@ export default function HomeScreen() {
           <Text style={styles.summaryFooter}>Tap to start or review your session.</Text>
         </Pressable>
 
+        {/* Quick Action Grid */}
         <View style={styles.gridRow}>
           <Pressable
             onPress={() => router.push('/plan')}
@@ -187,8 +186,8 @@ export default function HomeScreen() {
               hovered && styles.cardHover,
             ]}
           >
-            <View style={[styles.cardGlow, { backgroundColor: '#38bdf8' }]} />
-            <Ionicons name="sparkles" size={22} color="#38bdf8" />
+            <View style={[styles.cardGlow, { backgroundColor: colors.midday }]} />
+            <Ionicons name="sparkles" size={22} color={colors.midday} />
             <Text style={styles.secondaryTitle}>AI Daily Plan</Text>
             <Text style={styles.secondaryBody}>Review the AI-tailored balance plan.</Text>
           </Pressable>
@@ -200,13 +199,14 @@ export default function HomeScreen() {
               hovered && styles.cardHover,
             ]}
           >
-            <View style={[styles.cardGlow, { backgroundColor: '#a855f7' }]} />
-            <Ionicons name="trending-up" size={22} color="#a855f7" />
+            <View style={[styles.cardGlow, { backgroundColor: colors.evening }]} />
+            <Ionicons name="trending-up" size={22} color={colors.evening} />
             <Text style={styles.secondaryTitle}>Metrics Check-in</Text>
             <Text style={styles.secondaryBody}>Log pain and posture scores.</Text>
           </Pressable>
         </View>
 
+        {/* Daily Tip */}
         <View style={styles.tipCard}>
           <View style={styles.tipGlow} />
           <Text style={styles.tipLabel}>Daily tip</Text>
@@ -218,22 +218,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#020617',
-  },
   content: {
-    padding: 20,
+    padding: spacing.xl,
     paddingBottom: 120,
   },
   heroCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 18,
+    backgroundColor: colors.bgBase,
+    borderRadius: radii['2xl'],
+    padding: spacing.xl,
+    marginBottom: spacing.lg + 2,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.15)',
+    borderColor: colors.borderLight,
   },
   heroGlow: {
     position: 'absolute',
@@ -249,78 +245,69 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: '#38bdf8',
+    backgroundColor: colors.midday,
     opacity: 0.12,
     bottom: -80,
     left: -40,
   },
   kicker: {
-    color: '#94a3b8',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 2,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: BODY_FONT,
+    ...typography.small,
   },
   greeting: {
-    color: '#f8fafc',
-    fontSize: 28,
-    fontWeight: '700',
-    marginTop: 8,
-    fontFamily: TITLE_FONT,
+    color: colors.textPrimary,
+    ...typography.hero,
+    marginTop: spacing.sm,
   },
   subtitle: {
-    color: '#cbd5f5',
-    fontSize: 15,
-    marginTop: 6,
-    fontFamily: BODY_FONT,
+    color: colors.textSecondary,
+    ...typography.body,
+    marginTop: spacing.xs + 2,
   },
   streakRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
     borderWidth: 1,
-    backgroundColor: 'rgba(15,23,42,0.8)',
+    backgroundColor: colors.bgOverlay,
   },
   streakText: {
-    color: '#f8fafc',
-    fontWeight: '600',
-    fontSize: 13,
-    fontFamily: BODY_FONT,
+    color: colors.textPrimary,
+    ...typography.captionMedium,
   },
   streakBadgeMuted: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: 'rgba(56,189,248,0.3)',
-    backgroundColor: 'rgba(15,23,42,0.7)',
+    borderColor: colors.middayBorder,
+    backgroundColor: colors.bgCardAlt,
   },
   streakTextMuted: {
-    color: '#e2e8f0',
-    fontWeight: '500',
-    fontSize: 13,
-    fontFamily: BODY_FONT,
+    color: colors.textSecondary,
+    ...typography.captionMedium,
   },
   summaryCard: {
-    backgroundColor: '#0b1120',
-    borderRadius: 24,
-    padding: 20,
+    backgroundColor: colors.bgDeep,
+    borderRadius: radii['2xl'],
+    padding: spacing.xl,
     borderWidth: 1,
     overflow: 'hidden',
-    marginBottom: 18,
+    marginBottom: spacing.lg + 2,
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 20,
@@ -341,7 +328,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: colors.info,
     opacity: 0.08,
     bottom: -70,
     left: -50,
@@ -350,22 +337,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: spacing.md,
   },
   summaryLabel: {
-    color: '#94a3b8',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: BODY_FONT,
+    ...typography.tiny,
   },
   summaryTitle: {
-    color: '#f8fafc',
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 6,
-    fontFamily: TITLE_FONT,
+    color: colors.textPrimary,
+    ...typography.h2,
+    marginTop: spacing.xs + 2,
   },
   badge: {
     flexDirection: 'row',
@@ -373,56 +356,51 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: radii.full,
     borderWidth: 1,
-    backgroundColor: 'rgba(15,23,42,0.7)',
+    backgroundColor: colors.bgCardAlt,
   },
   badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: BODY_FONT,
+    ...typography.tiny,
   },
   summaryDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   detailPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(15,23,42,0.8)',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md + 2,
+    backgroundColor: colors.bgOverlay,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.15)',
+    borderColor: colors.borderLight,
   },
   detailText: {
-    color: '#e2e8f0',
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: BODY_FONT,
+    color: colors.textSecondary,
+    ...typography.captionMedium,
   },
   summaryFooter: {
-    color: '#94a3b8',
-    marginTop: 14,
-    fontSize: 12,
-    fontFamily: BODY_FONT,
+    color: colors.textTertiary,
+    marginTop: spacing.md + 2,
+    ...typography.small,
   },
   gridRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 18,
+    gap: spacing.md,
+    marginBottom: spacing.lg + 2,
   },
   secondaryCard: {
     flex: 1,
-    backgroundColor: '#0f172a',
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.12)',
+    borderColor: colors.borderLight,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.2,
@@ -431,24 +409,21 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   secondaryTitle: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.textPrimary,
+    ...typography.bodySemibold,
     marginTop: 10,
-    fontFamily: TITLE_FONT,
   },
   secondaryBody: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginTop: 6,
-    fontFamily: BODY_FONT,
+    color: colors.textTertiary,
+    ...typography.small,
+    marginTop: spacing.xs + 2,
   },
   tipCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 20,
-    padding: 18,
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.xl,
+    padding: spacing.lg + 2,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.12)',
+    borderColor: colors.borderLight,
     overflow: 'hidden',
   },
   tipGlow: {
@@ -456,25 +431,22 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: '#22d3ee',
+    backgroundColor: colors.tealLight,
     opacity: 0.08,
     top: -60,
     right: -40,
   },
   tipLabel: {
-    color: '#94a3b8',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: BODY_FONT,
+    ...typography.tiny,
   },
   tipText: {
-    color: '#e2e8f0',
-    fontSize: 15,
-    marginTop: 8,
+    color: colors.textSecondary,
+    ...typography.body,
+    marginTop: spacing.sm,
     lineHeight: 21,
-    fontFamily: BODY_FONT,
   },
   cardPressed: {
     transform: [{ scale: 0.98 }],
