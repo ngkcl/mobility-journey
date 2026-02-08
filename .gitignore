@@ -42,3 +42,4 @@ yarn-error.*
 ralph.log
 ralph.pid
 .env
+ralph.log

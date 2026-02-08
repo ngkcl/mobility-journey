@@ -26,6 +26,8 @@ import {
   buildWeeklyConsistency,
   buildWeeklyWorkoutVolume,
   computeWorkoutStreak,
+  computeAsymmetrySummary,
+  computePainImpact,
   type WorkoutHistoryItem,
 } from '../../lib/workoutAnalytics';
 
@@ -116,6 +118,16 @@ export default function ChartsScreen() {
   const sideTrend = useMemo(
     () => (selectedSideExerciseId ? buildSideVolumeTrend(workoutHistory, selectedSideExerciseId) : []),
     [selectedSideExerciseId, workoutHistory],
+  );
+  
+  const asymmetrySummary = useMemo(
+    () => computeAsymmetrySummary(workoutHistory),
+    [workoutHistory],
+  );
+  
+  const painImpact = useMemo(
+    () => computePainImpact(workoutHistory),
+    [workoutHistory],
   );
 
   useEffect(() => {
@@ -608,6 +620,121 @@ export default function ChartsScreen() {
             />
           </>
         )}
+      </View>
+
+      {/* Asymmetry & Pain Impact Summary */}
+      <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+        {/* Asymmetry Summary Card */}
+        <View style={[shared.card, { flex: 1 }]}>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Balance Status</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>L/R asymmetry trend</Text>
+          </View>
+          {asymmetrySummary ? (
+            <>
+              <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+                <Text style={{ ...typography.small, color: colors.textSecondary }}>Current</Text>
+                <Text style={{
+                  ...typography.bodySemibold,
+                  color: Math.abs(asymmetrySummary.currentImbalancePct) <= 5
+                    ? colors.success
+                    : Math.abs(asymmetrySummary.currentImbalancePct) <= 15
+                    ? colors.warning
+                    : colors.error,
+                }}>
+                  {asymmetrySummary.currentImbalancePct > 0 ? '+' : ''}
+                  {asymmetrySummary.currentImbalancePct}%
+                </Text>
+              </View>
+              <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+                <Text style={{ ...typography.small, color: colors.textSecondary }}>Dominant</Text>
+                <Text style={{
+                  ...typography.bodySemibold,
+                  color: asymmetrySummary.dominantSide === 'balanced'
+                    ? colors.success
+                    : asymmetrySummary.dominantSide === 'left'
+                    ? colors.leftSide
+                    : colors.rightSide,
+                }}>
+                  {asymmetrySummary.dominantSide === 'balanced' ? '⚖️ Balanced' : 
+                   asymmetrySummary.dominantSide === 'left' ? '← Left' : 'Right →'}
+                </Text>
+              </View>
+              <View style={[shared.rowBetween]}>
+                <Text style={{ ...typography.small, color: colors.textSecondary }}>Trend</Text>
+                <View style={[shared.row, shared.gap8]}>
+                  <Ionicons
+                    name={
+                      asymmetrySummary.trendDirection === 'improving' ? 'trending-up' :
+                      asymmetrySummary.trendDirection === 'worsening' ? 'trending-down' : 'remove'
+                    }
+                    size={16}
+                    color={
+                      asymmetrySummary.trendDirection === 'improving' ? colors.success :
+                      asymmetrySummary.trendDirection === 'worsening' ? colors.error : colors.textMuted
+                    }
+                  />
+                  <Text style={{
+                    ...typography.bodySemibold,
+                    color: asymmetrySummary.trendDirection === 'improving' ? colors.success :
+                           asymmetrySummary.trendDirection === 'worsening' ? colors.error : colors.textMuted,
+                  }}>
+                    {asymmetrySummary.trendDirection === 'improving' ? 'Improving' :
+                     asymmetrySummary.trendDirection === 'worsening' ? 'Needs work' : 'Stable'}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.lg }}>
+              <Text style={{ ...typography.caption, color: colors.textTertiary }}>Log side-specific sets</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Pain Impact Card */}
+        <View style={[shared.card, { flex: 1 }]}>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Pain Impact</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Workout effect on pain</Text>
+          </View>
+          {painImpact.workoutsWithPainData > 0 ? (
+            <>
+              <View style={{ alignItems: 'center', marginBottom: spacing.sm }}>
+                <Text style={{
+                  fontSize: 36,
+                  fontWeight: '700',
+                  color: painImpact.avgPainChange < 0 ? colors.success :
+                         painImpact.avgPainChange > 0 ? colors.error : colors.textMuted,
+                }}>
+                  {painImpact.avgPainChange > 0 ? '+' : ''}{painImpact.avgPainChange}
+                </Text>
+                <Text style={{ ...typography.caption, color: colors.textTertiary }}>
+                  avg. pain change
+                </Text>
+              </View>
+              <View style={[shared.rowBetween]}>
+                <Text style={{ ...typography.small, color: colors.textSecondary }}>Based on</Text>
+                <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>
+                  {painImpact.workoutsWithPainData} workouts
+                </Text>
+              </View>
+              <Text style={{
+                ...typography.caption,
+                color: painImpact.avgPainChange < 0 ? colors.success : colors.textTertiary,
+                marginTop: spacing.sm,
+                textAlign: 'center',
+              }}>
+                {painImpact.avgPainChange < -0.5 ? '🎉 Workouts are helping!' :
+                 painImpact.avgPainChange > 0.5 ? '⚠️ Consider intensity' : 'Neutral effect'}
+              </Text>
+            </>
+          ) : (
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.lg }}>
+              <Text style={{ ...typography.caption, color: colors.textTertiary }}>Log pain before/after</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={[shared.card, { marginBottom: spacing.lg }]}>

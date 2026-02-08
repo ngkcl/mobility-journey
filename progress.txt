@@ -176,3 +176,48 @@
 ### Learnings (add to Codebase Patterns if reusable)
 - None.
 ---
+
+---
+## 2025-02-09 - UX & Analytics Improvements
+
+### Completed
+1. **Fixed desktop TypeScript errors**
+   - Added proper type declarations for @mediapipe/pose and @mediapipe/camera_utils
+   - Added electron type reference for module resolution
+   - Fixed posture-monitor.ts timer type (NodeJS.Timeout → ReturnType<typeof setInterval>)
+   - Updated tsconfig.json with custom typeRoots
+
+2. **Enhanced workout analytics** (lib/workoutAnalytics.ts)
+   - `buildOverallAsymmetryTrend`: Track L/R volume imbalance across ALL exercises
+   - `computeAsymmetrySummary`: Trend direction (improving/worsening/stable), dominant side
+   - `buildWorkoutPainTrend`: Pain/energy levels before and after workouts
+   - `computePainImpact`: Average pain change after workouts
+
+3. **Added EmptyState component** (components/EmptyState.tsx)
+   - Reusable empty state with icon, title, description, and action button
+   - Consistent styling with design system
+
+4. **Charts page enhancement** (app/(tabs)/charts.tsx)
+   - Added "Balance Status" card showing current asymmetry %, dominant side, trend direction
+   - Added "Pain Impact" card showing average pain change from workouts
+   - Color-coded indicators for improvement/concern status
+
+### Next Up
+- [ ] Add EmptyState to more screens (exercises, workouts, metrics)
+- [ ] Improve loading skeletons for better perceived performance
+- [ ] Consider adding accessibility labels for screen readers
+- [ ] Implement AirPods integration (needs dev build)
+
+### Files Changed
+- desktop/src/types/mediapipe.d.ts (new)
+- desktop/src/types/electron.d.ts (new)
+- desktop/tsconfig.json
+- desktop/src/renderer/lib/posture-monitor.ts
+- lib/workoutAnalytics.ts
+- components/EmptyState.tsx (new)
+- app/(tabs)/charts.tsx
+- progress.txt
+
+### Learnings
+- Browser setInterval returns number, not NodeJS.Timeout. Use ReturnType<typeof setInterval> for cross-platform compatibility.
+- For packages without @types, create src/types/package.d.ts and add typeRoots to tsconfig.
