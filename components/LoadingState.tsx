@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 
 interface LoadingStateProps {
   label: string;
+  rows?: number;
 }
 
 export default function LoadingState({ label }: LoadingStateProps) {

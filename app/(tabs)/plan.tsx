@@ -8,7 +8,7 @@ import { normalizeDailyPlan, normalizeReasoning } from '../../lib/dailyPlan';
 import { buildPostureTrend } from '../../lib/postureSessions';
 import LoadingState from '../../components/LoadingState';
 import { useToast } from '../../components/Toast';
-import { colors, typography, spacing, radii, shared, getSessionColors, estimateSessionDuration, getDailyTip, getGreeting } from '../../lib/theme';
+import { colors, typography, spacing, radii, shared, getSessionColors, estimateSessionDuration, getDailyTip, getGreeting } from '@/lib/theme';
 import type {
   DailyPlan,
   DailyPlanPayload,
