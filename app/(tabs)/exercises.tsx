@@ -7,6 +7,7 @@ import {
   TextInput,
   RefreshControl,
   Switch,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,7 +15,7 @@ import { getSupabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
 import { useToast } from '../../components/Toast';
 import { normalizeTargetMuscles } from '../../lib/exercises';
-import { colors } from '@/lib/theme';
+import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { Exercise, ExerciseCategory } from '../../lib/types';
 
 type ExerciseFormState = {
@@ -32,41 +33,25 @@ type ExerciseFormState = {
 };
 
 const CATEGORIES: ExerciseCategory[] = [
-  'corrective',
-  'stretching',
-  'strengthening',
-  'warmup',
-  'cooldown',
-  'gym_compound',
-  'gym_isolation',
-  'cardio',
-  'mobility',
+  'corrective', 'stretching', 'strengthening', 'warmup', 'cooldown',
+  'gym_compound', 'gym_isolation', 'cardio', 'mobility',
 ];
 
-const CATEGORY_META: Record<ExerciseCategory, { label: string; bg: string; text: string }> = {
-  corrective: { label: 'Corrective', bg: 'bg-teal-500/20', text: 'text-teal-200' },
-  stretching: { label: 'Stretching', bg: 'bg-amber-500/20', text: 'text-amber-200' },
-  strengthening: { label: 'Strength', bg: 'bg-emerald-500/20', text: 'text-emerald-200' },
-  warmup: { label: 'Warmup', bg: 'bg-sky-500/20', text: 'text-sky-200' },
-  cooldown: { label: 'Cooldown', bg: 'bg-slate-500/20', text: 'text-slate-200' },
-  gym_compound: { label: 'Gym: Compound', bg: 'bg-indigo-500/20', text: 'text-indigo-200' },
-  gym_isolation: { label: 'Gym: Isolation', bg: 'bg-purple-500/20', text: 'text-purple-200' },
-  cardio: { label: 'Cardio', bg: 'bg-rose-500/20', text: 'text-rose-200' },
-  mobility: { label: 'Mobility', bg: 'bg-cyan-500/20', text: 'text-cyan-200' },
+const CATEGORY_COLORS: Record<ExerciseCategory, { bg: string; text: string; label: string }> = {
+  corrective: { bg: colors.corrective.bg, text: colors.corrective.text, label: 'Corrective' },
+  stretching: { bg: colors.stretching.bg, text: colors.stretching.text, label: 'Stretching' },
+  strengthening: { bg: colors.strengthening.bg, text: colors.strengthening.text, label: 'Strength' },
+  warmup: { bg: colors.warmup.bg, text: colors.warmup.text, label: 'Warmup' },
+  cooldown: { bg: colors.cooldown.bg, text: colors.cooldown.text, label: 'Cooldown' },
+  gym_compound: { bg: colors.gym_compound.bg, text: colors.gym_compound.text, label: 'Gym: Compound' },
+  gym_isolation: { bg: colors.gym_isolation.bg, text: colors.gym_isolation.text, label: 'Gym: Isolation' },
+  cardio: { bg: colors.cardio.bg, text: colors.cardio.text, label: 'Cardio' },
+  mobility: { bg: colors.mobility.bg, text: colors.mobility.text, label: 'Mobility' },
 };
 
 const emptyForm = (): ExerciseFormState => ({
-  name: '',
-  category: 'corrective',
-  targetMuscles: '',
-  description: '',
-  instructions: '',
-  setsDefault: '',
-  repsDefault: '',
-  durationDefault: '',
-  sideSpecific: false,
-  videoUrl: '',
-  imageUrl: '',
+  name: '', category: 'corrective', targetMuscles: '', description: '', instructions: '',
+  setsDefault: '', repsDefault: '', durationDefault: '', sideSpecific: false, videoUrl: '', imageUrl: '',
 });
 
 const parseNumber = (value: string): number | null => {
@@ -100,46 +85,24 @@ export default function ExercisesScreen() {
   const router = useRouter();
 
   const normalizeExercise = (row: any): Exercise => ({
-    id: row.id,
-    name: row.name,
-    category: (row.category ?? 'corrective') as ExerciseCategory,
-    target_muscles: row.target_muscles ?? null,
-    description: row.description ?? null,
-    instructions: row.instructions ?? null,
-    sets_default: row.sets_default ?? null,
-    reps_default: row.reps_default ?? null,
-    duration_seconds_default: row.duration_seconds_default ?? null,
-    side_specific: row.side_specific ?? false,
-    video_url: row.video_url ?? null,
-    image_url: row.image_url ?? null,
+    id: row.id, name: row.name, category: (row.category ?? 'corrective') as ExerciseCategory,
+    target_muscles: row.target_muscles ?? null, description: row.description ?? null,
+    instructions: row.instructions ?? null, sets_default: row.sets_default ?? null,
+    reps_default: row.reps_default ?? null, duration_seconds_default: row.duration_seconds_default ?? null,
+    side_specific: row.side_specific ?? false, video_url: row.video_url ?? null, image_url: row.image_url ?? null,
   });
 
   const loadExercises = async () => {
     const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
-      pushToast('Failed to load exercises.', 'error');
-      setIsLoading(false);
-      return;
-    }
-
+    const { data, error } = await supabase.from('exercises').select('*').order('name', { ascending: true });
+    if (error) { pushToast('Failed to load exercises.', 'error'); setIsLoading(false); return; }
     setExercises((data ?? []).map((row) => normalizeExercise(row)));
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    loadExercises();
-  }, []);
+  useEffect(() => { loadExercises(); }, []);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadExercises();
-    setRefreshing(false);
-  };
+  const onRefresh = async () => { setRefreshing(true); await loadExercises(); setRefreshing(false); };
 
   const targetOptions = useMemo(() => {
     const targetMap = new Map<string, string>();
@@ -157,53 +120,28 @@ export default function ExercisesScreen() {
     return exercises.filter((exercise) => {
       if (categoryFilter !== 'all' && exercise.category !== categoryFilter) return false;
       if (targetFilter !== 'all') {
-        const targets = normalizeTargetMuscles(exercise.target_muscles).map((target) =>
-          target.toLowerCase(),
-        );
+        const targets = normalizeTargetMuscles(exercise.target_muscles).map((t) => t.toLowerCase());
         if (!targets.includes(targetFilter)) return false;
       }
       if (!query) return true;
-      const targets = normalizeTargetMuscles(exercise.target_muscles)
-        .map((target) => target.toLowerCase())
-        .join(' ');
-      const haystack = `${exercise.name} ${exercise.description ?? ''} ${targets}`.toLowerCase();
-      return haystack.includes(query);
+      const targets = normalizeTargetMuscles(exercise.target_muscles).map((t) => t.toLowerCase()).join(' ');
+      return `${exercise.name} ${exercise.description ?? ''} ${targets}`.toLowerCase().includes(query);
     });
   }, [exercises, categoryFilter, targetFilter, searchQuery]);
 
   const addExercise = async () => {
-    if (!newExercise.name.trim()) {
-      pushToast('Exercise name is required.', 'error');
-      return;
-    }
-
+    if (!newExercise.name.trim()) { pushToast('Exercise name is required.', 'error'); return; }
     const targets = normalizeTargetMuscles(newExercise.targetMuscles);
     const payload = {
-      name: newExercise.name.trim(),
-      category: newExercise.category,
-      target_muscles: targets.length ? targets : null,
-      description: newExercise.description.trim() || null,
-      instructions: newExercise.instructions.trim() || null,
-      sets_default: parseNumber(newExercise.setsDefault),
-      reps_default: parseNumber(newExercise.repsDefault),
-      duration_seconds_default: parseNumber(newExercise.durationDefault),
-      side_specific: newExercise.sideSpecific,
-      video_url: newExercise.videoUrl.trim() || null,
-      image_url: newExercise.imageUrl.trim() || null,
+      name: newExercise.name.trim(), category: newExercise.category,
+      target_muscles: targets.length ? targets : null, description: newExercise.description.trim() || null,
+      instructions: newExercise.instructions.trim() || null, sets_default: parseNumber(newExercise.setsDefault),
+      reps_default: parseNumber(newExercise.repsDefault), duration_seconds_default: parseNumber(newExercise.durationDefault),
+      side_specific: newExercise.sideSpecific, video_url: newExercise.videoUrl.trim() || null, image_url: newExercise.imageUrl.trim() || null,
     };
-
     const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from('exercises')
-      .insert(payload)
-      .select('*')
-      .single();
-
-    if (error || !data) {
-      pushToast('Failed to save exercise.', 'error');
-      return;
-    }
-
+    const { data, error } = await supabase.from('exercises').insert(payload).select('*').single();
+    if (error || !data) { pushToast('Failed to save exercise.', 'error'); return; }
     setExercises((prev) => [normalizeExercise(data), ...prev]);
     setNewExercise(emptyForm());
     setShowAddForm(false);
@@ -212,77 +150,49 @@ export default function ExercisesScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#0b1020]"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
-      }
+      style={shared.screen}
+      contentContainerStyle={s.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />}
     >
-      <View className="flex-row items-center justify-between mb-6">
+      {/* Header */}
+      <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
         <View>
-          <Text className="text-2xl font-semibold text-white">Exercise Library</Text>
-          <Text className="text-slate-400 text-sm">
-            Corrective, mobility, and gym movements
-          </Text>
+          <Text style={shared.pageTitle}>Exercise Library</Text>
+          <Text style={shared.pageSubtitle}>Corrective, mobility, and gym movements</Text>
         </View>
-        <Pressable
-          onPress={() => setShowAddForm(true)}
-          className="bg-teal-500 px-4 py-2 rounded-xl flex-row items-center gap-2"
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text className="text-white font-medium text-sm">Add Exercise</Text>
+        <Pressable onPress={() => setShowAddForm(true)} style={[shared.btnPrimary, shared.btnSmall]}>
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={{ ...typography.captionMedium, color: '#fff' }}>Add Exercise</Text>
         </Pressable>
       </View>
 
-      <View className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800/70 mb-6">
-        <Text className="text-white text-lg font-semibold">Search & Filters</Text>
-        <TextInput
-          placeholder="Search by name, target muscle, or notes"
-          placeholderTextColor="#94a3b8"
-          className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mt-3"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      {/* Search & Filters */}
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary }}>Search & Filters</Text>
+        <TextInput placeholder="Search by name, target muscle, or notes" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginTop: spacing.md }]} value={searchQuery} onChangeText={setSearchQuery} />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4">
-          <View className="flex-row gap-2">
-            {(['all', ...CATEGORIES] as const).map((category) => (
-              <Pressable
-                key={category}
-                onPress={() => setCategoryFilter(category)}
-                className={`px-3 py-2 rounded-full border ${
-                  categoryFilter === category ? 'bg-teal-500 border-teal-400' : 'border-slate-700'
-                }`}
-              >
-                <Text
-                  className={`text-xs capitalize ${
-                    categoryFilter === category ? 'text-white' : 'text-slate-300'
-                  }`}
-                >
-                  {category}
-                </Text>
-              </Pressable>
-            ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.lg }}>
+          <View style={[shared.row, { gap: spacing.sm }]}>
+            {(['all', ...CATEGORIES] as const).map((category) => {
+              const active = categoryFilter === category;
+              return (
+                <Pressable key={category} onPress={() => setCategoryFilter(category)} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.full, borderWidth: 1, backgroundColor: active ? colors.teal : 'transparent', borderColor: active ? colors.teal : colors.border }}>
+                  <Text style={{ ...typography.small, color: active ? '#fff' : colors.textSecondary, textTransform: 'capitalize' }}>{category}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </ScrollView>
 
         {targetOptions.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
-            <View className="flex-row gap-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.md }}>
+            <View style={[shared.row, { gap: spacing.sm }]}>
               {(['all', ...targetOptions] as const).map((target) => {
                 const value = target === 'all' ? 'all' : target.toLowerCase();
-                const isActive = targetFilter === value;
+                const active = targetFilter === value;
                 return (
-                  <Pressable
-                    key={target}
-                    onPress={() => setTargetFilter(value)}
-                    className={`px-3 py-2 rounded-full border ${
-                      isActive ? 'bg-slate-700 border-slate-500' : 'border-slate-700'
-                    }`}
-                  >
-                    <Text className={`text-xs ${isActive ? 'text-white' : 'text-slate-300'}`}>
-                      {target}
-                    </Text>
+                  <Pressable key={target} onPress={() => setTargetFilter(value)} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.full, borderWidth: 1, backgroundColor: active ? colors.bgCard : 'transparent', borderColor: active ? colors.textMuted : colors.border }}>
+                    <Text style={{ ...typography.small, color: active ? colors.textPrimary : colors.textSecondary }}>{target}</Text>
                   </Pressable>
                 );
               })}
@@ -291,187 +201,97 @@ export default function ExercisesScreen() {
         )}
       </View>
 
+      {/* Add form */}
       {showAddForm && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <Text className="text-lg font-semibold text-white mb-4">Add Custom Exercise</Text>
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>Add Custom Exercise</Text>
 
-          <TextInput
-            placeholder="Exercise name"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-3"
-            value={newExercise.name}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, name: text }))}
-          />
+          <TextInput placeholder="Exercise name" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.md }]} value={newExercise.name} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, name: text }))} />
 
-          <Text className="text-slate-300 text-sm mb-2">Category</Text>
-          <View className="flex-row flex-wrap gap-2 mb-4">
-            {CATEGORIES.map((category) => (
-              <Pressable
-                key={category}
-                onPress={() => setNewExercise((prev) => ({ ...prev, category }))}
-                className={`px-3 py-2 rounded-lg border ${
-                  newExercise.category === category
-                    ? 'bg-teal-500 border-teal-400'
-                    : 'border-slate-700'
-                }`}
-              >
-                <Text
-                  className={`${newExercise.category === category ? 'text-white' : 'text-slate-300'} capitalize`}
-                >
-                  {category}
-                </Text>
-              </Pressable>
-            ))}
+          <Text style={[shared.inputLabel, { marginBottom: spacing.sm }]}>Category</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+            {CATEGORIES.map((category) => {
+              const active = newExercise.category === category;
+              return (
+                <Pressable key={category} onPress={() => setNewExercise((prev) => ({ ...prev, category }))} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, backgroundColor: active ? colors.teal : 'transparent', borderColor: active ? colors.teal : colors.border }}>
+                  <Text style={{ ...typography.caption, color: active ? '#fff' : colors.textSecondary, textTransform: 'capitalize' }}>{category}</Text>
+                </Pressable>
+              );
+            })}
           </View>
 
-          <TextInput
-            placeholder="Target muscles (comma separated)"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-3"
-            value={newExercise.targetMuscles}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, targetMuscles: text }))}
-          />
+          <TextInput placeholder="Target muscles (comma separated)" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.md }]} value={newExercise.targetMuscles} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, targetMuscles: text }))} />
+          <TextInput placeholder="Description" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.md }]} value={newExercise.description} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, description: text }))} multiline />
+          <TextInput placeholder="Instructions" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.md }]} value={newExercise.instructions} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, instructions: text }))} multiline />
 
-          <TextInput
-            placeholder="Description"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-3"
-            value={newExercise.description}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, description: text }))}
-            multiline
-          />
-
-          <TextInput
-            placeholder="Instructions"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-3"
-            value={newExercise.instructions}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, instructions: text }))}
-            multiline
-          />
-
-          <View className="flex-row gap-2 mb-3">
-            <TextInput
-              placeholder="Sets"
-              placeholderTextColor="#94a3b8"
-              className="flex-1 bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
-              value={newExercise.setsDefault}
-              onChangeText={(text) => setNewExercise((prev) => ({ ...prev, setsDefault: text }))}
-              keyboardType="number-pad"
-            />
-            <TextInput
-              placeholder="Reps"
-              placeholderTextColor="#94a3b8"
-              className="flex-1 bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
-              value={newExercise.repsDefault}
-              onChangeText={(text) => setNewExercise((prev) => ({ ...prev, repsDefault: text }))}
-              keyboardType="number-pad"
-            />
-            <TextInput
-              placeholder="Duration (sec)"
-              placeholderTextColor="#94a3b8"
-              className="flex-1 bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
-              value={newExercise.durationDefault}
-              onChangeText={(text) =>
-                setNewExercise((prev) => ({ ...prev, durationDefault: text }))
-              }
-              keyboardType="number-pad"
-            />
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+            <TextInput placeholder="Sets" placeholderTextColor={colors.textTertiary} style={[shared.input, { flex: 1 }]} value={newExercise.setsDefault} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, setsDefault: text }))} keyboardType="number-pad" />
+            <TextInput placeholder="Reps" placeholderTextColor={colors.textTertiary} style={[shared.input, { flex: 1 }]} value={newExercise.repsDefault} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, repsDefault: text }))} keyboardType="number-pad" />
+            <TextInput placeholder="Duration (sec)" placeholderTextColor={colors.textTertiary} style={[shared.input, { flex: 1 }]} value={newExercise.durationDefault} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, durationDefault: text }))} keyboardType="number-pad" />
           </View>
 
-          <View className="flex-row items-center justify-between mb-3">
+          <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
             <View>
-              <Text className="text-white font-medium">Side-specific</Text>
-              <Text className="text-slate-400 text-xs">Use for left/right emphasis</Text>
+              <Text style={{ ...typography.bodyMedium, color: colors.textPrimary }}>Side-specific</Text>
+              <Text style={{ ...typography.caption, color: colors.textTertiary }}>Use for left/right emphasis</Text>
             </View>
-            <Switch
-              value={newExercise.sideSpecific}
-              onValueChange={(value) => setNewExercise((prev) => ({ ...prev, sideSpecific: value }))}
-              thumbColor={newExercise.sideSpecific ? '#5eead4' : '#94a3b8'}
-              trackColor={{ false: '#334155', true: '#14b8a6' }}
-            />
+            <Switch value={newExercise.sideSpecific} onValueChange={(value) => setNewExercise((prev) => ({ ...prev, sideSpecific: value }))} thumbColor={newExercise.sideSpecific ? colors.tealLight : colors.textTertiary} trackColor={{ false: '#334155', true: colors.teal }} />
           </View>
 
-          <TextInput
-            placeholder="Video URL (optional)"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-3"
-            value={newExercise.videoUrl}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, videoUrl: text }))}
-          />
+          <TextInput placeholder="Video URL (optional)" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.md }]} value={newExercise.videoUrl} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, videoUrl: text }))} />
+          <TextInput placeholder="Image URL (optional)" placeholderTextColor={colors.textTertiary} style={[shared.input, { marginBottom: spacing.lg }]} value={newExercise.imageUrl} onChangeText={(text) => setNewExercise((prev) => ({ ...prev, imageUrl: text }))} />
 
-          <TextInput
-            placeholder="Image URL (optional)"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white mb-4"
-            value={newExercise.imageUrl}
-            onChangeText={(text) => setNewExercise((prev) => ({ ...prev, imageUrl: text }))}
-          />
-
-          <View className="flex-row justify-end gap-3">
-            <Pressable
-              onPress={() => setShowAddForm(false)}
-              className="px-4 py-2 rounded-xl border border-slate-700"
-            >
-              <Text className="text-slate-300">Cancel</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md }}>
+            <Pressable onPress={() => setShowAddForm(false)} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={addExercise} className="px-4 py-2 rounded-xl bg-teal-500">
-              <Text className="text-white font-medium">Save Exercise</Text>
+            <Pressable onPress={addExercise} style={shared.btnPrimary}>
+              <Text style={shared.btnPrimaryText}>Save Exercise</Text>
             </Pressable>
           </View>
         </View>
       )}
 
+      {/* Exercise list */}
       {isLoading ? (
         <LoadingState label="Loading exercises..." />
       ) : filteredExercises.length === 0 ? (
-        <View className="bg-slate-900/70 rounded-2xl p-6 border border-slate-800/70 items-center">
-          <Text className="text-white font-semibold mb-2">No exercises yet</Text>
-          <Text className="text-slate-400 text-center">
-            Add your first custom exercise or adjust filters.
-          </Text>
+        <View style={[shared.card, { borderStyle: 'dashed', alignItems: 'center', paddingVertical: spacing['3xl'] }]}>
+          <Ionicons name="barbell-outline" size={40} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No exercises yet</Text>
+          <Text style={shared.emptyStateText}>Add your first custom exercise or adjust filters.</Text>
         </View>
       ) : (
-        <View className="gap-4">
+        <View style={{ gap: spacing.md }}>
           {filteredExercises.map((exercise) => {
-            const meta = CATEGORY_META[exercise.category];
+            const meta = CATEGORY_COLORS[exercise.category];
             const targets = normalizeTargetMuscles(exercise.target_muscles);
             return (
-              <Pressable
-                key={exercise.id}
-                onPress={() =>
-                  router.push({ pathname: '/exercise/[id]', params: { id: exercise.id } })
-                }
-                className="rounded-2xl border border-slate-800/70 bg-slate-900/70 p-4"
-              >
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1">
-                    <Text className="text-lg font-semibold text-white">{exercise.name}</Text>
-                    {exercise.description ? (
-                      <Text className="text-slate-400 text-sm mt-1">{exercise.description}</Text>
-                    ) : null}
+              <Pressable key={exercise.id} onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: exercise.id } })} style={shared.card}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.h3, color: colors.textPrimary }}>{exercise.name}</Text>
+                    {exercise.description ? <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs }}>{exercise.description}</Text> : null}
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#64748b" />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </View>
 
-                <View className="flex-row flex-wrap items-center gap-2 mt-3">
-                  <View className={`px-2.5 py-1 rounded-full ${meta.bg}`}>
-                    <Text className={`text-xs ${meta.text}`}>{meta.label}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md }}>
+                  <View style={[shared.badge, { backgroundColor: meta.bg }]}>
+                    <Text style={{ ...typography.small, color: meta.text }}>{meta.label}</Text>
                   </View>
                   {exercise.side_specific && (
-                    <View className="px-2.5 py-1 rounded-full border border-amber-400/40 bg-amber-500/10">
-                      <Text className="text-xs text-amber-200">Side-specific</Text>
+                    <View style={[shared.badge, { backgroundColor: colors.warningDim, borderWidth: 1, borderColor: colors.warningDim }]}>
+                      <Text style={{ ...typography.small, color: '#fcd34d' }}>Side-specific</Text>
                     </View>
                   )}
-                  <View className="px-2.5 py-1 rounded-full border border-slate-700">
-                    <Text className="text-xs text-slate-300">{formatDefaults(exercise)}</Text>
+                  <View style={[shared.badge, { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border }]}>
+                    <Text style={{ ...typography.small, color: colors.textSecondary }}>{formatDefaults(exercise)}</Text>
                   </View>
                 </View>
 
                 {targets.length > 0 && (
-                  <Text className="text-slate-400 text-xs mt-3">
-                    Targets: {targets.join(', ')}
-                  </Text>
+                  <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.md }}>Targets: {targets.join(', ')}</Text>
                 )}
               </Pressable>
             );
@@ -481,3 +301,10 @@ export default function ExercisesScreen() {
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing['4xl'],
+  },
+});

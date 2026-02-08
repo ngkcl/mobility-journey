@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
-import { colors, typography, spacing, radii, shared, getGreeting } from '../../lib/theme';
+import { colors, typography, spacing, radii, shared, getGreeting } from '@/lib/theme';
 import type { MetricEntry as MetricRow } from '../../lib/types';
 
 const quickMetrics = [
@@ -317,172 +317,111 @@ export default function MetricsScreen() {
 
       {/* Add entry form */}
       {showAddForm && (
-        <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
-          <Text className="text-lg font-semibold text-white mb-4">Daily Check-in</Text>
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>Daily Check-in</Text>
 
           {/* Date */}
-          <Text className="text-sm text-slate-300 mb-1">Date</Text>
+          <Text style={shared.inputLabel}>Date</Text>
           <TextInput
             value={newEntry.date}
             onChangeText={(text) => setNewEntry((prev) => ({ ...prev, date: text }))}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#64748b"
-            className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white mb-4"
+            placeholderTextColor={colors.textPlaceholder}
+            style={[shared.input, { marginBottom: spacing.lg }]}
           />
 
           {/* Quick scores */}
-          <View className="flex-row flex-wrap gap-3 mb-4">
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg }}>
             {quickMetrics.map((metric) => (
-              <View key={metric.key} className="flex-1 min-w-[120px]">
-                <Text className="text-sm text-slate-300 mb-1">{metric.label} (1-10)</Text>
+              <View key={metric.key} style={{ flex: 1, minWidth: 120 }}>
+                <Text style={shared.inputLabel}>{metric.label} (1-10)</Text>
                 <TextInput
                   keyboardType="numeric"
                   placeholder="—"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={colors.textPlaceholder}
                   value={
                     newEntry[metric.key as keyof MetricEntryView] !== undefined
                       ? String(newEntry[metric.key as keyof MetricEntryView])
                       : ''
                   }
                   onChangeText={(text) => updateNum(metric.key, text)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  style={shared.input}
                 />
               </View>
             ))}
           </View>
 
           {/* Exercise toggle */}
-          <View className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 mb-4">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-white font-medium">Did exercises today</Text>
-              <Switch
-                value={newEntry.exerciseDone || false}
-                onValueChange={(val) => setNewEntry((prev) => ({ ...prev, exerciseDone: val }))}
-                trackColor={{ false: '#334155', true: '#14b8a6' }}
-                thumbColor="#fff"
-              />
+          <View style={{ backgroundColor: colors.bgCardAlt, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.borderLight, marginBottom: spacing.lg }}>
+            <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
+              <Text style={{ ...typography.bodyMedium, color: colors.textPrimary }}>Did exercises today</Text>
+              <Switch value={newEntry.exerciseDone || false} onValueChange={(val) => setNewEntry((prev) => ({ ...prev, exerciseDone: val }))} trackColor={{ false: '#334155', true: colors.teal }} thumbColor="#fff" />
             </View>
-
             {newEntry.exerciseDone && (
-              <View className="gap-3">
+              <View style={{ gap: spacing.md }}>
                 <View>
-                  <Text className="text-sm text-slate-300 mb-1">Duration (minutes)</Text>
-                  <TextInput
-                    keyboardType="numeric"
-                    placeholder="30"
-                    placeholderTextColor="#64748b"
-                    value={newEntry.exerciseMinutes ? String(newEntry.exerciseMinutes) : ''}
-                    onChangeText={(text) => updateNum('exerciseMinutes', text)}
-                    className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-                  />
+                  <Text style={shared.inputLabel}>Duration (minutes)</Text>
+                  <TextInput keyboardType="numeric" placeholder="30" placeholderTextColor={colors.textPlaceholder} value={newEntry.exerciseMinutes ? String(newEntry.exerciseMinutes) : ''} onChangeText={(text) => updateNum('exerciseMinutes', text)} style={shared.input} />
                 </View>
                 <View>
-                  <Text className="text-sm text-slate-300 mb-1">Which exercises</Text>
-                  <TextInput
-                    placeholder="Planks, bird dogs, cat-cow..."
-                    placeholderTextColor="#64748b"
-                    value={newEntry.exerciseNames || ''}
-                    onChangeText={(text) =>
-                      setNewEntry((prev) => ({ ...prev, exerciseNames: text }))
-                    }
-                    className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-                  />
+                  <Text style={shared.inputLabel}>Which exercises</Text>
+                  <TextInput placeholder="Planks, bird dogs, cat-cow..." placeholderTextColor={colors.textPlaceholder} value={newEntry.exerciseNames || ''} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, exerciseNames: text }))} style={shared.input} />
                 </View>
               </View>
             )}
           </View>
 
           {/* ROM */}
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Forward Bend ROM (°)</Text>
-              <TextInput
-                keyboardType="numeric"
-                placeholder="—"
-                placeholderTextColor="#64748b"
-                value={newEntry.romForwardBend ? String(newEntry.romForwardBend) : ''}
-                onChangeText={(text) => updateNum('romForwardBend', text)}
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-              />
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Forward Bend ROM (°)</Text>
+              <TextInput keyboardType="numeric" placeholder="—" placeholderTextColor={colors.textPlaceholder} value={newEntry.romForwardBend ? String(newEntry.romForwardBend) : ''} onChangeText={(text) => updateNum('romForwardBend', text)} style={shared.input} />
             </View>
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Lateral Flexion (°)</Text>
-              <TextInput
-                keyboardType="numeric"
-                placeholder="—"
-                placeholderTextColor="#64748b"
-                value={newEntry.romLateral ? String(newEntry.romLateral) : ''}
-                onChangeText={(text) => updateNum('romLateral', text)}
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-              />
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Lateral Flexion (°)</Text>
+              <TextInput keyboardType="numeric" placeholder="—" placeholderTextColor={colors.textPlaceholder} value={newEntry.romLateral ? String(newEntry.romLateral) : ''} onChangeText={(text) => updateNum('romLateral', text)} style={shared.input} />
             </View>
           </View>
 
           {/* Rib hump picker */}
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Rib Hump</Text>
-            <View className="flex-row gap-2">
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Rib Hump</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               {RIB_HUMP_OPTIONS.filter(Boolean).map((opt) => (
                 <Pressable
                   key={opt}
                   onPress={() => setNewEntry((prev) => ({ ...prev, ribHump: opt }))}
-                  className={`px-3 py-2 rounded-xl ${
-                    newEntry.ribHump === opt ? 'bg-teal-500' : 'bg-slate-800 border border-slate-700'
-                  }`}
+                  style={{
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.lg,
+                    backgroundColor: newEntry.ribHump === opt ? colors.teal : colors.bgCard,
+                    borderWidth: newEntry.ribHump === opt ? 0 : 1,
+                    borderColor: colors.border,
+                  }}
                 >
-                  <Text
-                    className={`text-sm capitalize ${
-                      newEntry.ribHump === opt ? 'text-white font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    {opt}
-                  </Text>
+                  <Text style={{ ...typography.caption, color: newEntry.ribHump === opt ? '#fff' : colors.textSecondary, textTransform: 'capitalize', fontWeight: newEntry.ribHump === opt ? '600' : '400' }}>{opt}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
 
           {/* Milestone */}
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Functional Milestone 🎯</Text>
-            <TextInput
-              placeholder="e.g. Held plank for 60s..."
-              placeholderTextColor="#64748b"
-              value={newEntry.functionalMilestone || ''}
-              onChangeText={(text) =>
-                setNewEntry((prev) => ({ ...prev, functionalMilestone: text }))
-              }
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-            />
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Functional Milestone 🎯</Text>
+            <TextInput placeholder="e.g. Held plank for 60s..." placeholderTextColor={colors.textPlaceholder} value={newEntry.functionalMilestone || ''} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, functionalMilestone: text }))} style={shared.input} />
           </View>
 
           {/* Notes */}
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Notes</Text>
-            <TextInput
-              placeholder="How you feel, anything unusual..."
-              placeholderTextColor="#64748b"
-              multiline
-              numberOfLines={3}
-              value={newEntry.notes || ''}
-              onChangeText={(text) => setNewEntry((prev) => ({ ...prev, notes: text }))}
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white min-h-[80px]"
-              textAlignVertical="top"
-            />
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Notes</Text>
+            <TextInput placeholder="How you feel, anything unusual..." placeholderTextColor={colors.textPlaceholder} multiline numberOfLines={3} value={newEntry.notes || ''} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, notes: text }))} style={[shared.input, { minHeight: 80, textAlignVertical: 'top' }]} />
           </View>
 
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={addEntry}
-              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
-            >
-              <Text className="text-white font-medium">Save Check-in</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable onPress={addEntry} style={[shared.btnPrimary, { flex: 1 }]}>
+              <Text style={shared.btnPrimaryText}>Save Check-in</Text>
             </Pressable>
-            <Pressable
-              onPress={() => setShowAddForm(false)}
-              className="bg-slate-800 px-4 py-2.5 rounded-xl"
-            >
-              <Text className="text-slate-300">Cancel</Text>
+            <Pressable onPress={() => setShowAddForm(false)} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Cancel</Text>
             </Pressable>
           </View>
         </View>

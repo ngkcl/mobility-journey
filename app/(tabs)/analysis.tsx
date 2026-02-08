@@ -8,21 +8,22 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
-import { colors } from '@/lib/theme';
+import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { AnalysisEntry as AnalysisRow, AnalysisType } from '../../lib/types';
 
 const FILTERS: readonly ('all' | AnalysisType)[] = ['all', 'ai', 'personal', 'specialist'];
 
-const typeConfig: Record<AnalysisType, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  ai: { icon: 'sparkles', color: '#fbbf24', bg: 'bg-amber-500/20' },
-  personal: { icon: 'person', color: '#38bdf8', bg: 'bg-sky-500/20' },
-  specialist: { icon: 'medkit', color: '#34d399', bg: 'bg-emerald-500/20' },
+const typeConfig: Record<AnalysisType, { icon: keyof typeof Ionicons.glyphMap; color: string; bgDim: string }> = {
+  ai: { icon: 'sparkles', color: '#fbbf24', bgDim: 'rgba(245,158,11,0.15)' },
+  personal: { icon: 'person', color: '#38bdf8', bgDim: 'rgba(56,189,248,0.15)' },
+  specialist: { icon: 'medkit', color: '#34d399', bgDim: 'rgba(52,211,153,0.15)' },
 };
 
 type AnalysisEntryView = {
@@ -71,9 +72,7 @@ export default function AnalysisScreen() {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    loadEntries();
-  }, []);
+  useEffect(() => { loadEntries(); }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -131,60 +130,52 @@ export default function AnalysisScreen() {
           const prev = entries;
           setEntries((p) => p.filter((e) => e.id !== id));
           const { error } = await supabase.from('analysis_logs').delete().eq('id', id);
-          if (error) {
-            setEntries(prev);
-            pushToast('Failed to delete.', 'error');
-          }
+          if (error) { setEntries(prev); pushToast('Failed to delete.', 'error'); }
         },
       },
     ]);
   };
 
-  const filteredEntries =
-    filter === 'all' ? entries : entries.filter((e) => e.type === filter);
-
+  const filteredEntries = filter === 'all' ? entries : entries.filter((e) => e.type === filter);
   const typeButtons: AnalysisType[] = ['personal', 'ai', 'specialist'];
   const contentStyle = Platform.OS === 'web' ? ({ whiteSpace: 'pre-wrap' } as any) : undefined;
 
   return (
     <ScrollView
-      className="flex-1 bg-[#0b1020]"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
-      }
+      style={shared.screen}
+      contentContainerStyle={s.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />}
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between mb-6">
+      <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
         <View>
-          <Text className="text-2xl font-semibold text-white">Analysis Log</Text>
-          <Text className="text-slate-400 text-sm">AI insights, notes & specialist feedback</Text>
+          <Text style={shared.pageTitle}>Analysis Log</Text>
+          <Text style={shared.pageSubtitle}>AI insights, notes & specialist feedback</Text>
         </View>
-        <Pressable
-          onPress={() => setShowAddForm(true)}
-          className="bg-teal-500 px-4 py-2 rounded-xl flex-row items-center gap-2"
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text className="text-white font-medium text-sm">Add Entry</Text>
+        <Pressable onPress={() => setShowAddForm(true)} style={[shared.btnPrimary, shared.btnSmall]}>
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={{ ...typography.captionMedium, color: '#fff' }}>Add Entry</Text>
         </Pressable>
       </View>
 
       {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
-        <View className="flex-row gap-2">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+        <View style={[shared.row, { gap: spacing.sm }]}>
           {FILTERS.map((type) => (
             <Pressable
               key={type}
               onPress={() => setFilter(type)}
-              className={`px-4 py-2 rounded-full ${
-                filter === type ? 'bg-teal-500' : 'bg-slate-900'
-              }`}
+              style={{
+                paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radii.full,
+                backgroundColor: filter === type ? colors.teal : colors.bgBase,
+              }}
             >
-              <Text
-                className={`text-sm capitalize ${
-                  filter === type ? 'text-white font-semibold' : 'text-slate-300'
-                }`}
-              >
+              <Text style={{
+                ...typography.caption,
+                color: filter === type ? '#fff' : colors.textSecondary,
+                fontWeight: filter === type ? '600' : '400',
+                textTransform: 'capitalize',
+              }}>
                 {type === 'ai' ? 'AI Analysis' : type}
               </Text>
             </Pressable>
@@ -194,36 +185,27 @@ export default function AnalysisScreen() {
 
       {/* Add form */}
       {showAddForm && (
-        <View className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-6">
-          <Text className="text-lg font-semibold text-white mb-4">Add Analysis Entry</Text>
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>Add Analysis Entry</Text>
 
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Date</Text>
-              <TextInput
-                value={newEntry.date}
-                onChangeText={(text) => setNewEntry((prev) => ({ ...prev, date: text }))}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#64748b"
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-              />
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Date</Text>
+              <TextInput value={newEntry.date} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, date: text }))} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textPlaceholder} style={shared.input} />
             </View>
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Type</Text>
-              <View className="flex-row gap-1">
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Type</Text>
+              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
                 {typeButtons.map((t) => (
                   <Pressable
                     key={t}
                     onPress={() => setNewEntry((prev) => ({ ...prev, type: t }))}
-                    className={`flex-1 px-2 py-2 rounded-lg items-center ${
-                      newEntry.type === t ? 'bg-teal-500' : 'bg-slate-800'
-                    }`}
+                    style={{
+                      flex: 1, paddingVertical: spacing.sm, borderRadius: radii.md, alignItems: 'center',
+                      backgroundColor: newEntry.type === t ? colors.teal : colors.bgCard,
+                    }}
                   >
-                    <Text
-                      className={`text-xs capitalize ${
-                        newEntry.type === t ? 'text-white font-semibold' : 'text-slate-400'
-                      }`}
-                    >
+                    <Text style={{ ...typography.small, color: newEntry.type === t ? '#fff' : colors.textTertiary, fontWeight: newEntry.type === t ? '600' : '400', textTransform: 'capitalize' }}>
                       {t === 'ai' ? 'AI' : t}
                     </Text>
                   </Pressable>
@@ -232,43 +214,22 @@ export default function AnalysisScreen() {
             </View>
           </View>
 
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Title</Text>
-            <TextInput
-              value={newEntry.title || ''}
-              onChangeText={(text) => setNewEntry((prev) => ({ ...prev, title: text }))}
-              placeholder="e.g., Weekly Progress Review"
-              placeholderTextColor="#64748b"
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-            />
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Title</Text>
+            <TextInput value={newEntry.title || ''} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, title: text }))} placeholder="e.g., Weekly Progress Review" placeholderTextColor={colors.textPlaceholder} style={shared.input} />
           </View>
 
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Content</Text>
-            <TextInput
-              value={newEntry.content || ''}
-              onChangeText={(text) => setNewEntry((prev) => ({ ...prev, content: text }))}
-              placeholder="Your analysis, observations, or notes..."
-              placeholderTextColor="#64748b"
-              multiline
-              numberOfLines={6}
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white min-h-[160px]"
-              textAlignVertical="top"
-            />
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Content</Text>
+            <TextInput value={newEntry.content || ''} onChangeText={(text) => setNewEntry((prev) => ({ ...prev, content: text }))} placeholder="Your analysis, observations, or notes..." placeholderTextColor={colors.textPlaceholder} multiline numberOfLines={6} style={[shared.input, { minHeight: 160, textAlignVertical: 'top' }]} />
           </View>
 
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={addEntry}
-              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
-            >
-              <Text className="text-white font-medium">Save Entry</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable onPress={addEntry} style={[shared.btnPrimary, { flex: 1 }]}>
+              <Text style={shared.btnPrimaryText}>Save Entry</Text>
             </Pressable>
-            <Pressable
-              onPress={() => setShowAddForm(false)}
-              className="bg-slate-800 px-4 py-2.5 rounded-xl"
-            >
-              <Text className="text-slate-300">Cancel</Text>
+            <Pressable onPress={() => setShowAddForm(false)} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Cancel</Text>
             </Pressable>
           </View>
         </View>
@@ -278,66 +239,49 @@ export default function AnalysisScreen() {
       {isLoading ? (
         <LoadingState label="Loading analysis log..." />
       ) : filteredEntries.length === 0 ? (
-        <View className="bg-slate-900 rounded-2xl p-8 border border-slate-800 border-dashed items-center">
-          <Text className="text-slate-300 text-center">
-            No entries yet. Add your first analysis to start documenting your journey.
+        <View style={[shared.card, { borderStyle: 'dashed', alignItems: 'center', paddingVertical: spacing['3xl'] }]}>
+          <Ionicons name="document-text-outline" size={40} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No entries yet</Text>
+          <Text style={shared.emptyStateText}>
+            Add your first analysis to start documenting your journey.
           </Text>
         </View>
       ) : (
         filteredEntries.map((entry) => {
           const config = typeConfig[entry.type];
           const isExpanded = expandedEntries[entry.id] ?? false;
-          const isLong =
-            entry.content.length > 240 || entry.content.split('\n').length > 6;
+          const isLong = entry.content.length > 240 || entry.content.split('\n').length > 6;
           return (
-            <View
-              key={entry.id}
-              className="bg-slate-900 rounded-2xl p-5 border border-slate-800 mb-3"
-            >
-              <View className="flex-row items-start justify-between gap-3 mb-3">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className={`p-2 rounded-lg ${config.bg}`}>
+            <View key={entry.id} style={[shared.card, { marginBottom: spacing.md }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.md }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 }}>
+                  <View style={{ padding: spacing.sm, borderRadius: radii.md, backgroundColor: config.bgDim }}>
                     <Ionicons name={config.icon} size={20} color={config.color} />
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-white font-semibold" numberOfLines={2}>
-                      {entry.title}
-                    </Text>
-                    <View className="flex-row items-center gap-2 mt-1">
-                      <Ionicons name="calendar-outline" size={12} color="#94a3b8" />
-                      <Text className="text-slate-400 text-xs">
-                        {format(new Date(entry.date), 'MMMM d, yyyy')}
-                      </Text>
-                      <View className={`${config.bg} px-2 py-0.5 rounded`}>
-                        <Text className="text-xs capitalize" style={{ color: config.color }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }} numberOfLines={2}>{entry.title}</Text>
+                    <View style={[shared.row, { gap: spacing.sm, marginTop: spacing.xs }]}>
+                      <Ionicons name="calendar-outline" size={12} color={colors.textTertiary} />
+                      <Text style={{ ...typography.small, color: colors.textTertiary }}>{format(new Date(entry.date), 'MMMM d, yyyy')}</Text>
+                      <View style={[shared.badge, { backgroundColor: config.bgDim }]}>
+                        <Text style={{ ...typography.small, color: config.color, textTransform: 'capitalize' }}>
                           {entry.type === 'ai' ? 'AI Analysis' : entry.type}
                         </Text>
                       </View>
                     </View>
                   </View>
                 </View>
-                <Pressable onPress={() => deleteEntry(entry.id)} className="p-2">
-                  <Ionicons name="trash-outline" size={16} color="#94a3b8" />
+                <Pressable onPress={() => deleteEntry(entry.id)} style={{ padding: spacing.sm }}>
+                  <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
                 </Pressable>
               </View>
 
-              <Text
-                className="text-slate-200 text-sm leading-6"
-                numberOfLines={isExpanded ? undefined : 8}
-                style={contentStyle}
-              >
+              <Text style={[{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }, contentStyle]} numberOfLines={isExpanded ? undefined : 8}>
                 {entry.content}
               </Text>
               {isLong ? (
-                <Pressable
-                  onPress={() =>
-                    setExpandedEntries((prev) => ({ ...prev, [entry.id]: !isExpanded }))
-                  }
-                  className="mt-3"
-                >
-                  <Text className="text-teal-400 text-sm font-medium">
-                    {isExpanded ? 'Show less' : 'Show more'}
-                  </Text>
+                <Pressable onPress={() => setExpandedEntries((prev) => ({ ...prev, [entry.id]: !isExpanded }))} style={{ marginTop: spacing.md }}>
+                  <Text style={{ ...typography.captionMedium, color: colors.tealLight }}>{isExpanded ? 'Show less' : 'Show more'}</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -347,3 +291,10 @@ export default function AnalysisScreen() {
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing['4xl'],
+  },
+});

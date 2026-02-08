@@ -29,23 +29,23 @@ import type {
   WorkoutType,
 } from '../../lib/types';
 
-const WORKOUT_TYPES: { value: WorkoutType; label: string; tone: string }[] = [
-  { value: 'corrective', label: 'Corrective', tone: 'bg-teal-500/20 text-teal-200' },
-  { value: 'gym', label: 'Gym', tone: 'bg-indigo-500/20 text-indigo-200' },
-  { value: 'cardio', label: 'Cardio', tone: 'bg-rose-500/20 text-rose-200' },
-  { value: 'other', label: 'Other', tone: 'bg-slate-500/20 text-slate-200' },
+const WORKOUT_TYPES: { value: WorkoutType; label: string; bg: string; text: string }[] = [
+  { value: 'corrective', label: 'Corrective', bg: colors.corrective.bg, text: colors.corrective.text },
+  { value: 'gym', label: 'Gym', bg: colors.gym_compound.bg, text: colors.gym_compound.text },
+  { value: 'cardio', label: 'Cardio', bg: colors.cardio.bg, text: colors.cardio.text },
+  { value: 'other', label: 'Other', bg: colors.cooldown.bg, text: colors.cooldown.text },
 ];
 
 const CATEGORY_META: Record<ExerciseCategory, { label: string; bg: string; text: string }> = {
-  corrective: { label: 'Corrective', bg: 'bg-teal-500/20', text: 'text-teal-200' },
-  stretching: { label: 'Stretching', bg: 'bg-amber-500/20', text: 'text-amber-200' },
-  strengthening: { label: 'Strength', bg: 'bg-emerald-500/20', text: 'text-emerald-200' },
-  warmup: { label: 'Warmup', bg: 'bg-sky-500/20', text: 'text-sky-200' },
-  cooldown: { label: 'Cooldown', bg: 'bg-slate-500/20', text: 'text-slate-200' },
-  gym_compound: { label: 'Gym: Compound', bg: 'bg-indigo-500/20', text: 'text-indigo-200' },
-  gym_isolation: { label: 'Gym: Isolation', bg: 'bg-purple-500/20', text: 'text-purple-200' },
-  cardio: { label: 'Cardio', bg: 'bg-rose-500/20', text: 'text-rose-200' },
-  mobility: { label: 'Mobility', bg: 'bg-cyan-500/20', text: 'text-cyan-200' },
+  corrective: { label: 'Corrective', bg: colors.corrective.bg, text: colors.corrective.text },
+  stretching: { label: 'Stretching', bg: colors.stretching.bg, text: colors.stretching.text },
+  strengthening: { label: 'Strength', bg: colors.strengthening.bg, text: colors.strengthening.text },
+  warmup: { label: 'Warmup', bg: colors.warmup.bg, text: colors.warmup.text },
+  cooldown: { label: 'Cooldown', bg: colors.cooldown.bg, text: colors.cooldown.text },
+  gym_compound: { label: 'Gym: Compound', bg: colors.gym_compound.bg, text: colors.gym_compound.text },
+  gym_isolation: { label: 'Gym: Isolation', bg: colors.gym_isolation.bg, text: colors.gym_isolation.text },
+  cardio: { label: 'Cardio', bg: colors.cardio.bg, text: colors.cardio.text },
+  mobility: { label: 'Mobility', bg: colors.mobility.bg, text: colors.mobility.text },
 };
 
 type WorkoutExerciseDraft = {
@@ -822,16 +822,16 @@ export default function WorkoutsScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#0b1020]"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      style={shared.screen}
+      contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['4xl'] }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
-      <View className="flex-row items-center justify-between mb-6">
+      <View style={[shared.rowBetween, { marginBottom: spacing['2xl'] }]}>
         <View>
-          <Text className="text-2xl font-semibold text-white">Workouts</Text>
-          <Text className="text-slate-400 text-sm">Log sets, track asymmetry, and rest timers</Text>
+          <Text style={shared.pageTitle}>Workouts</Text>
+          <Text style={shared.pageSubtitle}>Log sets, track asymmetry, and rest timers</Text>
         </View>
         {!activeWorkout && !guidedTemplate && (
           <Pressable
@@ -839,10 +839,10 @@ export default function WorkoutsScreen() {
               setActiveWorkout({ type: 'corrective', startedAt: new Date(), notes: '' });
               setShowStartForm(true);
             }}
-            className="bg-teal-500 px-4 py-2 rounded-xl flex-row items-center gap-2"
+            style={[shared.btnPrimary, shared.btnSmall]}
           >
             <Ionicons name="add" size={18} color="#fff" />
-            <Text className="text-white font-medium text-sm">Start</Text>
+            <Text style={{ ...typography.captionMedium, color: '#fff' }}>Start</Text>
           </Pressable>
         )}
       </View>
@@ -872,140 +872,140 @@ export default function WorkoutsScreen() {
         </Pressable>
       </View>
 
-      <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-        <View className="flex-row items-center justify-between mb-2">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Schedule and Reminders</Text>
-            <Text className="text-slate-400 text-xs">Set session times and gym days.</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Schedule and Reminders</Text>
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>Set session times and gym days.</Text>
           </View>
           <Pressable
             onPress={() => router.push('/workout-schedule')}
-            className="px-3 py-2 rounded-xl bg-teal-500"
+            style={[shared.btnPrimary, shared.btnSmall]}
           >
-            <Text className="text-white text-xs font-medium">Open</Text>
+            <Text style={{ ...typography.small, color: '#fff', fontWeight: '600' }}>Open</Text>
           </Pressable>
         </View>
-        <Text className="text-slate-400 text-xs">
+        <Text style={{ ...typography.small, color: colors.textTertiary }}>
           Sync notifications for your daily corrective protocol and gym schedule.
         </Text>
       </View>
 
       {guidedTemplate && guidedExercise && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-amber-500/30 mb-6">
-          <View className="flex-row items-center justify-between mb-3">
+        <View style={[shared.card, { borderColor: colors.warningDim, marginBottom: spacing.lg }]}>
+          <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
             <View>
-              <Text className="text-lg font-semibold text-white">Guided Protocol</Text>
-              <Text className="text-slate-400 text-xs">{guidedTemplate.name}</Text>
+              <Text style={{ ...typography.h3, color: colors.textPrimary }}>Guided Protocol</Text>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>{guidedTemplate.name}</Text>
             </View>
-            <Pressable onPress={stopGuidedTemplate} className="px-3 py-2 rounded-xl bg-slate-800">
-              <Text className="text-slate-300 text-xs">End</Text>
+            <Pressable onPress={stopGuidedTemplate} style={[shared.btnSecondary, shared.btnSmall]}>
+              <Text style={{ ...typography.small, color: colors.textSecondary }}>End</Text>
             </Pressable>
           </View>
 
-          <View className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70">
-            <Text className="text-slate-400 text-xs">
+          <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>
               Exercise {guidedExerciseIndex + 1} of {guidedTemplate.exercises.length}
             </Text>
-            <Text className="text-white text-lg font-semibold mt-1">
+            <Text style={{ ...typography.h3, color: colors.textPrimary, marginTop: spacing.xs }}>
               {guidedExerciseInfo?.name ?? 'Exercise'}
             </Text>
             {guidedExerciseInfo?.instructions && (
-              <Text className="text-slate-300 text-xs mt-2">{guidedExerciseInfo.instructions}</Text>
+              <Text style={{ ...typography.small, color: colors.textSecondary, marginTop: spacing.sm }}>{guidedExerciseInfo.instructions}</Text>
             )}
-            <View className="flex-row flex-wrap gap-2 mt-3">
-              <Text className="text-xs text-slate-400">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md }}>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>
                 Set {guidedSetIndex + 1} of {guidedTotalSets}
               </Text>
               {guidedExercise.reps !== null && (
-                <Text className="text-xs text-slate-400">Reps: {guidedExercise.reps}</Text>
+                <Text style={{ ...typography.small, color: colors.textTertiary }}>Reps: {guidedExercise.reps}</Text>
               )}
               {guidedExercise.duration !== null && (
-                <Text className="text-xs text-slate-400">Duration: {guidedExercise.duration}s</Text>
+                <Text style={{ ...typography.small, color: colors.textTertiary }}>Duration: {guidedExercise.duration}s</Text>
               )}
-              <Text className="text-xs text-slate-400">
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>
                 Side: {guidedExercise.side ?? (guidedExerciseInfo?.side_specific ? 'left' : 'bilateral')}
               </Text>
             </View>
 
             {guidedExercise.duration !== null && (
-              <View className="mt-4 bg-slate-900/70 rounded-xl p-3 border border-amber-500/30">
-                <Text className="text-amber-200 text-xs">Timer</Text>
-                <Text className="text-white text-2xl font-semibold">
+              <View style={{ marginTop: spacing.lg, backgroundColor: colors.bgBase, borderRadius: radii.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.warningDim }}>
+                <Text style={{ ...typography.small, color: colors.warning }}>Timer</Text>
+                <Text style={{ ...typography.hero, color: colors.textPrimary }}>
                   {formatSeconds(Math.max(guidedRemaining ?? guidedExercise.duration, 0))}
                 </Text>
                 {guidedRemaining === null ? (
                   <Pressable
                     onPress={() => setGuidedRemaining(guidedExercise.duration ?? null)}
-                    className="mt-3 px-3 py-2 rounded-lg bg-amber-500/20 self-start"
+                    style={{ marginTop: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.md, backgroundColor: colors.warningDim, alignSelf: 'flex-start' }}
                   >
-                    <Text className="text-amber-100 text-xs">Start Timer</Text>
+                    <Text style={{ ...typography.small, color: '#fef3c7' }}>Start Timer</Text>
                   </Pressable>
                 ) : (
                   <Pressable
                     onPress={() => setGuidedRemaining(null)}
-                    className="mt-3 px-3 py-2 rounded-lg bg-slate-800 self-start"
+                    style={[shared.btnSecondary, shared.btnSmall, { marginTop: spacing.md, alignSelf: 'flex-start' }]}
                   >
-                    <Text className="text-slate-300 text-xs">Pause Timer</Text>
+                    <Text style={{ ...typography.small, color: colors.textSecondary }}>Pause Timer</Text>
                   </Pressable>
                 )}
               </View>
             )}
           </View>
 
-          <View className="flex-row gap-2 mt-4">
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
             <Pressable
               onPress={completeGuidedSet}
-              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
+              style={[shared.btnPrimary, { flex: 1 }]}
             >
-              <Text className="text-white font-medium">Complete Set</Text>
+              <Text style={shared.btnPrimaryText}>Complete Set</Text>
             </Pressable>
             <Pressable
               onPress={skipGuidedExercise}
-              className="bg-slate-800 px-4 py-2.5 rounded-xl"
+              style={shared.btnSecondary}
             >
-              <Text className="text-slate-300">Next Exercise</Text>
+              <Text style={shared.btnSecondaryText}>Next Exercise</Text>
             </Pressable>
           </View>
         </View>
       )}
 
       {!guidedTemplate && !activeWorkout && !showStartForm && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <View className="flex-row items-center justify-between mb-3">
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
             <View>
-              <Text className="text-lg font-semibold text-white">Corrective Protocols</Text>
-              <Text className="text-slate-400 text-xs">Start a guided session in one tap</Text>
+              <Text style={{ ...typography.h3, color: colors.textPrimary }}>Corrective Protocols</Text>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>Start a guided session in one tap</Text>
             </View>
           </View>
 
           {templates.length === 0 ? (
-            <Text className="text-slate-400 text-sm">No templates available yet.</Text>
+            <Text style={shared.pageSubtitle}>No templates available yet.</Text>
           ) : (
-            <View className="gap-3">
+            <View style={{ gap: spacing.md }}>
               {templates.map((template) => (
                 <View
                   key={template.id}
-                  className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70"
+                  style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}
                 >
-                  <View className="flex-row items-center justify-between">
+                  <View style={shared.rowBetween}>
                     <View>
-                      <Text className="text-white font-semibold">{template.name}</Text>
-                      <Text className="text-slate-400 text-xs mt-1">
+                      <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>{template.name}</Text>
+                      <Text style={{ ...typography.small, color: colors.textTertiary, marginTop: spacing.xs }}>
                         {template.exercises.length} exercises · {template.estimated_duration_minutes ?? '--'} min
                       </Text>
                     </View>
-                    <View className="flex-row gap-2">
+                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                       <Pressable
                         onPress={() => startTemplateEdit(template)}
-                        className="px-3 py-2 rounded-lg bg-slate-800"
+                        style={[shared.btnSecondary, shared.btnSmall]}
                       >
-                        <Text className="text-slate-300 text-xs">Customize</Text>
+                        <Text style={{ ...typography.small, color: colors.textSecondary }}>Customize</Text>
                       </Pressable>
                       <Pressable
                         onPress={() => startGuidedTemplate(template)}
-                        className="px-3 py-2 rounded-lg bg-teal-500"
+                        style={[shared.btnPrimary, shared.btnSmall]}
                       >
-                        <Text className="text-white text-xs">Start Protocol</Text>
+                        <Text style={{ ...typography.small, color: '#fff' }}>Start Protocol</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -1017,44 +1017,44 @@ export default function WorkoutsScreen() {
       )}
 
       {showTemplateEditor && templateDraft && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <View className="flex-row items-center justify-between mb-4">
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
             <View>
-              <Text className="text-lg font-semibold text-white">Edit Template</Text>
-              <Text className="text-slate-400 text-xs">{templateDraft.name}</Text>
+              <Text style={{ ...typography.h3, color: colors.textPrimary }}>Edit Template</Text>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>{templateDraft.name}</Text>
             </View>
-            <Pressable onPress={closeTemplateEditor} className="px-3 py-2 rounded-xl bg-slate-800">
-              <Text className="text-slate-300 text-xs">Close</Text>
+            <Pressable onPress={closeTemplateEditor} style={[shared.btnSecondary, shared.btnSmall]}>
+              <Text style={{ ...typography.small, color: colors.textSecondary }}>Close</Text>
             </Pressable>
           </View>
 
-          <View className="gap-3">
+          <View style={{ gap: spacing.md }}>
             {templateDraft.exercises.map((exercise, index) => (
               <View
                 key={`${exercise.exercise_id}-${index}`}
-                className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/70"
+                style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}
               >
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-white font-medium">
+                <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+                  <Text style={shared.btnPrimaryText}>
                     {index + 1}. {exercise.exercise?.name ?? 'Missing exercise'}
                   </Text>
-                  <View className="flex-row gap-1">
-                    <Pressable onPress={() => moveTemplateExercise(index, -1)} className="p-1">
+                  <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                    <Pressable onPress={() => moveTemplateExercise(index, -1)} style={{ padding: spacing.xs }}>
                       <Ionicons name="arrow-up" size={16} color="#94a3b8" />
                     </Pressable>
-                    <Pressable onPress={() => moveTemplateExercise(index, 1)} className="p-1">
+                    <Pressable onPress={() => moveTemplateExercise(index, 1)} style={{ padding: spacing.xs }}>
                       <Ionicons name="arrow-down" size={16} color="#94a3b8" />
                     </Pressable>
-                    <Pressable onPress={() => openTemplateExercisePicker(index)} className="p-1">
+                    <Pressable onPress={() => openTemplateExercisePicker(index)} style={{ padding: spacing.xs }}>
                       <Ionicons name="swap-horizontal" size={16} color="#94a3b8" />
                     </Pressable>
-                    <Pressable onPress={() => removeTemplateExercise(index)} className="p-1">
+                    <Pressable onPress={() => removeTemplateExercise(index)} style={{ padding: spacing.xs }}>
                       <Ionicons name="trash-outline" size={16} color="#94a3b8" />
                     </Pressable>
                   </View>
                 </View>
 
-                <View className="flex-row gap-2 mb-2">
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                   <TextInput
                     placeholder="Sets"
                     placeholderTextColor="#64748b"
@@ -1063,7 +1063,7 @@ export default function WorkoutsScreen() {
                     onChangeText={(text) =>
                       updateTemplateExercise(index, { sets: parseNumber(text) })
                     }
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    style={[shared.input, { flex: 1 }]}
                   />
                   <TextInput
                     placeholder="Reps"
@@ -1073,10 +1073,10 @@ export default function WorkoutsScreen() {
                     onChangeText={(text) =>
                       updateTemplateExercise(index, { reps: parseNumber(text) })
                     }
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    style={[shared.input, { flex: 1 }]}
                   />
                 </View>
-                <View className="flex-row gap-2 mb-2">
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                   <TextInput
                     placeholder="Duration (sec)"
                     placeholderTextColor="#64748b"
@@ -1085,20 +1085,18 @@ export default function WorkoutsScreen() {
                     onChangeText={(text) =>
                       updateTemplateExercise(index, { duration: parseNumber(text) })
                     }
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    style={[shared.input, { flex: 1 }]}
                   />
                 </View>
 
-                <View className="flex-row flex-wrap gap-2">
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                   {(['left', 'right', 'bilateral'] as WorkoutSetSide[]).map((side) => (
                     <Pressable
                       key={side}
                       onPress={() => updateTemplateExercise(index, { side })}
-                      className={`px-3 py-1.5 rounded-full border ${
-                        exercise.side === side ? 'bg-amber-500/30 border-amber-400' : 'border-slate-700'
-                      }`}
+                      style={{ paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.full, borderWidth: 1, backgroundColor: exercise.side === side ? colors.warningDim : 'transparent', borderColor: exercise.side === side ? colors.warning : colors.border }}
                     >
-                      <Text className={`text-xs ${exercise.side === side ? 'text-white' : 'text-slate-300'}`}>
+                      <Text style={{ ...typography.small, color: exercise.side === side ? '#fff' : colors.textSecondary }}>
                         {side}
                       </Text>
                     </Pressable>
@@ -1110,69 +1108,70 @@ export default function WorkoutsScreen() {
 
           <Pressable
             onPress={() => openTemplateExercisePicker()}
-            className="mt-4 bg-slate-800 px-4 py-2.5 rounded-xl items-center"
+            style={[shared.btnSecondary, { marginTop: spacing.lg, alignItems: 'center' }]}
           >
-            <Text className="text-slate-300 text-sm">Add Exercise</Text>
+            <Text style={{ ...typography.caption, color: colors.textSecondary }}>Add Exercise</Text>
           </Pressable>
 
           {templatePickerOpen && (
-            <View className="mt-4">
+            <View style={{ marginTop: spacing.lg }}>
               <TextInput
                 placeholder="Search exercises"
                 placeholderTextColor="#64748b"
-                className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
+                style={shared.input}
                 value={templatePickerQuery}
                 onChangeText={setTemplatePickerQuery}
               />
               {templateReplaceIndex !== null && (
-                <Text className="text-slate-400 text-xs mt-2">Replacing exercise {templateReplaceIndex + 1}</Text>
+                <Text style={{ ...typography.small, color: colors.textTertiary, marginTop: spacing.sm }}>Replacing exercise {templateReplaceIndex + 1}</Text>
               )}
-              <View className="mt-3 gap-2">
+              <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
                 {filteredTemplateExercises.slice(0, 20).map((exercise) => (
                   <Pressable
                     key={exercise.id}
                     onPress={() => upsertTemplateExercise(exercise)}
-                    className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3"
+                    style={{ borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCardAlt, padding: spacing.md }}
                   >
-                    <Text className="text-white font-medium">{exercise.name}</Text>
-                    <Text className="text-xs text-slate-400 mt-1">{exercise.category}</Text>
+                    <Text style={shared.btnPrimaryText}>{exercise.name}</Text>
+                    <Text style={{ ...typography.small, color: colors.textTertiary, marginTop: spacing.xs }}>{exercise.category}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
           )}
 
-          <View className="flex-row gap-2 mt-5">
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl }}>
             <Pressable
               onPress={saveTemplateDraft}
-              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
+              style={[shared.btnPrimary, { flex: 1 }]}
             >
-              <Text className="text-white font-medium">Save Template</Text>
+              <Text style={shared.btnPrimaryText}>Save Template</Text>
             </Pressable>
-            <Pressable onPress={closeTemplateEditor} className="bg-slate-800 px-4 py-2.5 rounded-xl">
-              <Text className="text-slate-300">Cancel</Text>
+            <Pressable onPress={closeTemplateEditor} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Cancel</Text>
             </Pressable>
           </View>
         </View>
       )}
 
       {showStartForm && activeWorkout && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <Text className="text-lg font-semibold text-white mb-4">Start Workout</Text>
-          <Text className="text-sm text-slate-300 mb-2">Type</Text>
-          <View className="flex-row flex-wrap gap-2 mb-4">
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>Start Workout</Text>
+          <Text style={shared.inputLabel}>Type</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
             {WORKOUT_TYPES.map((type) => (
               <Pressable
                 key={type.value}
                 onPress={() => setActiveWorkout({ ...activeWorkout, type: type.value })}
-                className={`px-3 py-2 rounded-lg border ${
-                  activeWorkout.type === type.value
-                    ? 'bg-teal-500 border-teal-400'
-                    : 'border-slate-700'
-                }`}
+                style={{
+                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.md,
+                  borderWidth: 1,
+                  backgroundColor: activeWorkout.type === type.value ? colors.teal : 'transparent',
+                  borderColor: activeWorkout.type === type.value ? colors.teal : colors.border,
+                }}
               >
                 <Text
-                  className={`${activeWorkout.type === type.value ? 'text-white' : 'text-slate-300'}`}
+                  style={{ color: activeWorkout.type === type.value ? '#fff' : colors.textSecondary }}
                 >
                   {type.label}
                 </Text>
@@ -1180,9 +1179,9 @@ export default function WorkoutsScreen() {
             ))}
           </View>
 
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Energy (1-10)</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Energy (1-10)</Text>
               <TextInput
                 keyboardType="numeric"
                 placeholder="7"
@@ -1191,11 +1190,11 @@ export default function WorkoutsScreen() {
                 onChangeText={(text) =>
                   setActiveWorkout({ ...activeWorkout, energyBefore: parseNumber(text) ?? undefined })
                 }
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                style={shared.input}
               />
             </View>
-            <View className="flex-1">
-              <Text className="text-sm text-slate-300 mb-1">Pain (1-10)</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={shared.inputLabel}>Pain (1-10)</Text>
               <TextInput
                 keyboardType="numeric"
                 placeholder="3"
@@ -1204,109 +1203,109 @@ export default function WorkoutsScreen() {
                 onChangeText={(text) =>
                   setActiveWorkout({ ...activeWorkout, painBefore: parseNumber(text) ?? undefined })
                 }
-                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                style={shared.input}
               />
             </View>
           </View>
 
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Rest Timer (seconds)</Text>
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Rest Timer (seconds)</Text>
             <TextInput
               keyboardType="numeric"
               placeholder="90"
               placeholderTextColor="#64748b"
               value={String(restDuration)}
               onChangeText={(text) => setRestDuration(parseNumber(text) ?? 0)}
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+              style={shared.input}
             />
           </View>
 
-          <View className="mb-4">
-            <Text className="text-sm text-slate-300 mb-1">Notes</Text>
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={shared.inputLabel}>Notes</Text>
             <TextInput
               placeholder="Workout focus or goals"
               placeholderTextColor="#64748b"
               value={activeWorkout.notes}
               onChangeText={(text) => setActiveWorkout({ ...activeWorkout, notes: text })}
-              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+              style={shared.input}
             />
           </View>
 
-          <View className="flex-row gap-2">
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Pressable
               onPress={() => {
                 startWorkout();
               }}
-              className="bg-teal-500 px-4 py-2.5 rounded-xl flex-1 items-center"
+              style={[shared.btnPrimary, { flex: 1 }]}
             >
-              <Text className="text-white font-medium">Begin Workout</Text>
+              <Text style={shared.btnPrimaryText}>Begin Workout</Text>
             </Pressable>
-            <Pressable onPress={cancelWorkout} className="bg-slate-800 px-4 py-2.5 rounded-xl">
-              <Text className="text-slate-300">Cancel</Text>
+            <Pressable onPress={cancelWorkout} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Cancel</Text>
             </Pressable>
           </View>
         </View>
       )}
 
       {summary && !activeWorkout && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <Text className="text-lg font-semibold text-white mb-4">Workout Summary</Text>
-          <View className="flex-row flex-wrap gap-3">
-            <View className="bg-slate-950/70 rounded-xl px-4 py-3 border border-slate-800/70">
-              <Text className="text-slate-400 text-xs">Total Volume</Text>
-              <Text className="text-white font-semibold">{Math.round(summary.totalVolumeKg)} kg</Text>
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>Workout Summary</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
+            <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>Total Volume</Text>
+              <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>{Math.round(summary.totalVolumeKg)} kg</Text>
             </View>
-            <View className="bg-slate-950/70 rounded-xl px-4 py-3 border border-slate-800/70">
-              <Text className="text-slate-400 text-xs">Total Sets</Text>
-              <Text className="text-white font-semibold">{summary.totalSets}</Text>
+            <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>Total Sets</Text>
+              <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>{summary.totalSets}</Text>
             </View>
-            <View className="bg-slate-950/70 rounded-xl px-4 py-3 border border-slate-800/70">
-              <Text className="text-slate-400 text-xs">Duration</Text>
-              <Text className="text-white font-semibold">
+            <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>Duration</Text>
+              <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>
                 {Math.round(summary.totalDurationSeconds / 60)} min
               </Text>
             </View>
-            <View className="bg-slate-950/70 rounded-xl px-4 py-3 border border-slate-800/70">
-              <Text className="text-slate-400 text-xs">Left/Right</Text>
-              <Text className="text-white font-semibold">
+            <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>Left/Right</Text>
+              <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>
                 {summary.leftVolumeKg} / {summary.rightVolumeKg} kg
               </Text>
             </View>
           </View>
           {summary.imbalancePct !== null && (
-            <Text className="text-slate-400 text-sm mt-3">
+            <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.md }}>
               Imbalance: {summary.imbalancePct > 0 ? '+' : ''}
               {summary.imbalancePct}%
             </Text>
           )}
           <Pressable
             onPress={() => setSummary(null)}
-            className="mt-4 bg-teal-500 px-4 py-2.5 rounded-xl items-center"
+            style={[shared.btnPrimary, { marginTop: spacing.lg }]}
           >
-            <Text className="text-white font-medium">Done</Text>
+            <Text style={shared.btnPrimaryText}>Done</Text>
           </Pressable>
         </View>
       )}
 
       {activeWorkout && !showStartForm && (
-        <View className="bg-slate-900/70 rounded-2xl p-5 border border-slate-800/70 mb-6">
-          <View className="flex-row items-center justify-between mb-4">
+        <View style={[shared.card, { marginBottom: spacing.lg }]}>
+          <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
             <View>
-              <Text className="text-white font-semibold text-lg">{activeWorkoutForm.type}</Text>
-              <Text className="text-slate-400 text-sm">Elapsed {formatSeconds(elapsedSeconds)}</Text>
+              <Text style={{ ...typography.h3, color: colors.textPrimary }}>{activeWorkoutForm.type}</Text>
+              <Text style={shared.pageSubtitle}>Elapsed {formatSeconds(elapsedSeconds)}</Text>
             </View>
-            <Pressable onPress={cancelWorkout} className="px-3 py-2 rounded-xl bg-slate-800">
-              <Text className="text-slate-300 text-sm">Discard</Text>
+            <Pressable onPress={cancelWorkout} style={[shared.btnSecondary, shared.btnSmall]}>
+              <Text style={{ ...typography.caption, color: colors.textSecondary }}>Discard</Text>
             </Pressable>
           </View>
 
           {restRemaining !== null && (
-            <View className="bg-slate-950/70 rounded-xl p-4 border border-amber-500/40 mb-4">
-              <Text className="text-amber-200 text-sm">Rest Timer</Text>
-              <Text className="text-white text-2xl font-semibold">
+            <View style={{ backgroundColor: colors.bgDeep, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.warningDim, marginBottom: spacing.lg }}>
+              <Text style={{ ...typography.caption, color: colors.warning }}>Rest Timer</Text>
+              <Text style={{ ...typography.hero, color: colors.textPrimary }}>
                 {formatSeconds(Math.max(restRemaining, 0))}
               </Text>
-              <Text className="text-slate-400 text-xs mt-1">
+              <Text style={{ ...typography.small, color: colors.textTertiary, marginTop: spacing.xs }}>
                 {restingExerciseId ? 'Between sets' : 'Rest'}
               </Text>
               <Pressable
@@ -1314,25 +1313,25 @@ export default function WorkoutsScreen() {
                   setRestRemaining(null);
                   setRestingExerciseId(null);
                 }}
-                className="mt-3 px-3 py-2 rounded-lg bg-slate-800 self-start"
+                style={[shared.btnSecondary, shared.btnSmall, { marginTop: spacing.md, alignSelf: 'flex-start' }]}
               >
-                <Text className="text-slate-300 text-xs">Skip Rest</Text>
+                <Text style={{ ...typography.small, color: colors.textSecondary }}>Skip Rest</Text>
               </Pressable>
             </View>
           )}
 
           {recentExercises.length > 0 && (
-            <View className="mb-4">
-              <Text className="text-sm text-slate-300 mb-2">Quick add from recent</Text>
+            <View style={{ marginBottom: spacing.lg }}>
+              <Text style={shared.inputLabel}>Quick add from recent</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row gap-2">
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                   {recentExercises.map((exercise) => (
                     <Pressable
                       key={exercise.id}
                       onPress={() => addExercise(exercise)}
-                      className="px-3 py-2 rounded-full border border-slate-700"
+                      style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.full, borderWidth: 1, borderColor: colors.border }}
                     >
-                      <Text className="text-xs text-slate-200">{exercise.name}</Text>
+                      <Text style={{ ...typography.small, color: colors.textSecondary }}>{exercise.name}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -1342,33 +1341,33 @@ export default function WorkoutsScreen() {
 
           <Pressable
             onPress={() => setShowExercisePicker((prev) => !prev)}
-            className="bg-slate-800 px-4 py-2 rounded-xl flex-row items-center gap-2"
+            style={[shared.btnSecondary, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]}
           >
             <Ionicons name="add" size={16} color="#94a3b8" />
-            <Text className="text-slate-200 text-sm">Add Exercise</Text>
+            <Text style={{ ...typography.caption, color: colors.textSecondary }}>Add Exercise</Text>
           </Pressable>
 
           {showExercisePicker && (
-            <View className="mt-4">
+            <View style={{ marginTop: spacing.lg }}>
               <TextInput
                 placeholder="Search exercises"
                 placeholderTextColor="#64748b"
-                className="bg-slate-950/70 border border-slate-800/70 rounded-xl px-4 py-3 text-white"
+                style={shared.input}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-              <View className="mt-3 gap-2">
+              <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
                 {filteredExercises.slice(0, 20).map((exercise) => {
                   const meta = CATEGORY_META[exercise.category];
                   return (
                     <Pressable
                       key={exercise.id}
                       onPress={() => addExercise(exercise)}
-                      className="rounded-xl border border-slate-800/70 bg-slate-950/40 p-3"
+                      style={{ borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCardAlt, padding: spacing.md }}
                     >
-                      <Text className="text-white font-medium">{exercise.name}</Text>
-                      <View className={`mt-2 px-2 py-1 rounded-full ${meta.bg}`}>
-                        <Text className={`text-xs ${meta.text}`}>{meta.label}</Text>
+                      <Text style={shared.btnPrimaryText}>{exercise.name}</Text>
+                      <View style={{ marginTop: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radii.full, backgroundColor: meta.bg }}>
+                        <Text style={{ ...typography.small, color: meta.text }}>{meta.label}</Text>
                       </View>
                     </Pressable>
                   );
@@ -1377,7 +1376,7 @@ export default function WorkoutsScreen() {
             </View>
           )}
 
-          <View className="mt-5 gap-4">
+          <View style={{ marginTop: spacing.xl, gap: spacing.lg }}>
             {workoutExercises.map((entry, index) => {
               const draft = setDrafts[entry.id] ?? emptySetDraft('bilateral');
               const sideOptions: WorkoutSetSide[] = entry.exercise.side_specific
@@ -1388,28 +1387,28 @@ export default function WorkoutsScreen() {
               return (
                 <View
                   key={entry.id}
-                  className="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4"
+                  style={{ backgroundColor: colors.bgCardAlt, borderRadius: radii.xl, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}
                 >
-                  <View className="flex-row items-center justify-between">
+                  <View style={shared.rowBetween}>
                     <View>
-                      <Text className="text-white font-semibold">{index + 1}. {entry.exercise.name}</Text>
+                      <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>{index + 1}. {entry.exercise.name}</Text>
                       {entry.exercise.side_specific && (
-                        <Text className="text-xs text-amber-200 mt-1">Side-specific</Text>
+                        <Text style={{ ...typography.small, color: '#fcd34d', marginTop: spacing.xs }}>Side-specific</Text>
                       )}
                     </View>
-                    <Pressable onPress={() => removeExercise(entry.id)} className="p-2">
+                    <Pressable onPress={() => removeExercise(entry.id)} style={{ padding: spacing.sm }}>
                       <Ionicons name="trash-outline" size={16} color="#94a3b8" />
                     </Pressable>
                   </View>
 
-                  <View className="flex-row flex-wrap gap-2 mt-3">
-                    <Text className="text-xs text-slate-400">Sets: {entry.sets.length}</Text>
-                    <Text className="text-xs text-slate-400">Volume: {Math.round(summary.totalVolumeKg)} kg</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md }}>
+                    <Text style={{ ...typography.small, color: colors.textTertiary }}>Sets: {entry.sets.length}</Text>
+                    <Text style={{ ...typography.small, color: colors.textTertiary }}>Volume: {Math.round(summary.totalVolumeKg)} kg</Text>
                   </View>
 
-                  <View className="mt-4">
+                  <View style={{ marginTop: spacing.lg }}>
                     {entry.exercise.side_specific && (
-                      <View className="flex-row gap-2 mb-3">
+                      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                         {sideOptions.map((side) => {
                           const sc = getSideColor(side);
                           const active = draft.side === side;
@@ -1433,14 +1432,14 @@ export default function WorkoutsScreen() {
                       </View>
                     )}
 
-                    <View className="flex-row gap-2 mb-2">
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                       <TextInput
                         placeholder="Reps"
                         placeholderTextColor="#64748b"
                         keyboardType="numeric"
                         value={draft.reps}
                         onChangeText={(text) => updateSetDraft(entry.id, { reps: text })}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                        style={[shared.input, { flex: 1 }]}
                       />
                       <TextInput
                         placeholder="Weight (kg)"
@@ -1448,18 +1447,18 @@ export default function WorkoutsScreen() {
                         keyboardType="numeric"
                         value={draft.weight}
                         onChangeText={(text) => updateSetDraft(entry.id, { weight: text })}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                        style={[shared.input, { flex: 1 }]}
                       />
                     </View>
 
-                    <View className="flex-row gap-2 mb-2">
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
                       <TextInput
                         placeholder="Duration (sec)"
                         placeholderTextColor="#64748b"
                         keyboardType="numeric"
                         value={draft.duration}
                         onChangeText={(text) => updateSetDraft(entry.id, { duration: text })}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                        style={[shared.input, { flex: 1 }]}
                       />
                       <TextInput
                         placeholder="RPE"
@@ -1467,7 +1466,7 @@ export default function WorkoutsScreen() {
                         keyboardType="numeric"
                         value={draft.rpe}
                         onChangeText={(text) => updateSetDraft(entry.id, { rpe: text })}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                        style={[shared.input, { flex: 1 }]}
                       />
                     </View>
 
@@ -1476,25 +1475,25 @@ export default function WorkoutsScreen() {
                       placeholderTextColor="#64748b"
                       value={draft.notes}
                       onChangeText={(text) => updateSetDraft(entry.id, { notes: text })}
-                      className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                      style={shared.input}
                     />
 
                     <Pressable
                       onPress={() => addSet(entry)}
-                      className="mt-3 bg-teal-500 px-4 py-2.5 rounded-xl items-center"
+                      style={[shared.btnPrimary, { marginTop: spacing.md }]}
                     >
-                      <Text className="text-white font-medium">Add Set</Text>
+                      <Text style={shared.btnPrimaryText}>Add Set</Text>
                     </Pressable>
                   </View>
 
                   {entry.sets.length > 0 && (
-                    <View className="mt-4 gap-2">
+                    <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
                       {entry.sets.map((set, setIndex) => (
                         <View
                           key={`${entry.id}-${setIndex}`}
-                          className="flex-row items-center justify-between bg-slate-900/70 px-3 py-2 rounded-lg"
+                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCardAlt, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radii.md }}
                         >
-                          <Text className="text-slate-200 text-xs">
+                          <Text style={{ ...typography.small, color: colors.textSecondary }}>
                             {set.side ? `${set.side} ` : ''}
                             {set.reps ?? 0} reps · {set.weight_kg ?? 0} kg
                             {set.duration_seconds ? ` · ${set.duration_seconds}s` : ''}
@@ -1512,55 +1511,55 @@ export default function WorkoutsScreen() {
             })}
           </View>
 
-          <View className="mt-6 bg-slate-950/70 rounded-2xl p-4 border border-slate-800/70">
-            <Text className="text-white font-semibold">Finish Workout</Text>
-            <Text className="text-slate-400 text-xs mt-1">
+          <View style={{ marginTop: spacing.lg, backgroundColor: colors.bgDeep, borderRadius: radii.xl, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>Finish Workout</Text>
+            <Text style={{ ...typography.small, color: colors.textTertiary, marginTop: spacing.xs }}>
               Total volume {Math.round(workoutSummary.totalVolumeKg)} kg · {workoutSummary.totalSets} sets
             </Text>
 
-            <View className="flex-row gap-3 mt-3">
-              <View className="flex-1">
-                <Text className="text-xs text-slate-300 mb-1">Energy after</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...typography.small, color: colors.textSecondary, marginBottom: spacing.xs }}>Energy after</Text>
                 <TextInput
                   keyboardType="numeric"
                   placeholder="7"
                   placeholderTextColor="#64748b"
                   value={energyAfter}
                   onChangeText={setEnergyAfter}
-                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  style={shared.input}
                 />
               </View>
-              <View className="flex-1">
-                <Text className="text-xs text-slate-300 mb-1">Pain after</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...typography.small, color: colors.textSecondary, marginBottom: spacing.xs }}>Pain after</Text>
                 <TextInput
                   keyboardType="numeric"
                   placeholder="2"
                   placeholderTextColor="#64748b"
                   value={painAfter}
                   onChangeText={setPainAfter}
-                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  style={shared.input}
                 />
               </View>
             </View>
 
-            <Pressable onPress={finishWorkout} className="mt-4 bg-teal-500 px-4 py-2.5 rounded-xl items-center">
-              <Text className="text-white font-medium">Complete Workout</Text>
+            <Pressable onPress={finishWorkout} style={[shared.btnPrimary, { marginTop: spacing.lg }]}>
+              <Text style={shared.btnPrimaryText}>Complete Workout</Text>
             </Pressable>
           </View>
         </View>
       )}
 
-      <Text className="text-lg font-semibold text-white mb-3">Workout History</Text>
+      <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md }}>Workout History</Text>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-4">
+      <View style={[shared.card, { marginBottom: spacing.md }]}>
         <TextInput
           placeholder="Search notes or exercises..."
           placeholderTextColor="#64748b"
           value={historySearchQuery}
           onChangeText={setHistorySearchQuery}
-          className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+          style={shared.input}
         />
-        <View className="flex-row flex-wrap gap-2 mt-3">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md }}>
           {(['all', 'corrective', 'gym', 'cardio', 'other'] as const).map((type) => {
             const active = historyTypeFilter === type;
             const label = type === 'all' ? 'All' : WORKOUT_TYPES.find((item) => item.value === type)?.label ?? type;
@@ -1568,38 +1567,36 @@ export default function WorkoutsScreen() {
               <Pressable
                 key={type}
                 onPress={() => setHistoryTypeFilter(type)}
-                className={`px-3 py-1 rounded-full border ${
-                  active ? 'bg-teal-500/20 border-teal-500/40' : 'bg-slate-950 border-slate-800'
-                }`}
+                style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radii.full, borderWidth: 1, backgroundColor: active ? colors.tealDim : colors.bgDeep, borderColor: active ? colors.tealBorder : colors.border }}
               >
-                <Text className={`text-xs ${active ? 'text-teal-200' : 'text-slate-300'}`}>{label}</Text>
+                <Text style={{ ...typography.small, color: active ? colors.tealLight : colors.textSecondary }}>{label}</Text>
               </Pressable>
             );
           })}
         </View>
-        <View className="flex-row gap-3 mt-3">
-          <View className="flex-1">
-            <Text className="text-xs text-slate-400 mb-1">Start date</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs }}>Start date</Text>
             <TextInput
               placeholder="YYYY-MM-DD"
               placeholderTextColor="#64748b"
               value={historyStartDate}
               onChangeText={setHistoryStartDate}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm"
+              style={shared.input}
             />
           </View>
-          <View className="flex-1">
-            <Text className="text-xs text-slate-400 mb-1">End date</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs }}>End date</Text>
             <TextInput
               placeholder="YYYY-MM-DD"
               placeholderTextColor="#64748b"
               value={historyEndDate}
               onChangeText={setHistoryEndDate}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm"
+              style={shared.input}
             />
           </View>
         </View>
-        <Text className="text-xs text-slate-500 mt-3">
+        <Text style={{ ...typography.small, color: colors.textMuted, marginTop: spacing.md }}>
           Showing {filteredHistory.length} of {workouts.length} workouts
         </Text>
       </View>
@@ -1607,8 +1604,8 @@ export default function WorkoutsScreen() {
       {isLoading ? (
         <LoadingState label="Loading workouts..." />
       ) : filteredHistory.length === 0 ? (
-        <View className="bg-slate-900 rounded-2xl p-8 border border-slate-800 border-dashed items-center">
-          <Text className="text-slate-300 text-center">No workouts match these filters yet.</Text>
+        <View style={[shared.card, { borderStyle: 'dashed', alignItems: 'center', paddingVertical: spacing['3xl'] }]}>
+          <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center' }}>No workouts match these filters yet.</Text>
         </View>
       ) : (
         filteredHistory.map((item) => {
@@ -1619,17 +1616,17 @@ export default function WorkoutsScreen() {
             <Pressable
               key={item.workout.id}
               onPress={() => setExpandedWorkoutId(isExpanded ? null : item.workout.id)}
-              className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-3"
+              style={[shared.card, { marginBottom: spacing.md }]}
             >
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-white font-medium">
+              <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+                <Text style={shared.btnPrimaryText}>
                   {format(new Date(item.workout.date), 'MMMM d, yyyy')}
                 </Text>
-                <View className={`px-2.5 py-1 rounded-full ${typeMeta?.tone ?? 'bg-slate-500/20 text-slate-200'}`}>
-                  <Text className="text-xs">{typeMeta?.label ?? item.workout.type}</Text>
+                <View style={{ paddingHorizontal: 10, paddingVertical: spacing.xs, borderRadius: radii.full, backgroundColor: colors.tealDim }}>
+                  <Text style={{ ...typography.small }}>{typeMeta?.label ?? item.workout.type}</Text>
                 </View>
               </View>
-              <Text className="text-slate-400 text-xs">
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>
                 {item.workout.duration_minutes ?? 0} min · {summary.totalSets} sets · {Math.round(summary.totalVolumeKg)} kg
               </Text>
               {summary.leftVolumeKg + summary.rightVolumeKg > 0 && (
@@ -1645,22 +1642,22 @@ export default function WorkoutsScreen() {
                 </View>
               )}
               {item.workout.notes && (
-                <Text className="text-slate-300 text-sm mt-2">{item.workout.notes}</Text>
+                <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm }}>{item.workout.notes}</Text>
               )}
               {isExpanded && (
-                <View className="mt-3 border-t border-slate-800 pt-3">
+                <View style={{ marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md }}>
                   {item.exercises.length === 0 ? (
-                    <Text className="text-slate-500 text-xs">No exercises logged.</Text>
+                    <Text style={{ ...typography.small, color: colors.textMuted }}>No exercises logged.</Text>
                   ) : (
                     item.exercises.map((exercise) => {
                       const name = exerciseById.get(exercise.exercise_id ?? '')?.name ?? 'Unknown exercise';
                       return (
-                        <View key={exercise.id} className="mb-3">
-                          <Text className="text-slate-200 text-sm font-medium">{name}</Text>
-                          <Text className="text-slate-500 text-xs">
+                        <View key={exercise.id} style={{ marginBottom: spacing.md }}>
+                          <Text style={{ ...typography.bodyMedium, color: colors.textSecondary }}>{name}</Text>
+                          <Text style={{ ...typography.small, color: colors.textMuted }}>
                             {exercise.sets.length} sets
                           </Text>
-                          <View className="mt-2 gap-2">
+                          <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
                             {exercise.sets.map((set, setIndex) => (
                               <View
                                 key={`${exercise.id}-${setIndex}`}
