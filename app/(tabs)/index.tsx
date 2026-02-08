@@ -16,9 +16,10 @@ const sections: { title: string; items: { label: string; icon: IconName; route: 
   {
     title: 'Track & Log',
     items: [
+      { label: 'Health & Recovery', icon: 'heart-circle', route: '/(tabs)/health', color: '#ef4444' },
       { label: 'Progress Photos', icon: 'camera', route: '/(tabs)/photos', color: '#3b82f6' },
       { label: 'Videos', icon: 'videocam', route: '/(tabs)/videos', color: '#f59e0b' },
-      { label: 'Metrics', icon: 'pulse', route: '/(tabs)/metrics', color: '#ef4444' },
+      { label: 'Metrics', icon: 'pulse', route: '/(tabs)/metrics', color: '#94a3b8' },
     ],
   },
   {

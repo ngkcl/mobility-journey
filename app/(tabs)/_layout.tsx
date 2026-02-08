@@ -19,7 +19,7 @@ const tabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }
 
 // Hidden tabs — accessible from within other screens but not in bottom bar
 const hiddenTabs = [
-  'photos', 'videos', 'metrics', 'posture-camera', 'analysis', 'todos', 'exercises',
+  'photos', 'videos', 'metrics', 'posture-camera', 'analysis', 'todos', 'exercises', 'health',
 ];
 
 export default function TabLayout() {

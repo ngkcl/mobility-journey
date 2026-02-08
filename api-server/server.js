@@ -206,6 +206,65 @@ Respond as JSON:
   }
 });
 
+// ==================== EIGHT SLEEP ====================
+app.get('/api/eight-sleep', async (req, res) => {
+  try {
+    const { execSync } = await import('child_process');
+    
+    // Get status from eightctl
+    const statusRaw = execSync('eightctl status --output json --quiet 2>/dev/null', { 
+      timeout: 15000,
+      encoding: 'utf-8',
+    });
+    
+    const status = JSON.parse(statusRaw);
+    
+    // Get recent sleep data
+    let sleepData = null;
+    try {
+      const sleepRaw = execSync('eightctl sleep --output json --quiet 2>/dev/null', {
+        timeout: 15000,
+        encoding: 'utf-8',
+      });
+      sleepData = JSON.parse(sleepRaw);
+    } catch {
+      // Sleep data might not be available
+    }
+
+    const lastNight = sleepData ? {
+      score: sleepData.score ?? 0,
+      duration_hours: (sleepData.duration ?? 0) / 3600,
+      hrv_avg: sleepData.hrv ?? 0,
+      hr_avg: sleepData.heartRate ?? 0,
+      respiratory_rate: sleepData.respiratoryRate ?? 0,
+      toss_turns: sleepData.tossTurns ?? 0,
+      time_to_sleep_min: (sleepData.latency ?? 0) / 60,
+      deep_sleep_pct: sleepData.deepSleepPct ?? 0,
+      rem_sleep_pct: sleepData.remSleepPct ?? 0,
+      bed_temp_f: status.bedTemp ?? 0,
+      room_temp_f: status.roomTemp ?? 0,
+    } : null;
+
+    // Compute recovery score (1-10)
+    let recoveryScore = 5;
+    if (lastNight) {
+      if (lastNight.score >= 80) recoveryScore += 2;
+      else if (lastNight.score >= 60) recoveryScore += 1;
+      else if (lastNight.score < 40) recoveryScore -= 2;
+      
+      if (lastNight.duration_hours >= 7.5) recoveryScore += 1;
+      else if (lastNight.duration_hours < 5) recoveryScore -= 1;
+      
+      recoveryScore = Math.max(1, Math.min(10, recoveryScore));
+    }
+
+    res.json({ lastNight, recoveryScore });
+  } catch (err) {
+    console.error('Eight Sleep error:', err.message);
+    res.status(503).json({ error: 'Eight Sleep unavailable', message: err.message });
+  }
+});
+
 // ==================== HEALTH CHECK ====================
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
