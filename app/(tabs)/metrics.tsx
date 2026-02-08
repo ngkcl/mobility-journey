@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
+import { colors, typography, spacing, radii, shared, getGreeting } from '../../lib/theme';
 import type { MetricEntry as MetricRow } from '../../lib/types';
 
 const quickMetrics = [
@@ -239,49 +240,56 @@ export default function MetricsScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#0b1020]"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      style={shared.screen}
+      contentContainerStyle={shared.screenContent}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between mb-6">
+      <View style={[shared.rowBetween, { marginBottom: spacing.xl }]}>
         <View>
-          <Text className="text-2xl font-semibold text-white">Daily Check-in</Text>
-          <Text className="text-slate-400 text-sm">Track how you feel and what you did</Text>
+          <Text style={shared.pageTitle}>Daily Check-in</Text>
+          <Text style={shared.pageSubtitle}>Track how you feel and what you did</Text>
         </View>
-        <Pressable
-          onPress={() => setShowAddForm(true)}
-          className="bg-teal-500 px-4 py-2 rounded-xl flex-row items-center gap-2"
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text className="text-white font-medium text-sm">Check-in</Text>
+        <Pressable onPress={() => setShowAddForm(true)} style={[shared.btnPrimary, shared.btnSmall]}>
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={{ ...typography.captionMedium, color: '#fff' }}>Check-in</Text>
         </Pressable>
       </View>
 
       {/* Quick stats */}
-      <View className="flex-row flex-wrap gap-3 mb-4">
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.lg }}>
         {quickMetrics.map((metric) => {
           const value = getLatestValue(metric.key);
           const trend = getTrend(metric.key);
           return (
             <View
               key={metric.key}
-              className="flex-1 min-w-[140px] bg-slate-900 rounded-2xl p-4 border border-slate-800"
+              style={{
+                flex: 1,
+                minWidth: 150,
+                backgroundColor: colors.bgBase,
+                borderRadius: radii.xl,
+                padding: spacing.lg,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
             >
-              <View className="flex-row items-center gap-2 mb-2">
-                <Ionicons name={metric.icon} size={16} color={metric.color} />
-                <Text className="text-slate-300 text-sm">{metric.label}</Text>
+              <View style={[shared.row, { gap: spacing.sm, marginBottom: spacing.sm }]}>
+                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${metric.color}20`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={metric.icon} size={14} color={metric.color} />
+                </View>
+                <Text style={{ ...typography.captionMedium, color: colors.textSecondary }}>{metric.label}</Text>
               </View>
-              <View className="flex-row items-end justify-between">
-                <Text className="text-3xl font-bold text-white">
+              <View style={shared.rowBetween}>
+                <Text style={{ fontSize: 28, fontWeight: '700', color: colors.textPrimary }}>
                   {value !== null ? `${value}` : '—'}
-                  <Text className="text-lg text-slate-500">{metric.unit}</Text>
+                  <Text style={{ fontSize: 16, color: colors.textMuted }}>{metric.unit}</Text>
                 </Text>
-                <View className="flex-row items-center gap-1">
+                <View style={[shared.row, { gap: 4 }]}>
                   <Ionicons name={trend.icon} size={16} color={trend.color} />
-                  <Text className="text-xs" style={{ color: trend.color }}>
+                  <Text style={{ ...typography.small, color: trend.color }}>
                     {trend.label}
                   </Text>
                 </View>
@@ -292,12 +300,19 @@ export default function MetricsScreen() {
       </View>
 
       {/* Exercise streak */}
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center gap-3">
-          <Ionicons name="barbell" size={20} color="#14b8a6" />
-          <Text className="text-white font-semibold">{streak} sessions</Text>
-          <Text className="text-slate-400 text-sm">• {totalMinutes} minutes total</Text>
+      <View style={[shared.cardAccent, { marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md }]}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.tealDim, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="barbell" size={20} color={colors.teal} />
         </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ ...typography.bodySemibold, color: colors.textPrimary }}>
+            {streak} sessions logged
+          </Text>
+          <Text style={{ ...typography.caption, color: colors.textTertiary }}>
+            {totalMinutes} minutes total exercise time
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
 
       {/* Add entry form */}
@@ -474,82 +489,100 @@ export default function MetricsScreen() {
       )}
 
       {/* History */}
-      <Text className="text-lg font-semibold text-white mb-3">History</Text>
+      <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md }}>History</Text>
 
       {isLoading ? (
-        <LoadingState label="Loading check-ins..." />
+        <LoadingState label="Loading check-ins..." rows={4} />
       ) : entries.length === 0 ? (
-        <View className="bg-slate-900 rounded-2xl p-8 border border-slate-800 border-dashed items-center">
-          <Text className="text-slate-300 text-center">
-            No check-ins yet. Start your first daily check-in!
+        <View style={[shared.card, { borderStyle: 'dashed', alignItems: 'center', paddingVertical: spacing['3xl'] }]}>
+          <Ionicons name="pulse-outline" size={40} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No check-ins yet</Text>
+          <Text style={shared.emptyStateText}>
+            Start your first daily check-in to begin tracking your journey.
           </Text>
         </View>
       ) : (
         entries.map((entry) => (
           <View
             key={entry.id}
-            className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-3"
+            style={[shared.card, { marginBottom: spacing.md }]}
           >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center gap-3">
-                <Text className="text-white font-medium">
-                  {format(new Date(entry.date), 'MMMM d, yyyy')}
+            <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
+              <View style={[shared.row, { gap: spacing.sm }]}>
+                <Text style={{ ...typography.bodyMedium, color: colors.textPrimary }}>
+                  {format(new Date(entry.date), 'MMM d, yyyy')}
                 </Text>
                 {entry.exerciseDone && (
-                  <View className="bg-teal-500/20 px-2 py-0.5 rounded-full flex-row items-center gap-1">
-                    <Ionicons name="barbell" size={12} color="#5eead4" />
-                    <Text className="text-teal-400 text-xs">
+                  <View style={[shared.badge, { backgroundColor: colors.tealDim }]}>
+                    <Ionicons name="barbell" size={10} color={colors.tealLight} />
+                    <Text style={{ ...typography.tiny, color: colors.tealLight }}>
                       {entry.exerciseMinutes ? `${entry.exerciseMinutes}min` : '✓'}
                     </Text>
                   </View>
                 )}
               </View>
-              <Pressable onPress={() => deleteEntry(entry.id)} className="p-2">
-                <Ionicons name="trash-outline" size={16} color="#94a3b8" />
+              <Pressable onPress={() => deleteEntry(entry.id)} style={{ padding: spacing.sm }}>
+                <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
               </Pressable>
             </View>
 
-            <View className="flex-row flex-wrap gap-4">
+            {/* Metric pills row */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
               {entry.painLevel !== undefined && (
-                <Text className="text-sm">
-                  <Text className="text-slate-400">Pain: </Text>
-                  <Text className="text-white font-medium">{entry.painLevel}/10</Text>
-                </Text>
+                <View style={[shared.badge, { backgroundColor: `${colors.pain}15` }]}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.pain }} />
+                  <Text style={{ ...typography.small, color: colors.textSecondary }}>
+                    Pain {entry.painLevel}/10
+                  </Text>
+                </View>
               )}
               {entry.postureScore !== undefined && (
-                <Text className="text-sm">
-                  <Text className="text-slate-400">Posture: </Text>
-                  <Text className="text-white font-medium">{entry.postureScore}/10</Text>
-                </Text>
+                <View style={[shared.badge, { backgroundColor: `${colors.posture}15` }]}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.posture }} />
+                  <Text style={{ ...typography.small, color: colors.textSecondary }}>
+                    Posture {entry.postureScore}/10
+                  </Text>
+                </View>
               )}
               {entry.symmetryScore !== undefined && (
-                <Text className="text-sm">
-                  <Text className="text-slate-400">Symmetry: </Text>
-                  <Text className="text-white font-medium">{entry.symmetryScore}/10</Text>
-                </Text>
+                <View style={[shared.badge, { backgroundColor: `${colors.symmetry}15` }]}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.symmetry }} />
+                  <Text style={{ ...typography.small, color: colors.textSecondary }}>
+                    Sym. {entry.symmetryScore}/10
+                  </Text>
+                </View>
               )}
               {entry.energyLevel !== undefined && (
-                <Text className="text-sm">
-                  <Text className="text-slate-400">Energy: </Text>
-                  <Text className="text-white font-medium">{entry.energyLevel}/10</Text>
-                </Text>
+                <View style={[shared.badge, { backgroundColor: `${colors.energy}15` }]}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.energy }} />
+                  <Text style={{ ...typography.small, color: colors.textSecondary }}>
+                    Energy {entry.energyLevel}/10
+                  </Text>
+                </View>
               )}
               {entry.ribHump && (
-                <Text className="text-sm">
-                  <Text className="text-slate-400">Rib hump: </Text>
-                  <Text className="text-white font-medium">{entry.ribHump}</Text>
-                </Text>
+                <View style={[shared.badge, { backgroundColor: colors.bgCard }]}>
+                  <Text style={{ ...typography.small, color: colors.textSecondary }}>
+                    Rib hump: {entry.ribHump}
+                  </Text>
+                </View>
               )}
             </View>
 
             {entry.exerciseNames && (
-              <Text className="text-slate-400 text-sm mt-2">🏋️ {entry.exerciseNames}</Text>
+              <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.sm }}>
+                🏋️ {entry.exerciseNames}
+              </Text>
             )}
             {entry.functionalMilestone && (
-              <Text className="text-teal-400 text-sm mt-1">🎯 {entry.functionalMilestone}</Text>
+              <Text style={{ ...typography.caption, color: colors.tealLight, marginTop: spacing.xs }}>
+                🎯 {entry.functionalMilestone}
+              </Text>
             )}
             {entry.notes && (
-              <Text className="text-slate-400 text-sm mt-2 italic">"{entry.notes}"</Text>
+              <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.sm, fontStyle: 'italic' }}>
+                &ldquo;{entry.notes}&rdquo;
+              </Text>
             )}
           </View>
         ))
