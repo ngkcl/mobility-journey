@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Mobility Journey",
-    "slug": "mobility-app",
+    "slug": "mobility-journey",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobilityapp",
+    "scheme": "mobilityjourney",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,24 +15,24 @@
     },
     "ios": {
       "bundleIdentifier": "com.mandel.mobilityjourney",
+      "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow Mobility Journey to access your camera for progress photos.",
-        "NSMotionUsageDescription": "Mobility Journey uses AirPods motion to track your posture",
-        "NSPhotoLibraryUsageDescription": "Allow Mobility Journey to access your photo library for progress photos.",
-        "NSPhotoLibraryAddUsageDescription": "Allow Mobility Journey to save photos to your library.",
-        "NSHealthShareUsageDescription": "Mobility Journey reads your health data (sleep, HRV, heart rate, steps) to personalize your corrective exercise plans and track recovery.",
-        "NSHealthUpdateUsageDescription": "Mobility Journey can save your workout data to Apple Health.",
+        "NSCameraUsageDescription": "Mobility Journey uses your camera to analyze your posture and capture progress photos so you can track improvements over time.",
+        "NSMotionUsageDescription": "Mobility Journey uses AirPods motion sensors to monitor your head and neck posture in real time, helping you build better posture habits.",
+        "NSPhotoLibraryUsageDescription": "Mobility Journey accesses your photo library so you can select existing photos for posture analysis and progress tracking.",
+        "NSPhotoLibraryAddUsageDescription": "Mobility Journey saves progress photos to your library so you can access them outside the app.",
+        "NSHealthShareUsageDescription": "Mobility Journey reads your health data including sleep, HRV, heart rate, and step count to personalize your corrective exercise plans and track recovery progress.",
+        "NSHealthUpdateUsageDescription": "Mobility Journey saves your completed workout and mobility session data to Apple Health so all your fitness data stays in one place.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": [
-          "health-records",
           "health-records"
         ]
       },
-      "backgroundColor": "#0b1020"
+      "backgroundColor": "#0f172a"
     },
     "android": {
       "adaptiveIcon": {
@@ -47,7 +47,8 @@
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.mandel.mobilityjourney"
+      "package": "com.mandel.mobilityjourney",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -57,7 +58,8 @@
     "plugins": [
       "expo-router",
       "expo-image-picker",
-      "expo-dev-client"
+      "expo-dev-client",
+      "expo-system-ui"
     ],
     "experiments": {
       "typedRoutes": true
