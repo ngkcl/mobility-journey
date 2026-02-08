@@ -1,5 +1,5 @@
-// Renderer Process - UI Logic and IPC Communication
-// This handles the popover window UI, camera preview, and communication with main/vision processes
+// Renderer Process - Posture Detection + UI
+// Uses MediaPipe Pose via CDN scripts loaded in index.html
 
 // DOM Elements
 const cameraPreview = document.getElementById('camera-preview');
@@ -7,7 +7,6 @@ const poseCanvas = document.getElementById('pose-canvas');
 const cameraStatus = document.getElementById('camera-status');
 const scoreValue = document.getElementById('score-value');
 const scoreProgress = document.getElementById('score-progress');
-const scoreRing = document.getElementById('score-ring');
 const statusIndicator = document.getElementById('status-indicator');
 const statusMessage = document.getElementById('status-message');
 const goodPosturePercent = document.getElementById('good-posture-percent');
@@ -18,337 +17,401 @@ const pauseBtn = document.getElementById('pause-btn');
 const pauseIcon = document.getElementById('pause-icon');
 const pauseText = document.getElementById('pause-text');
 
+// Constants
+const CIRCLE_CIRCUMFERENCE = 326.73;
+
 // State
 let isPaused = false;
 let isCalibrating = false;
+let isCalibrated = false;
 let cameraStream = null;
-let currentScore = 0;
+let pose = null;
 
-// Constants
-const CIRCLE_CIRCUMFERENCE = 326.73; // 2 * PI * 52 (radius from SVG)
+// Baseline (set during calibration)
+let baseline = null; // { headForwardDeg, shoulderTiltDeg }
 
-// Initialize
+// Stats tracking
+let stats = {
+  goodFrames: 0,
+  totalFrames: 0,
+  slouches: 0,
+  currentStreakSec: 0,
+  lastGoodTime: null,
+  currentState: 'UNCALIBRATED'
+};
+
+// Slouch timing
+let warningStart = null;
+let slouchStart = null;
+const WARNING_MS = 5000;
+const SLOUCH_MS = 15000;
+
+// ===== POSTURE MATH (from cameraPosture.ts) =====
+
+function computeHeadForwardDeg(landmarks) {
+  const { nose, leftEar, rightEar, leftShoulder, rightShoulder } = landmarks;
+  const earMidX = (leftEar.x + rightEar.x) / 2;
+  const earMidY = (leftEar.y + rightEar.y) / 2;
+  const shoulderMidX = (leftShoulder.x + rightShoulder.x) / 2;
+  const shoulderMidY = (leftShoulder.y + rightShoulder.y) / 2;
+  
+  const dx = earMidX - shoulderMidX;
+  const dy = earMidY - shoulderMidY;
+  // In image coords, forward lean = ears moving forward (lower y relative to shoulders)
+  // We measure the angle of the ear-shoulder vector from vertical
+  const angleRad = Math.atan2(Math.abs(dx), Math.abs(dy));
+  return angleRad * (180 / Math.PI);
+}
+
+function computeShoulderTiltDeg(landmarks) {
+  const { leftShoulder, rightShoulder } = landmarks;
+  const dx = rightShoulder.x - leftShoulder.x;
+  const dy = rightShoulder.y - leftShoulder.y;
+  return Math.atan2(dy, dx) * (180 / Math.PI);
+}
+
+function extractLandmarks(poseLandmarks) {
+  if (!poseLandmarks || poseLandmarks.length < 13) return null;
+  return {
+    nose: poseLandmarks[0],
+    leftEar: poseLandmarks[7],
+    rightEar: poseLandmarks[8],
+    leftShoulder: poseLandmarks[11],
+    rightShoulder: poseLandmarks[12]
+  };
+}
+
+// ===== INITIALIZATION =====
+
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Renderer process loaded');
-    await initializeCamera();
-    setupEventListeners();
-    requestInitialData();
+  console.log('Renderer loaded');
+  await initCamera();
+  initMediaPipe();
+  setupEventListeners();
 });
 
-// Camera Initialization
-async function initializeCamera() {
+async function initCamera() {
+  try {
+    updateCameraStatus('Requesting camera...', false);
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+    });
+    cameraPreview.srcObject = cameraStream;
+    await new Promise(r => { cameraPreview.onloadedmetadata = r; });
+    poseCanvas.width = cameraPreview.videoWidth;
+    poseCanvas.height = cameraPreview.videoHeight;
+    updateCameraStatus('Active', true);
+  } catch (err) {
+    console.error('Camera failed:', err);
+    updateCameraStatus('Camera denied', false, true);
+  }
+}
+
+function initMediaPipe() {
+  if (typeof Pose === 'undefined') {
+    console.error('MediaPipe Pose not loaded. Make sure CDN scripts are in index.html');
+    updateCameraStatus('MediaPipe not loaded', false, true);
+    return;
+  }
+
+  pose = new Pose({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+  });
+
+  pose.setOptions({
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+
+  pose.onResults(onPoseResults);
+
+  // Start detection loop
+  detectLoop();
+}
+
+async function detectLoop() {
+  if (!pose || !cameraPreview || cameraPreview.readyState < 2) {
+    setTimeout(detectLoop, 500);
+    return;
+  }
+
+  if (!isPaused) {
     try {
-        updateCameraStatus('Requesting camera access...', false);
+      await pose.send({ image: cameraPreview });
+    } catch (e) {
+      console.warn('Pose send error:', e);
+    }
+  }
 
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user'
-            }
-        });
+  // Run every ~1.5 seconds to save CPU
+  setTimeout(detectLoop, 1500);
+}
 
-        cameraPreview.srcObject = cameraStream;
+// ===== POSE RESULTS =====
 
-        // Wait for video to be ready
-        await new Promise((resolve) => {
-            cameraPreview.onloadedmetadata = resolve;
-        });
+function onPoseResults(results) {
+  if (!results.poseLandmarks) return;
 
-        // Set canvas size to match video
-        poseCanvas.width = cameraPreview.videoWidth;
-        poseCanvas.height = cameraPreview.videoHeight;
+  const landmarks = extractLandmarks(results.poseLandmarks);
+  if (!landmarks) return;
 
-        updateCameraStatus('Active', true);
+  // Draw landmarks on canvas
+  drawLandmarks(results.poseLandmarks);
 
-        // Notify main process that camera is ready
+  if (!isCalibrated) {
+    statusMessage.textContent = 'Calibration needed — sit up straight & click Calibrate';
+    return;
+  }
+
+  // Compute current angles
+  const headForward = computeHeadForwardDeg(landmarks);
+  const shoulderTilt = computeShoulderTiltDeg(landmarks);
+
+  const headDelta = Math.abs(headForward - baseline.headForwardDeg);
+  const shoulderDelta = Math.abs(shoulderTilt - baseline.shoulderTiltDeg);
+
+  // Score: 100 = perfect, decreases as you deviate
+  const headScore = Math.max(0, 100 - headDelta * 5);
+  const shoulderScore = Math.max(0, 100 - shoulderDelta * 3);
+  const score = Math.round(headScore * 0.7 + shoulderScore * 0.3);
+
+  // Determine state
+  const HEAD_THRESHOLD = 10;
+  const SHOULDER_THRESHOLD = 8;
+  const now = Date.now();
+
+  let frameState = 'GOOD';
+  if (headDelta > HEAD_THRESHOLD || shoulderDelta > SHOULDER_THRESHOLD) {
+    frameState = 'BAD';
+  } else if (headDelta > HEAD_THRESHOLD * 0.6 || shoulderDelta > SHOULDER_THRESHOLD * 0.6) {
+    frameState = 'WARNING';
+  }
+
+  // State machine with timing
+  stats.totalFrames++;
+
+  if (frameState === 'GOOD') {
+    warningStart = null;
+    slouchStart = null;
+    stats.goodFrames++;
+    stats.currentState = 'GOOD';
+    if (!stats.lastGoodTime) stats.lastGoodTime = now;
+    stats.currentStreakSec = Math.round((now - stats.lastGoodTime) / 1000);
+  } else if (frameState === 'WARNING') {
+    if (!warningStart) warningStart = now;
+    if (now - warningStart > WARNING_MS) {
+      stats.currentState = 'WARNING';
+    }
+    stats.lastGoodTime = null;
+    stats.currentStreakSec = 0;
+  } else {
+    if (!slouchStart) {
+      slouchStart = now;
+    }
+    if (now - slouchStart > SLOUCH_MS) {
+      if (stats.currentState !== 'SLOUCHING') {
+        stats.slouches++;
+        // Notify main process for system notification
         if (window.electron) {
-            window.electron.send('camera-ready', {
-                width: cameraPreview.videoWidth,
-                height: cameraPreview.videoHeight
-            });
+          window.electron.send('posture-state-changed', 'slouching');
         }
-
-    } catch (error) {
-        console.error('Camera initialization failed:', error);
-        updateCameraStatus('Camera access denied', false, true);
-
-        if (window.electron) {
-            window.electron.send('camera-error', error.message);
-        }
-    }
-}
-
-function updateCameraStatus(text, active = false, error = false) {
-    const statusText = cameraStatus.querySelector('.status-text');
-    statusText.textContent = text;
-
-    cameraStatus.classList.remove('active', 'error');
-    if (active) cameraStatus.classList.add('active');
-    if (error) cameraStatus.classList.add('error');
-}
-
-// Event Listeners
-function setupEventListeners() {
-    calibrateBtn.addEventListener('click', handleCalibrate);
-    pauseBtn.addEventListener('click', handlePauseToggle);
-
-    // IPC listeners (will be set up by electron-shell via preload)
-    if (window.electron) {
-        // Listen for posture updates from vision detection
-        window.electron.on('posture-update', handlePostureUpdate);
-
-        // Listen for stats updates
-        window.electron.on('stats-update', handleStatsUpdate);
-
-        // Listen for calibration status
-        window.electron.on('calibration-status', handleCalibrationStatus);
-
-        // Listen for pause state changes
-        window.electron.on('pause-state', handlePauseState);
-    }
-}
-
-// Request Initial Data
-function requestInitialData() {
-    if (window.electron) {
-        window.electron.send('request-stats');
-        window.electron.send('request-posture-state');
-    }
-}
-
-// Calibration Handler
-function handleCalibrate() {
-    if (isCalibrating) return;
-
-    isCalibrating = true;
-    calibrateBtn.disabled = true;
-    calibrateBtn.classList.add('calibrating');
-
-    // Update UI to show calibration in progress
-    statusMessage.textContent = 'Sit up straight and hold...';
-    statusIndicator.classList.remove('good', 'warning', 'bad');
-
-    // Send calibration request to main process
-    if (window.electron) {
-        window.electron.send('start-calibration');
-    }
-
-    // Calibration will complete when we receive 'calibration-status' event
-}
-
-function handleCalibrationStatus(event, data) {
-    const { success, message } = data;
-
-    isCalibrating = false;
-    calibrateBtn.disabled = false;
-    calibrateBtn.classList.remove('calibrating');
-
-    if (success) {
-        statusMessage.textContent = 'Calibration successful';
-        // Visual feedback
-        scoreRing.style.animation = 'none';
-        setTimeout(() => {
-            scoreRing.style.animation = '';
-        }, 100);
+      }
+      stats.currentState = 'SLOUCHING';
     } else {
-        statusMessage.textContent = message || 'Calibration failed';
+      stats.currentState = 'WARNING';
     }
+    stats.lastGoodTime = null;
+    stats.currentStreakSec = 0;
+  }
+
+  // Update UI
+  updateScoreDisplay(score);
+  updatePostureState(stats.currentState);
+  updateStats();
+
+  // Notify main for tray icon
+  if (window.electron) {
+    const stateMap = { 'GOOD': 'good', 'WARNING': 'warning', 'SLOUCHING': 'slouching' };
+    window.electron.send('posture-state-changed', stateMap[stats.currentState] || 'good');
+  }
 }
 
-// Pause/Resume Handler
-function handlePauseToggle() {
-    isPaused = !isPaused;
+// ===== UI UPDATES =====
 
-    if (window.electron) {
-        window.electron.send('toggle-pause', isPaused);
-    }
-
-    updatePauseButton();
+function updateCameraStatus(text, active, error) {
+  const statusText = cameraStatus.querySelector('.status-text');
+  statusText.textContent = text;
+  cameraStatus.classList.remove('active', 'error');
+  if (active) cameraStatus.classList.add('active');
+  if (error) cameraStatus.classList.add('error');
 }
 
-function handlePauseState(event, paused) {
-    isPaused = paused;
-    updatePauseButton();
-}
+function updateScoreDisplay(score) {
+  scoreValue.textContent = score;
+  const offset = CIRCLE_CIRCUMFERENCE - (score / 100) * CIRCLE_CIRCUMFERENCE;
+  scoreProgress.style.strokeDashoffset = offset;
 
-function updatePauseButton() {
-    if (isPaused) {
-        pauseIcon.textContent = '▶️';
-        pauseText.textContent = 'Resume';
-        pauseBtn.style.backgroundColor = 'var(--teal)';
-        pauseBtn.style.color = 'var(--bg-deep)';
-        statusMessage.textContent = 'Monitoring paused';
-    } else {
-        pauseIcon.textContent = '⏸';
-        pauseText.textContent = 'Pause';
-        pauseBtn.style.backgroundColor = '';
-        pauseBtn.style.color = '';
-    }
-}
-
-// Posture Update Handler
-function handlePostureUpdate(event, data) {
-    const { score, state, angle } = data;
-
-    // Update score display
-    if (score !== undefined && score !== null) {
-        currentScore = Math.round(score);
-        scoreValue.textContent = currentScore;
-
-        // Update circular progress
-        updateScoreRing(currentScore);
-    }
-
-    // Update state indicator
-    if (state) {
-        updatePostureState(state);
-    }
-
-    // Draw pose landmarks if provided
-    if (data.landmarks) {
-        drawPoseLandmarks(data.landmarks);
-    }
-}
-
-function updateScoreRing(score) {
-    // Calculate stroke-dashoffset (0-100 maps to full circle to no circle)
-    const offset = CIRCLE_CIRCUMFERENCE - (score / 100) * CIRCLE_CIRCUMFERENCE;
-    scoreProgress.style.strokeDashoffset = offset;
-
-    // Update color based on score
-    scoreProgress.classList.remove('good', 'warning', 'bad');
-    if (score >= 80) {
-        scoreProgress.classList.add('good');
-    } else if (score >= 60) {
-        scoreProgress.classList.add('warning');
-    } else {
-        scoreProgress.classList.add('bad');
-    }
+  scoreProgress.classList.remove('good', 'warning', 'bad');
+  if (score >= 80) scoreProgress.classList.add('good');
+  else if (score >= 60) scoreProgress.classList.add('warning');
+  else scoreProgress.classList.add('bad');
 }
 
 function updatePostureState(state) {
-    const stateMap = {
-        'GOOD': { class: 'good', message: 'Good posture' },
-        'WARNING': { class: 'warning', message: 'Posture needs attention' },
-        'SLOUCHING': { class: 'bad', message: 'Slouching detected' },
-        'UNCALIBRATED': { class: '', message: 'Calibration needed' }
+  const stateMap = {
+    'GOOD': { cls: 'good', msg: '✅ Good posture' },
+    'WARNING': { cls: 'warning', msg: '⚠️ Check your posture' },
+    'SLOUCHING': { cls: 'bad', msg: '🔴 Slouching!' },
+    'UNCALIBRATED': { cls: '', msg: 'Calibration needed' }
+  };
+  const info = stateMap[state] || stateMap['UNCALIBRATED'];
+  statusIndicator.classList.remove('good', 'warning', 'bad');
+  if (info.cls) statusIndicator.classList.add(info.cls);
+  if (!isPaused) statusMessage.textContent = info.msg;
+}
+
+function updateStats() {
+  const goodPct = stats.totalFrames > 0 ? Math.round((stats.goodFrames / stats.totalFrames) * 100) : 0;
+  goodPosturePercent.textContent = `${goodPct}%`;
+  slouchCount.textContent = stats.slouches;
+  streakCount.textContent = `${stats.currentStreakSec}s`;
+}
+
+function drawLandmarks(poseLandmarks) {
+  const ctx = poseCanvas.getContext('2d');
+  ctx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
+
+  const keyIndices = [0, 7, 8, 11, 12]; // nose, ears, shoulders
+  ctx.fillStyle = '#14b8a6';
+  ctx.strokeStyle = '#14b8a6';
+  ctx.lineWidth = 2;
+
+  keyIndices.forEach(i => {
+    if (poseLandmarks[i]) {
+      const x = poseLandmarks[i].x * poseCanvas.width;
+      const y = poseLandmarks[i].y * poseCanvas.height;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  });
+
+  // Shoulder line
+  if (poseLandmarks[11] && poseLandmarks[12]) {
+    ctx.beginPath();
+    ctx.moveTo(poseLandmarks[11].x * poseCanvas.width, poseLandmarks[11].y * poseCanvas.height);
+    ctx.lineTo(poseLandmarks[12].x * poseCanvas.width, poseLandmarks[12].y * poseCanvas.height);
+    ctx.stroke();
+  }
+
+  // Nose to shoulder midpoint (posture line)
+  if (poseLandmarks[0] && poseLandmarks[11] && poseLandmarks[12]) {
+    const midX = (poseLandmarks[11].x + poseLandmarks[12].x) / 2 * poseCanvas.width;
+    const midY = (poseLandmarks[11].y + poseLandmarks[12].y) / 2 * poseCanvas.height;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(poseLandmarks[0].x * poseCanvas.width, poseLandmarks[0].y * poseCanvas.height);
+    ctx.lineTo(midX, midY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ===== EVENT LISTENERS =====
+
+function setupEventListeners() {
+  calibrateBtn.addEventListener('click', handleCalibrate);
+  pauseBtn.addEventListener('click', handlePauseToggle);
+}
+
+function handleCalibrate() {
+  if (isCalibrating) return;
+  isCalibrating = true;
+  calibrateBtn.disabled = true;
+  calibrateBtn.classList.add('calibrating');
+  statusMessage.textContent = '📸 Sit up straight... capturing in 3s';
+
+  // Wait 3 seconds then capture baseline
+  setTimeout(() => {
+    // Get current frame landmarks
+    if (pose && cameraPreview && cameraPreview.readyState >= 2) {
+      pose.send({ image: cameraPreview }).then(() => {
+        // The onPoseResults callback will have updated currentLandmarks
+        // We need to capture on next result
+      });
+    }
+
+    // Use a one-shot results handler for calibration
+    const origOnResults = pose.onResults;
+    const calibrationHandler = (results) => {
+      if (!results.poseLandmarks) {
+        statusMessage.textContent = '❌ No pose detected. Try again.';
+        isCalibrating = false;
+        calibrateBtn.disabled = false;
+        calibrateBtn.classList.remove('calibrating');
+        pose.onResults(onPoseResults);
+        return;
+      }
+
+      const landmarks = extractLandmarks(results.poseLandmarks);
+      if (!landmarks) {
+        statusMessage.textContent = '❌ Could not detect shoulders. Try again.';
+        isCalibrating = false;
+        calibrateBtn.disabled = false;
+        calibrateBtn.classList.remove('calibrating');
+        pose.onResults(onPoseResults);
+        return;
+      }
+
+      baseline = {
+        headForwardDeg: computeHeadForwardDeg(landmarks),
+        shoulderTiltDeg: computeShoulderTiltDeg(landmarks)
+      };
+
+      isCalibrated = true;
+      isCalibrating = false;
+      calibrateBtn.disabled = false;
+      calibrateBtn.classList.remove('calibrating');
+      statusMessage.textContent = '✅ Calibrated! Monitoring posture...';
+
+      // Reset stats
+      stats.goodFrames = 0;
+      stats.totalFrames = 0;
+      stats.slouches = 0;
+      stats.currentStreakSec = 0;
+      stats.lastGoodTime = Date.now();
+
+      // Restore normal handler
+      pose.onResults(onPoseResults);
     };
 
-    const stateInfo = stateMap[state] || stateMap['UNCALIBRATED'];
+    pose.onResults(calibrationHandler);
 
-    statusIndicator.classList.remove('good', 'warning', 'bad');
-    if (stateInfo.class) {
-        statusIndicator.classList.add(stateInfo.class);
+    // Trigger a frame
+    if (cameraPreview.readyState >= 2) {
+      pose.send({ image: cameraPreview });
     }
-
-    if (!isPaused) {
-        statusMessage.textContent = stateInfo.message;
-    }
+  }, 3000);
 }
 
-// Stats Update Handler
-function handleStatsUpdate(event, data) {
-    const { goodPosturePercent: goodPercent, slouchCount: slouches, currentStreak } = data;
-
-    // Update stats display
-    if (goodPercent !== undefined && goodPercent !== null) {
-        goodPosturePercent.textContent = `${Math.round(goodPercent)}%`;
-    }
-
-    if (slouches !== undefined && slouches !== null) {
-        slouchCount.textContent = slouches;
-    }
-
-    if (currentStreak !== undefined && currentStreak !== null) {
-        streakCount.textContent = currentStreak;
-    }
+function handlePauseToggle() {
+  isPaused = !isPaused;
+  if (isPaused) {
+    pauseIcon.textContent = '▶️';
+    pauseText.textContent = 'Resume';
+    statusMessage.textContent = '⏸ Monitoring paused';
+  } else {
+    pauseIcon.textContent = '⏸';
+    pauseText.textContent = 'Pause';
+    statusMessage.textContent = isCalibrated ? '✅ Monitoring...' : 'Calibration needed';
+  }
 }
 
-// Draw Pose Landmarks on Canvas
-function drawPoseLandmarks(landmarks) {
-    const ctx = poseCanvas.getContext('2d');
-    ctx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
-
-    if (!landmarks || landmarks.length === 0) return;
-
-    // Key landmarks to draw: shoulders, ears, nose
-    const keyPoints = [
-        { index: 0, name: 'nose' },
-        { index: 7, name: 'left_ear' },
-        { index: 8, name: 'right_ear' },
-        { index: 11, name: 'left_shoulder' },
-        { index: 12, name: 'right_shoulder' }
-    ];
-
-    // Draw landmarks
-    ctx.fillStyle = '#14b8a6';
-    ctx.strokeStyle = '#14b8a6';
-    ctx.lineWidth = 2;
-
-    keyPoints.forEach(({ index }) => {
-        if (landmarks[index]) {
-            const x = landmarks[index].x * poseCanvas.width;
-            const y = landmarks[index].y * poseCanvas.height;
-
-            // Draw point
-            ctx.beginPath();
-            ctx.arc(x, y, 4, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-    });
-
-    // Draw connections
-    // Shoulders line
-    if (landmarks[11] && landmarks[12]) {
-        const leftShoulder = {
-            x: landmarks[11].x * poseCanvas.width,
-            y: landmarks[11].y * poseCanvas.height
-        };
-        const rightShoulder = {
-            x: landmarks[12].x * poseCanvas.width,
-            y: landmarks[12].y * poseCanvas.height
-        };
-
-        ctx.beginPath();
-        ctx.moveTo(leftShoulder.x, leftShoulder.y);
-        ctx.lineTo(rightShoulder.x, rightShoulder.y);
-        ctx.stroke();
-    }
-
-    // Head to shoulders (for posture visualization)
-    if (landmarks[0] && landmarks[11] && landmarks[12]) {
-        const nose = {
-            x: landmarks[0].x * poseCanvas.width,
-            y: landmarks[0].y * poseCanvas.height
-        };
-        const shoulderMidpoint = {
-            x: (landmarks[11].x + landmarks[12].x) / 2 * poseCanvas.width,
-            y: (landmarks[11].y + landmarks[12].y) / 2 * poseCanvas.height
-        };
-
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(nose.x, nose.y);
-        ctx.lineTo(shoulderMidpoint.x, shoulderMidpoint.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-    }
-}
-
-// Cleanup on window close
+// Cleanup
 window.addEventListener('beforeunload', () => {
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-    }
+  if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+  if (pose) pose.close();
 });
-
-// Expose functions for testing/debugging
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        handlePostureUpdate,
-        handleStatsUpdate,
-        updateScoreRing,
-        updatePostureState
-    };
-}
