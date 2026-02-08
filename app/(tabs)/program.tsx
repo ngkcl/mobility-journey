@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSupabase } from '../../lib/supabase';
+import { colors, typography, spacing, radii } from '@/lib/theme';
 import type {
   MonthlyProgram,
   ProgramExercise,
@@ -19,20 +20,20 @@ import type {
   Exercise,
 } from '../../lib/types';
 
-const TEAL = '#14b8a6';
-const SLATE_800 = '#1e293b';
-const SLATE_700 = '#334155';
-const SLATE_400 = '#94a3b8';
-const BG = '#0b1020';
-const CARD_BG = '#0f172a';
+const TEAL = colors.teal;
+const SLATE_800 = colors.bgCard;
+const SLATE_700 = 'rgba(51, 65, 85, 1)';
+const SLATE_400 = colors.textTertiary;
+const BG = colors.bgDeep;
+const CARD_BG = colors.bgBase;
 
 type SessionSlot = 'morning' | 'midday' | 'evening' | 'gym';
 
 const SESSION_COLORS: Record<string, string> = {
-  morning: '#f59e0b',
-  midday: '#3b82f6',
-  evening: '#8b5cf6',
-  gym: '#ef4444',
+  morning: colors.morning,
+  midday: colors.midday,
+  evening: colors.evening,
+  gym: colors.error,
 };
 
 const SESSION_ICONS: Record<string, string> = {
@@ -43,8 +44,8 @@ const SESSION_ICONS: Record<string, string> = {
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  high: '#ef4444',
-  normal: '#14b8a6',
+  high: colors.error,
+  normal: colors.teal,
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -350,15 +351,15 @@ export default function ProgramScreen() {
                 style={styles.actionButton}
                 onPress={() => handleCompleteAssignment(ca.id)}
               >
-                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
-                <Text style={[styles.actionText, { color: '#22c55e' }]}>Done</Text>
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                <Text style={[styles.actionText, { color: colors.success }]}>Done</Text>
               </Pressable>
               <Pressable
                 style={styles.actionButton}
                 onPress={() => handleDeleteAssignment(ca.id)}
               >
-                <Ionicons name="trash" size={20} color="#ef4444" />
-                <Text style={[styles.actionText, { color: '#ef4444' }]}>Remove</Text>
+                <Ionicons name="trash" size={20} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Remove</Text>
               </Pressable>
             </View>
           </View>
@@ -612,7 +613,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: 13,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#e2e8f0',
+    color: colors.textSecondary,
     marginBottom: 12,
     marginTop: 4,
   },
@@ -670,7 +671,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#f1f5f9',
+    color: colors.textPrimary,
   },
   mandatoryBadge: {
     color: '#f59e0b',
@@ -737,7 +738,7 @@ const styles = StyleSheet.create({
   assignmentName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f1f5f9',
+    color: colors.textPrimary,
     flex: 1,
   },
   sourceLabel: {
@@ -756,7 +757,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 8,
     fontSize: 11,
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     overflow: 'hidden',
   },
   coachNotes: {
@@ -804,7 +805,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textPrimary,
   },
   modalScroll: {
     padding: 16,
@@ -812,7 +813,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
   },
@@ -827,7 +828,7 @@ const styles = StyleSheet.create({
     backgroundColor: SLATE_800,
     borderRadius: 10,
     padding: 12,
-    color: '#f1f5f9',
+    color: colors.textPrimary,
     fontSize: 14,
     borderWidth: 1,
     borderColor: SLATE_700,
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
   },
   exerciseOptionText: {
     fontSize: 14,
-    color: '#e2e8f0',
+    color: colors.textSecondary,
     flex: 1,
   },
   exerciseOptionTextSelected: {
@@ -905,7 +906,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   saveButtonText: {
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

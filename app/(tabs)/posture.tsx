@@ -5,6 +5,7 @@ import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
+import { colors } from '@/lib/theme';
 import { useHeadphoneMotion } from '../../lib/useHeadphoneMotion';
 import { createSlouchDetector, SlouchState } from '../../lib/slouchDetector';
 import { computePercentage, formatAngle, formatDuration } from '../../lib/postureSession';
@@ -20,17 +21,17 @@ import {
 const STATUS_CONFIG = {
   [SlouchState.GOOD_POSTURE]: {
     label: 'Good posture',
-    color: '#22c55e',
+    color: colors.success,
     bg: 'bg-emerald-500/15',
   },
   [SlouchState.WARNING]: {
     label: 'Warning',
-    color: '#f59e0b',
+    color: colors.warning,
     bg: 'bg-amber-500/15',
   },
   [SlouchState.SLOUCHING]: {
     label: 'Slouching',
-    color: '#ef4444',
+    color: colors.error,
     bg: 'bg-rose-500/15',
   },
 };

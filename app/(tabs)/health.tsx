@@ -3,20 +3,21 @@ import { View, Text, ScrollView, Pressable, RefreshControl, Switch } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { getHealthSummary, isHealthKitAvailable, requestHealthPermissions, type HealthSummary } from '../../lib/healthKit';
 import { getEightSleepData, type EightSleepData } from '../../lib/eightSleep';
+import { colors as themeColors, typography, spacing, radii } from '@/lib/theme';
 
 const COLORS = {
-  bg: '#0b1020',
-  card: '#0f172a',
-  border: 'rgba(51,65,85,0.5)',
-  teal: '#14b8a6',
-  green: '#22c55e',
-  amber: '#f59e0b',
-  red: '#ef4444',
+  bg: themeColors.bgDeep,
+  card: themeColors.bgBase,
+  border: themeColors.border,
+  teal: themeColors.teal,
+  green: themeColors.success,
+  amber: themeColors.warning,
+  red: themeColors.error,
   purple: '#a78bfa',
-  blue: '#3b82f6',
-  white: '#ffffff',
-  muted: '#94a3b8',
-  dim: '#64748b',
+  blue: themeColors.info,
+  white: themeColors.textPrimary,
+  muted: themeColors.textTertiary,
+  dim: themeColors.textMuted,
 };
 
 function ScoreRing({ score, maxScore = 10, size = 120, label }: { score: number; maxScore?: number; size?: number; label: string }) {

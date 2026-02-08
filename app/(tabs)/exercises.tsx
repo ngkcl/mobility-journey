@@ -14,6 +14,7 @@ import { getSupabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
 import { useToast } from '../../components/Toast';
 import { normalizeTargetMuscles } from '../../lib/exercises';
+import { colors } from '@/lib/theme';
 import type { Exercise, ExerciseCategory } from '../../lib/types';
 
 type ExerciseFormState = {
@@ -214,7 +215,7 @@ export default function ExercisesScreen() {
       className="flex-1 bg-[#0b1020]"
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
       <View className="flex-row items-center justify-between mb-6">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import CameraPostureMonitor from '../../components/CameraPostureMonitor';
+import { colors } from '@/lib/theme';
 
 export default function PostureCameraScreen() {
   return (

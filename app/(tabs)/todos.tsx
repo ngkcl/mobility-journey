@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
 import { useToast } from '../../components/Toast';
+import { colors } from '@/lib/theme';
 import type { Todo as TodoRow, TodoCategory, TodoFrequency } from '../../lib/types';
 
 type TodoItem = {
@@ -215,7 +216,7 @@ export default function TodosScreen() {
       className="flex-1 bg-[#0b1020]"
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
       {/* Header */}
