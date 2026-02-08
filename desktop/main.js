@@ -84,6 +84,7 @@ function showSlouchNotification() {
 // App ready
 mb.on('ready', () => {
   console.log('Menubar app is ready');
+  mb.tray.setToolTip('Posture Monitor');
 
   // Set auto-start on login
   app.setLoginItemSettings({
