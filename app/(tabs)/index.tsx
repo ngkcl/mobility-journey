@@ -17,7 +17,7 @@ import {
   type NextSessionSummary,
 } from '../../lib/homeSummary';
 import { loadWorkoutSchedule } from '../../lib/workoutSchedule';
-import { computeWorkoutStreak, type WorkoutHistoryItem } from '../../lib/workoutAnalytics';
+import { computeStreakStats, type WorkoutHistoryItem, type StreakStats } from '../../lib/workoutAnalytics';
 import {
   colors,
   typography,
@@ -47,7 +47,7 @@ const getAccentForTime = (greeting: string) => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [streak, setStreak] = useState(0);
+  const [streakStats, setStreakStats] = useState<StreakStats>({ currentStreak: 0, bestStreak: 0, totalWorkoutDays: 0, workoutDates: [] });
   const [nextSession, setNextSession] = useState<NextSessionSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,7 +84,7 @@ export default function HomeScreen() {
       return acc;
     }, {} as Record<string, WorkoutTemplate>);
 
-    setStreak(computeWorkoutStreak(history));
+    setStreakStats(computeStreakStats(history));
     setNextSession(buildNextSessionSummary(new Date(), schedule, templatesByName));
     setIsLoading(false);
   };
@@ -117,12 +117,20 @@ export default function HomeScreen() {
           <View style={styles.streakRow}>
             <View style={[styles.streakBadge, { borderColor: accent }]}>
               <Ionicons name="flame" size={16} color={accent} />
-              <Text style={styles.streakText}>{streak} day streak</Text>
+              <Text style={styles.streakText}>{streakStats.currentStreak} day streak</Text>
             </View>
-            <View style={styles.streakBadgeMuted}>
-              <Ionicons name="pulse" size={16} color={colors.midday} />
-              <Text style={styles.streakTextMuted}>Consistency focus</Text>
-            </View>
+            {streakStats.bestStreak > 0 && (
+              <View style={[styles.streakBadge, { borderColor: colors.warning }]}>
+                <Ionicons name="trophy" size={16} color={colors.warning} />
+                <Text style={styles.streakText}>Best: {streakStats.bestStreak}</Text>
+              </View>
+            )}
+            {streakStats.totalWorkoutDays > 0 && (
+              <View style={styles.streakBadgeMuted}>
+                <Ionicons name="calendar" size={16} color={colors.midday} />
+                <Text style={styles.streakTextMuted}>{streakStats.totalWorkoutDays} total days</Text>
+              </View>
+            )}
           </View>
         </View>
 

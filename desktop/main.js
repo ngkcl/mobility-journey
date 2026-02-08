@@ -1,10 +1,28 @@
-const { app, ipcMain, Notification, nativeImage, Menu, globalShortcut, shell, BrowserWindow } = require('electron');
+const { app, ipcMain, Notification, nativeImage, Menu, globalShortcut, shell, BrowserWindow, systemPreferences } = require('electron');
 const { menubar } = require('menubar');
 const path = require('path');
 const fs = require('fs');
 const StatsManager = require('./stats-manager');
 const BreakManager = require('./break-manager');
 const ReportGenerator = require('./report-generator');
+
+// Request camera permission on macOS
+async function requestCameraPermission() {
+  if (process.platform === 'darwin') {
+    const status = systemPreferences.getMediaAccessStatus('camera');
+    console.log('[Main] Camera permission status:', status);
+    
+    if (status === 'not-determined') {
+      console.log('[Main] Requesting camera permission...');
+      const granted = await systemPreferences.askForMediaAccess('camera');
+      console.log('[Main] Camera permission granted:', granted);
+      return granted;
+    }
+    
+    return status === 'granted';
+  }
+  return true; // Non-macOS platforms
+}
 
 // Posture states
 const POSTURE_STATES = {
@@ -418,9 +436,22 @@ function setupTrayMenu() {
 }
 
 // App ready
-mb.on('ready', () => {
+mb.on('ready', async () => {
   console.log('Menubar app is ready');
   mb.tray.setToolTip('Posture Monitor');
+  
+  // Request camera permission early
+  const cameraGranted = await requestCameraPermission();
+  console.log('[Main] Camera access granted:', cameraGranted);
+  
+  if (!cameraGranted) {
+    const notification = new Notification({
+      title: 'Posture Monitor',
+      body: 'Camera permission is required. Please grant access in System Preferences > Privacy & Security > Camera.',
+      silent: false
+    });
+    notification.show();
+  }
   // No emoji title — clean template icon only
 
   // Load settings

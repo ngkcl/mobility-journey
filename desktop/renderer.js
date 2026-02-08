@@ -93,17 +93,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initCamera() {
   try {
     updateCameraStatus('Requesting camera...', false);
+    console.log('[Camera] Requesting camera access...');
+    
+    // Check if getUserMedia is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('getUserMedia not supported');
+    }
+    
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
     });
+    
+    console.log('[Camera] Got camera stream:', cameraStream.id);
     cameraPreview.srcObject = cameraStream;
     await new Promise(r => { cameraPreview.onloadedmetadata = r; });
     poseCanvas.width = cameraPreview.videoWidth;
     poseCanvas.height = cameraPreview.videoHeight;
+    console.log('[Camera] Camera active, resolution:', cameraPreview.videoWidth, 'x', cameraPreview.videoHeight);
     updateCameraStatus('Active', true);
   } catch (err) {
-    console.error('Camera failed:', err);
-    updateCameraStatus('Camera denied', false, true);
+    console.error('[Camera] Camera failed:', err.name, err.message);
+    updateCameraStatus(`Camera error: ${err.name}`, false, true);
+    
+    // Show a more helpful message
+    if (err.name === 'NotAllowedError') {
+      statusMessage.textContent = '⚠️ Camera permission denied. Please allow access in System Preferences.';
+    } else if (err.name === 'NotFoundError') {
+      statusMessage.textContent = '⚠️ No camera found. Please connect a camera.';
+    } else {
+      statusMessage.textContent = `⚠️ Camera error: ${err.message}`;
+    }
   }
 }
 
