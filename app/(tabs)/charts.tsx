@@ -16,6 +16,7 @@ import * as Sharing from 'expo-sharing';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
+import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { ChartPoint, Exercise, PostureSession, Workout, WorkoutExercise } from '../../lib/types';
 import { useNavigation } from 'expo-router';
 import { buildPostureTrend, type PostureTrendMode } from '../../lib/postureSessions';
@@ -35,7 +36,7 @@ const metrics = [
     key: 'painLevel' as const,
     label: 'Pain Level',
     unit: '/10',
-    color: '#f97316',
+    color: colors.pain,
     description: 'Lower is better.',
     lowerIsBetter: true,
   },
@@ -43,7 +44,7 @@ const metrics = [
     key: 'postureScore' as const,
     label: 'Posture',
     unit: '/10',
-    color: '#14b8a6',
+    color: colors.posture,
     description: 'Higher is better.',
     lowerIsBetter: false,
   },
@@ -51,7 +52,7 @@ const metrics = [
     key: 'symmetryScore' as const,
     label: 'Symmetry',
     unit: '/10',
-    color: '#8b5cf6',
+    color: colors.symmetry,
     description: 'Higher is better.',
     lowerIsBetter: false,
   },
@@ -59,21 +60,21 @@ const metrics = [
     key: 'energyLevel' as const,
     label: 'Energy',
     unit: '/10',
-    color: '#f59e0b',
+    color: colors.energy,
     description: 'Higher is better.',
     lowerIsBetter: false,
   },
 ];
 
 const chartConfig = {
-  backgroundGradientFrom: '#0f172a',
-  backgroundGradientTo: '#0f172a',
+  backgroundGradientFrom: colors.bgBase,
+  backgroundGradientTo: colors.bgBase,
   decimalPlaces: 0,
   color: (opacity = 1) => `rgba(20, 184, 166, ${opacity})`,
   labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
-  style: { borderRadius: 16 },
-  propsForDots: { r: '4', strokeWidth: '2', stroke: '#14b8a6' },
-  propsForBackgroundLines: { strokeDasharray: '3 3', stroke: '#334155' },
+  style: { borderRadius: radii.lg },
+  propsForDots: { r: '4', strokeWidth: '2', stroke: colors.teal },
+  propsForBackgroundLines: { strokeDasharray: '3 3', stroke: 'rgba(51, 65, 85, 0.8)' },
 };
 
 export default function ChartsScreen() {
@@ -295,14 +296,19 @@ export default function ChartsScreen() {
         <Pressable
           onPress={handleExport}
           disabled={isExporting}
-          className="mr-4 flex-row items-center rounded-full bg-slate-900 px-3 py-1.5 border border-slate-800"
+          style={{
+            marginRight: spacing.lg, flexDirection: 'row', alignItems: 'center',
+            borderRadius: radii.full, backgroundColor: colors.bgBase,
+            paddingHorizontal: spacing.md, paddingVertical: 6,
+            borderWidth: 1, borderColor: colors.border,
+          }}
         >
           {isExporting ? (
-            <ActivityIndicator color="#5eead4" />
+            <ActivityIndicator color={colors.tealLight} />
           ) : (
-            <Ionicons name="download-outline" size={16} color="#5eead4" />
+            <Ionicons name="download-outline" size={16} color={colors.tealLight} />
           )}
-          <Text className="text-sm text-teal-200 ml-2">Export</Text>
+          <Text style={{ ...typography.caption, color: colors.tealLight, marginLeft: spacing.sm }}>Export</Text>
         </Pressable>
       ),
     });
@@ -404,83 +410,85 @@ export default function ChartsScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-slate-950"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      style={shared.screen}
+      contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['4xl'] }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
-      <View className="mb-6">
-        <Text className="text-2xl font-semibold text-white">Progress Charts</Text>
-        <Text className="text-slate-400 text-sm">Visualize your improvement over time</Text>
+      <View style={{ marginBottom: spacing['2xl'] }}>
+        <Text style={shared.pageTitle}>Progress Charts</Text>
+        <Text style={shared.pageSubtitle}>Visualize your improvement over time</Text>
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-4">
-            <Text className="text-lg font-semibold text-white">Data Export</Text>
-            <Text className="text-sm text-slate-400 mt-1">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={shared.rowBetween}>
+          <View style={{ flex: 1, paddingRight: spacing.lg }}>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Data Export</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs }}>
               Share a JSON backup of all your mobility data.
             </Text>
           </View>
           <Pressable
             onPress={handleExport}
             disabled={isExporting}
-            className="bg-teal-500/20 border border-teal-400/40 rounded-full px-4 py-2"
+            style={[shared.cardAccent, { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radii.full }]}
           >
             {isExporting ? (
-              <View className="flex-row items-center gap-2">
-                <ActivityIndicator color="#5eead4" />
-                <Text className="text-sm text-teal-100">Exporting</Text>
+              <View style={[shared.row, shared.gap8]}>
+                <ActivityIndicator color={colors.tealLight} />
+                <Text style={{ ...typography.caption, color: colors.tealLight }}>Exporting</Text>
               </View>
             ) : (
-              <View className="flex-row items-center gap-2">
-                <Ionicons name="download-outline" size={16} color="#5eead4" />
-                <Text className="text-sm text-teal-100">Export</Text>
+              <View style={[shared.row, shared.gap8]}>
+                <Ionicons name="download-outline" size={16} color={colors.tealLight} />
+                <Text style={{ ...typography.caption, color: colors.tealLight }}>Export</Text>
               </View>
             )}
           </Pressable>
         </View>
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between mb-4">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Posture Monitoring Trend</Text>
-            <Text className="text-sm text-slate-400">Average good posture %</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Posture Monitoring Trend</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Average good posture %</Text>
           </View>
-          <View className="flex-row items-center gap-2">
+          <View style={[shared.row, shared.gap8]}>
             <Pressable
               onPress={() => setPostureTrendMode('daily')}
-              className={`px-3 py-1 rounded-full border ${
-                postureTrendMode === 'daily'
-                  ? 'border-teal-400 bg-teal-500/20'
-                  : 'border-slate-700'
-              }`}
+              style={{
+                paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                borderRadius: radii.full, borderWidth: 1,
+                borderColor: postureTrendMode === 'daily' ? colors.tealBorder : colors.border,
+                backgroundColor: postureTrendMode === 'daily' ? colors.tealDim : 'transparent',
+              }}
             >
-              <Text className="text-xs text-slate-200">Daily</Text>
+              <Text style={{ ...typography.small, color: colors.textSecondary }}>Daily</Text>
             </Pressable>
             <Pressable
               onPress={() => setPostureTrendMode('weekly')}
-              className={`px-3 py-1 rounded-full border ${
-                postureTrendMode === 'weekly'
-                  ? 'border-teal-400 bg-teal-500/20'
-                  : 'border-slate-700'
-              }`}
+              style={{
+                paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                borderRadius: radii.full, borderWidth: 1,
+                borderColor: postureTrendMode === 'weekly' ? colors.tealBorder : colors.border,
+                backgroundColor: postureTrendMode === 'weekly' ? colors.tealDim : 'transparent',
+              }}
             >
-              <Text className="text-xs text-slate-200">Weekly</Text>
+              <Text style={{ ...typography.small, color: colors.textSecondary }}>Weekly</Text>
             </Pressable>
           </View>
         </View>
 
         {isLoading ? (
-          <View className="h-52 items-center justify-center gap-2">
-            <ActivityIndicator color="#5eead4" />
-            <Text className="text-slate-400 text-sm">Loading posture trend...</Text>
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+            <ActivityIndicator color={colors.tealLight} />
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Loading posture trend...</Text>
           </View>
         ) : postureTrendValues.length === 0 ? (
-          <View className="h-52 items-center justify-center">
-            <Text className="text-slate-400">No posture sessions yet.</Text>
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ ...typography.body, color: colors.textTertiary }}>No posture sessions yet.</Text>
           </View>
       ) : (
         <LineChart
@@ -504,40 +512,40 @@ export default function ChartsScreen() {
               propsForDots: { r: '4', strokeWidth: '2', stroke: '#22c55e' },
             }}
             bezier
-            style={{ borderRadius: 16 }}
+            style={{ borderRadius: radii.lg }}
             fromZero
           />
         )}
       </View>
 
-      <View className="mb-4">
-        <Text className="text-xl font-semibold text-white">Workout Analytics</Text>
-        <Text className="text-slate-400 text-sm">Consistency, volume, and imbalance trends</Text>
+      <View style={{ marginBottom: spacing.lg }}>
+        <Text style={{ ...typography.h2, color: colors.textPrimary }}>Workout Analytics</Text>
+        <Text style={{ ...typography.caption, color: colors.textTertiary }}>Consistency, volume, and imbalance trends</Text>
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between mb-4">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Consistency & Streak</Text>
-            <Text className="text-sm text-slate-400">Corrective sessions out of 21 per week</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Consistency & Streak</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Corrective sessions out of 21 per week</Text>
           </View>
-          <View className="items-end">
-            <Text className="text-xs text-slate-400">Current streak</Text>
-            <Text className="text-xl font-semibold text-teal-200">{workoutStreak} days</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>Current streak</Text>
+            <Text style={{ ...typography.h2, color: colors.tealLight }}>{workoutStreak} days</Text>
           </View>
         </View>
 
         {weeklyConsistency.length === 0 ? (
-          <View className="h-40 items-center justify-center">
-            <Text className="text-slate-400">No corrective sessions yet.</Text>
+          <View style={{ height: 160, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>No corrective sessions yet.</Text>
           </View>
         ) : (
           <>
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-sm text-slate-300">
+            <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
+              <Text style={{ ...typography.caption, color: colors.textSecondary }}>
                 Latest week: {latestConsistency?.sessions ?? 0} / 21 sessions
               </Text>
-              <Text className="text-sm text-slate-300">
+              <Text style={{ ...typography.caption, color: colors.textSecondary }}>
                 {latestConsistency?.completionPct ?? 0}% complete
               </Text>
             </View>
@@ -562,24 +570,24 @@ export default function ChartsScreen() {
                 propsForDots: { r: '4', strokeWidth: '2', stroke: '#2dd4bf' },
               }}
               bezier
-              style={{ borderRadius: 16 }}
+              style={{ borderRadius: radii.lg }}
               fromZero
             />
           </>
         )}
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between mb-4">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Weekly Volume Trend</Text>
-            <Text className="text-sm text-slate-400">Total weight lifted per week</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Weekly Volume Trend</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Total weight lifted per week</Text>
           </View>
         </View>
 
         {volumeTrend.length === 0 ? (
-          <View className="h-40 items-center justify-center">
-            <Text className="text-slate-400">Log workouts to see volume trends.</Text>
+          <View style={{ height: 160, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>Log workouts to see volume trends.</Text>
           </View>
         ) : (
           <LineChart
@@ -603,39 +611,42 @@ export default function ChartsScreen() {
               propsForDots: { r: '4', strokeWidth: '2', stroke: '#94a3b8' },
             }}
             bezier
-            style={{ borderRadius: 16 }}
+            style={{ borderRadius: radii.lg }}
             fromZero
           />
         )}
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between mb-3">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Strength Progression</Text>
-            <Text className="text-sm text-slate-400">Max weight per session</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Strength Progression</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Max weight per session</Text>
           </View>
         </View>
 
         {gymExercises.length === 0 ? (
-          <View className="h-32 items-center justify-center">
-            <Text className="text-slate-400">Add gym exercises to track progression.</Text>
+          <View style={{ height: 128, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>Add gym exercises to track progression.</Text>
           </View>
         ) : (
           <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-              <View className="flex-row gap-2">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+              <View style={[shared.row, shared.gap8]}>
                 {gymExercises.map((exercise) => {
                   const active = exercise.id === selectedGymExerciseId;
                   return (
                     <Pressable
                       key={exercise.id}
                       onPress={() => setSelectedGymExerciseId(exercise.id)}
-                      className={`px-3 py-1 rounded-full border ${
-                        active ? 'bg-indigo-500/20 border-indigo-400/60' : 'bg-slate-950 border-slate-800'
-                      }`}
+                      style={{
+                        paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                        borderRadius: radii.full, borderWidth: 1,
+                        backgroundColor: active ? colors.gym_compound.bg : colors.bgDeep,
+                        borderColor: active ? colors.gym_compound.border : colors.border,
+                      }}
                     >
-                      <Text className={`text-xs ${active ? 'text-indigo-200' : 'text-slate-300'}`}>
+                      <Text style={{ ...typography.small, color: active ? colors.gym_compound.text : colors.textSecondary }}>
                         {exercise.name}
                       </Text>
                     </Pressable>
@@ -645,8 +656,8 @@ export default function ChartsScreen() {
             </ScrollView>
 
             {weightTrend.length === 0 ? (
-              <View className="h-32 items-center justify-center">
-                <Text className="text-slate-400">No sets logged for this exercise yet.</Text>
+              <View style={{ height: 128, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: colors.textTertiary }}>No sets logged for this exercise yet.</Text>
               </View>
             ) : (
               <LineChart
@@ -670,7 +681,7 @@ export default function ChartsScreen() {
                   propsForDots: { r: '4', strokeWidth: '2', stroke: '#6366f1' },
                 }}
                 bezier
-                style={{ borderRadius: 16 }}
+                style={{ borderRadius: radii.lg }}
                 fromZero
               />
             )}
@@ -678,33 +689,36 @@ export default function ChartsScreen() {
         )}
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="flex-row items-center justify-between mb-3">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
           <View>
-            <Text className="text-lg font-semibold text-white">Left vs Right Balance</Text>
-            <Text className="text-sm text-slate-400">Weekly volume for unilateral work</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Left vs Right Balance</Text>
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Weekly volume for unilateral work</Text>
           </View>
         </View>
 
         {unilateralExercises.length === 0 ? (
-          <View className="h-32 items-center justify-center">
-            <Text className="text-slate-400">Log side-specific exercises to compare.</Text>
+          <View style={{ height: 128, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>Log side-specific exercises to compare.</Text>
           </View>
         ) : (
           <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-              <View className="flex-row gap-2">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+              <View style={[shared.row, shared.gap8]}>
                 {unilateralExercises.map((exercise) => {
                   const active = exercise.id === selectedSideExerciseId;
                   return (
                     <Pressable
                       key={exercise.id}
                       onPress={() => setSelectedSideExerciseId(exercise.id)}
-                      className={`px-3 py-1 rounded-full border ${
-                        active ? 'bg-amber-500/20 border-amber-400/60' : 'bg-slate-950 border-slate-800'
-                      }`}
+                      style={{
+                        paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                        borderRadius: radii.full, borderWidth: 1,
+                        backgroundColor: active ? colors.stretching.bg : colors.bgDeep,
+                        borderColor: active ? colors.stretching.border : colors.border,
+                      }}
                     >
-                      <Text className={`text-xs ${active ? 'text-amber-200' : 'text-slate-300'}`}>
+                      <Text style={{ ...typography.small, color: active ? colors.stretching.text : colors.textSecondary }}>
                         {exercise.name}
                       </Text>
                     </Pressable>
@@ -714,8 +728,8 @@ export default function ChartsScreen() {
             </ScrollView>
 
             {sideTrend.length === 0 ? (
-              <View className="h-32 items-center justify-center">
-                <Text className="text-slate-400">No side-specific sets logged yet.</Text>
+              <View style={{ height: 128, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: colors.textTertiary }}>No side-specific sets logged yet.</Text>
               </View>
             ) : (
               <>
@@ -741,17 +755,17 @@ export default function ChartsScreen() {
                   yAxisInterval={1}
                   chartConfig={chartConfig}
                   bezier
-                  style={{ borderRadius: 16 }}
+                  style={{ borderRadius: radii.lg }}
                   fromZero
                 />
-                <View className="flex-row gap-4 mt-3 justify-center">
-                  <View className="flex-row items-center gap-2">
-                    <View className="w-3 h-3 rounded-full bg-sky-400" />
-                    <Text className="text-sm text-slate-400">Left</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md, justifyContent: 'center' }}>
+                  <View style={[shared.row, shared.gap8]}>
+                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.leftSide }} />
+                    <Text style={{ ...typography.caption, color: colors.textTertiary }}>Left</Text>
                   </View>
-                  <View className="flex-row items-center gap-2">
-                    <View className="w-3 h-3 rounded-full bg-rose-400" />
-                    <Text className="text-sm text-slate-400">Right</Text>
+                  <View style={[shared.row, shared.gap8]}>
+                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.error }} />
+                    <Text style={{ ...typography.caption, color: colors.textTertiary }}>Right</Text>
                   </View>
                 </View>
               </>
@@ -761,7 +775,7 @@ export default function ChartsScreen() {
       </View>
 
       {/* Metric selector cards */}
-      <View className="flex-row flex-wrap gap-3 mb-6">
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing['2xl'] }}>
         {metrics.map((metric) => {
           const { value, trend } = getChange(metric.key);
           const latestValue = [...data]
@@ -773,28 +787,25 @@ export default function ChartsScreen() {
             <Pressable
               key={metric.key}
               onPress={() => setSelectedMetric(metric.key)}
-              className={`flex-1 min-w-[140px] bg-slate-900 rounded-2xl p-4 border ${
-                selectedMetric === metric.key
-                  ? 'border-teal-400'
-                  : 'border-slate-800'
-              }`}
+              style={[shared.card, {
+                flex: 1, minWidth: 140,
+                borderColor: selectedMetric === metric.key ? colors.tealBorder : colors.border,
+              }]}
             >
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-slate-300 text-sm">{metric.label}</Text>
+              <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+                <Text style={{ ...typography.caption, color: colors.textSecondary }}>{metric.label}</Text>
                 <TrendIcon trend={trend} />
               </View>
-              <Text className="text-3xl font-bold" style={{ color: metric.color }}>
+              <Text style={{ fontSize: 30, fontWeight: '700', color: metric.color }}>
                 {latestValue !== undefined ? `${latestValue}` : '—'}
-                <Text className="text-lg text-slate-500">{metric.unit}</Text>
+                <Text style={{ fontSize: 18, color: colors.textMuted }}>{metric.unit}</Text>
               </Text>
               <Text
-                className={`text-sm mt-1 ${
-                  trend === 'improving'
-                    ? 'text-green-400'
-                    : trend === 'declining'
-                      ? 'text-red-400'
-                      : 'text-slate-500'
-                }`}
+                style={{
+                  ...typography.caption,
+                  marginTop: spacing.xs,
+                  color: trend === 'improving' ? colors.success : trend === 'declining' ? colors.error : colors.textMuted,
+                }}
               >
                 {data.length >= 2
                   ? `${value > 0 ? '+' : ''}${value.toFixed(1)} since start`
@@ -806,25 +817,25 @@ export default function ChartsScreen() {
       </View>
 
       {/* Main chart */}
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <View className="mb-4">
-          <Text className="text-lg font-semibold text-white">
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <View style={{ marginBottom: spacing.lg }}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary }}>
             {selectedConfig.label} Over Time
           </Text>
-          <View className="flex-row items-center gap-1 mt-1">
-            <Ionicons name="information-circle-outline" size={14} color="#94a3b8" />
-            <Text className="text-sm text-slate-400">{selectedConfig.description}</Text>
+          <View style={[shared.row, { gap: spacing.xs, marginTop: spacing.xs }]}>
+            <Ionicons name="information-circle-outline" size={14} color={colors.textTertiary} />
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>{selectedConfig.description}</Text>
           </View>
         </View>
 
         {isLoading ? (
-          <View className="h-52 items-center justify-center gap-2">
-            <ActivityIndicator color="#5eead4" />
-            <Text className="text-slate-400 text-sm">Loading chart data...</Text>
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+            <ActivityIndicator color={colors.tealLight} />
+            <Text style={{ ...typography.caption, color: colors.textTertiary }}>Loading chart data...</Text>
           </View>
         ) : chartValues.length === 0 ? (
-          <View className="h-52 items-center justify-center">
-            <Text className="text-slate-400">
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>
               No data yet. Add daily check-ins to see charts.
             </Text>
           </View>
@@ -862,23 +873,23 @@ export default function ChartsScreen() {
               },
             }}
             bezier
-            style={{ borderRadius: 16 }}
+            style={{ borderRadius: radii.lg }}
             fromZero
           />
         )}
       </View>
 
       {/* All metrics comparison */}
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-        <Text className="text-lg font-semibold text-white mb-4">All Metrics Comparison</Text>
+      <View style={shared.card}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.lg }}>All Metrics Comparison</Text>
 
         {isLoading ? (
-          <View className="h-52 items-center justify-center">
-            <ActivityIndicator color="#5eead4" />
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={colors.tealLight} />
           </View>
         ) : data.length === 0 ? (
-          <View className="h-52 items-center justify-center">
-            <Text className="text-slate-400">No data yet.</Text>
+          <View style={{ height: 208, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: colors.textTertiary }}>No data yet.</Text>
           </View>
         ) : (
           <>
@@ -905,18 +916,17 @@ export default function ChartsScreen() {
               yAxisSuffix=""
               chartConfig={chartConfig}
               bezier
-              style={{ borderRadius: 16 }}
+              style={{ borderRadius: radii.lg }}
               fromZero
             />
             {/* Legend */}
-            <View className="flex-row flex-wrap gap-4 mt-4 justify-center">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: spacing.lg, justifyContent: 'center' }}>
               {metrics.map((metric) => (
-                <View key={metric.key} className="flex-row items-center gap-2">
+                <View key={metric.key} style={[shared.row, shared.gap8]}>
                   <View
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: metric.color }}
+                    style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: metric.color }}
                   />
-                  <Text className="text-sm text-slate-400">{metric.label}</Text>
+                  <Text style={{ ...typography.caption, color: colors.textTertiary }}>{metric.label}</Text>
                 </View>
               ))}
             </View>
