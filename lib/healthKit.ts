@@ -7,13 +7,19 @@ import { Platform } from 'react-native';
 
 let HealthKit: any = null;
 
-// Only load on iOS with native modules available
-if (Platform.OS === 'ios') {
+// Lazy-load to avoid Metro resolution failures in Expo Go
+function getHealthKit() {
+  if (HealthKit !== null) return HealthKit;
+  if (Platform.OS !== 'ios') return null;
   try {
-    HealthKit = require('@kingstinct/react-native-healthkit');
+    // Dynamic require prevents Metro from statically resolving native modules
+    const moduleName = '@kingstinct/react-native-healthkit';
+    HealthKit = require(moduleName);
   } catch {
     console.log('HealthKit not available (Expo Go or web)');
+    HealthKit = false; // Mark as attempted
   }
+  return HealthKit || null;
 }
 
 export interface HealthSummary {
