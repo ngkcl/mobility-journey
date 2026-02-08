@@ -16,35 +16,12 @@ let currentPostureState = POSTURE_STATES.GOOD;
 let lastNotificationTime = 0;
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
-// Create a template image for the menu bar (proper macOS style)
-function createTemplateIcon() {
-  // Create a 32x32 template image (spine/posture icon)
-  // Template images are black + alpha, macOS handles light/dark mode
-  const size = 32;
-  const canvas = Buffer.alloc(size * size * 4, 0);
-  
-  // Draw a simple spine shape (vertical line with dots)
-  for (let y = 4; y < 28; y++) {
-    for (let x = 14; x < 18; x++) {
-      const i = (y * size + x) * 4;
-      canvas[i] = 0;     // R
-      canvas[i+1] = 0;   // G
-      canvas[i+2] = 0;   // B
-      canvas[i+3] = 200; // A
-    }
-  }
-  // Head circle
-  for (let y = 2; y < 8; y++) {
-    for (let x = 12; x < 20; x++) {
-      const dx = x - 16, dy = y - 5;
-      if (dx*dx + dy*dy <= 9) {
-        const i = (y * size + x) * 4;
-        canvas[i] = 0; canvas[i+1] = 0; canvas[i+2] = 0; canvas[i+3] = 220;
-      }
-    }
-  }
-  
-  const icon = nativeImage.createFromBuffer(canvas, { width: size, height: size });
+// Load the template icon for the menu bar (proper macOS style)
+function loadTemplateIcon() {
+  // Load the template icon from assets
+  // Template images are black on transparent, macOS handles light/dark mode
+  const iconPath = path.join(__dirname, 'assets', 'iconTemplate.png');
+  const icon = nativeImage.createFromPath(iconPath);
   icon.setTemplateImage(true);
   return icon;
 }
@@ -52,7 +29,7 @@ function createTemplateIcon() {
 // Create menubar app
 const mb = menubar({
   index: `file://${path.join(__dirname, 'index.html')}`,
-  icon: createTemplateIcon(),
+  icon: loadTemplateIcon(),
   browserWindow: {
     width: 340,
     height: 520,
@@ -111,7 +88,7 @@ function showSlouchNotification() {
 
   const notification = new Notification({
     title: 'Posture Alert',
-    body: 'You\'ve been slouching for 30 seconds. Sit up straight!',
+    body: 'You\'ve been slouching for 15 seconds. Sit up straight!',
     silent: false,
     urgency: 'normal'
   });

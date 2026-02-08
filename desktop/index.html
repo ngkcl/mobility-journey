@@ -9,6 +9,11 @@
 </head>
 <body>
     <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="app-title">Posture</div>
+        </div>
+
         <!-- Camera Preview Section -->
         <div class="camera-section">
             <video id="camera-preview" autoplay playsinline muted></video>
@@ -23,6 +28,12 @@
         <div class="score-section">
             <div class="score-ring" id="score-ring">
                 <svg viewBox="0 0 120 120">
+                    <defs>
+                        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
                     <circle class="score-ring-bg" cx="60" cy="60" r="52" />
                     <circle class="score-ring-progress" id="score-progress" cx="60" cy="60" r="52" />
                 </svg>

@@ -202,12 +202,17 @@ function onPoseResults(results) {
     stats.currentStreakSec = Math.round((now - stats.lastGoodTime) / 1000);
   } else if (frameState === 'WARNING') {
     if (!warningStart) warningStart = now;
+    slouchStart = null; // Reset slouch timer when in warning state
     if (now - warningStart > WARNING_MS) {
       stats.currentState = 'WARNING';
+    } else {
+      // Still good during the 5s grace period
+      stats.currentState = 'GOOD';
     }
     stats.lastGoodTime = null;
     stats.currentStreakSec = 0;
   } else {
+    // frameState === 'BAD'
     if (!slouchStart) {
       slouchStart = now;
     }
@@ -221,8 +226,10 @@ function onPoseResults(results) {
       }
       stats.currentState = 'SLOUCHING';
     } else {
+      // Still warning during the 15s grace period
       stats.currentState = 'WARNING';
     }
+    warningStart = null; // Reset warning timer when in bad state
     stats.lastGoodTime = null;
     stats.currentStreakSec = 0;
   }
@@ -345,7 +352,6 @@ function handleCalibrate() {
     }
 
     // Use a one-shot results handler for calibration
-    const origOnResults = pose.onResults;
     const calibrationHandler = (results) => {
       if (!results.poseLandmarks) {
         statusMessage.textContent = '❌ No pose detected. Try again.';
