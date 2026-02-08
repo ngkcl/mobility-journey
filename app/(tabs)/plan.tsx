@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, TextInput, Switch, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
@@ -8,6 +8,7 @@ import { normalizeDailyPlan, normalizeReasoning } from '../../lib/dailyPlan';
 import { buildPostureTrend } from '../../lib/postureSessions';
 import LoadingState from '../../components/LoadingState';
 import { useToast } from '../../components/Toast';
+import { colors, typography, spacing, radii, shared, getSessionColors, estimateSessionDuration, getDailyTip, getGreeting } from '../../lib/theme';
 import type {
   DailyPlan,
   DailyPlanPayload,
@@ -33,6 +34,20 @@ const SECTION_LABELS: Record<keyof DailyPlanPayload, string> = {
   afternoon: 'Afternoon',
   evening: 'Evening',
   gym: 'Gym',
+};
+
+const SECTION_ICONS: Record<keyof DailyPlanPayload, string> = {
+  morning: '🌅',
+  afternoon: '☀️',
+  evening: '🌙',
+  gym: '🏋️',
+};
+
+const SECTION_COLORS: Record<keyof DailyPlanPayload, { bg: string; text: string; border: string }> = {
+  morning: { bg: colors.morningDim, text: colors.morning, border: colors.morningBorder },
+  afternoon: { bg: colors.middayDim, text: colors.midday, border: colors.middayBorder },
+  evening: { bg: colors.eveningDim, text: colors.evening, border: colors.eveningBorder },
+  gym: { bg: 'rgba(99, 102, 241, 0.15)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
 };
 
 const toDateKey = (date: Date) => {
@@ -360,20 +375,34 @@ export default function DailyPlanScreen() {
   const renderExercises = (sectionKey: keyof DailyPlanPayload, section: DailyPlanSection) => {
     const isEditing = Boolean(editingPlan);
     return (
-      <View className="gap-3">
+      <View style={{ gap: spacing.sm }}>
         {section.exercises.length === 0 ? (
-          <Text className="text-slate-500 text-sm">No exercises yet.</Text>
+          <View style={[shared.emptyState, { padding: spacing.xl }]}>
+            <Ionicons name="barbell-outline" size={24} color={colors.textMuted} />
+            <Text style={{ ...typography.caption, color: colors.textMuted, marginTop: spacing.sm }}>
+              No exercises yet.
+            </Text>
+          </View>
         ) : (
           section.exercises.map((exercise, index) => (
-            <View key={`${sectionKey}-${index}`} className="bg-slate-800/50 rounded-xl p-3">
+            <View
+              key={`${sectionKey}-${index}`}
+              style={{
+                backgroundColor: colors.bgCardAlt,
+                borderRadius: radii.lg,
+                padding: spacing.md,
+                borderLeftWidth: 3,
+                borderLeftColor: SECTION_COLORS[sectionKey]?.text ?? colors.teal,
+              }}
+            >
               {isEditing ? (
-                <View className="gap-2">
+                <View style={{ gap: spacing.sm }}>
                   <TextInput
                     value={exercise.name}
                     onChangeText={(text) => updateExercise(sectionKey, index, { name: text })}
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                    style={shared.input}
                   />
-                  <View className="flex-row gap-2">
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                     <TextInput
                       value={exercise.sets != null ? String(exercise.sets) : ''}
                       onChangeText={(text) =>
@@ -382,9 +411,9 @@ export default function DailyPlanScreen() {
                         })
                       }
                       placeholder="Sets"
-                      placeholderTextColor="#64748b"
+                      placeholderTextColor={colors.textPlaceholder}
                       keyboardType="numeric"
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      style={[shared.input, { flex: 1 }]}
                     />
                     <TextInput
                       value={exercise.reps != null ? String(exercise.reps) : ''}
@@ -394,9 +423,9 @@ export default function DailyPlanScreen() {
                         })
                       }
                       placeholder="Reps"
-                      placeholderTextColor="#64748b"
+                      placeholderTextColor={colors.textPlaceholder}
                       keyboardType="numeric"
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      style={[shared.input, { flex: 1 }]}
                     />
                     <TextInput
                       value={exercise.duration_seconds != null ? String(exercise.duration_seconds) : ''}
@@ -406,42 +435,86 @@ export default function DailyPlanScreen() {
                         })
                       }
                       placeholder="Secs"
-                      placeholderTextColor="#64748b"
+                      placeholderTextColor={colors.textPlaceholder}
                       keyboardType="numeric"
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      style={[shared.input, { flex: 1 }]}
                     />
                   </View>
                   <TextInput
                     value={exercise.notes ?? ''}
                     onChangeText={(text) => updateExercise(sectionKey, index, { notes: text })}
                     placeholder="Notes"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                    placeholderTextColor={colors.textPlaceholder}
+                    style={shared.input}
                   />
                   <TextInput
                     value={exercise.reason ?? ''}
                     onChangeText={(text) => updateExercise(sectionKey, index, { reason: text })}
                     placeholder="Reason"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                    placeholderTextColor={colors.textPlaceholder}
+                    style={shared.input}
                   />
-                  <Pressable
-                    onPress={() => removeExercise(sectionKey, index)}
-                    className="self-start"
-                  >
-                    <Text className="text-rose-300 text-sm">Remove</Text>
+                  <Pressable onPress={() => removeExercise(sectionKey, index)}>
+                    <Text style={{ ...typography.caption, color: '#fda4af' }}>Remove</Text>
                   </Pressable>
                 </View>
               ) : (
                 <View>
-                  <Text className="text-white font-medium">{exercise.name}</Text>
-                  {formatExerciseMeta(exercise) ? (
-                    <Text className="text-slate-400 text-xs mt-1">
-                      {formatExerciseMeta(exercise)}
+                  <View style={[shared.rowBetween, { marginBottom: 4 }]}>
+                    <Text style={{ ...typography.bodySemibold, color: colors.textPrimary, flex: 1 }}>
+                      {exercise.name}
                     </Text>
-                  ) : null}
+                    {/* Sets × Reps badge */}
+                    {(exercise.sets != null || exercise.reps != null) && (
+                      <View
+                        style={{
+                          backgroundColor: SECTION_COLORS[sectionKey]?.bg ?? colors.tealDim,
+                          paddingHorizontal: spacing.sm + 2,
+                          paddingVertical: spacing.xs,
+                          borderRadius: radii.sm,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        {exercise.sets != null && (
+                          <Text style={{ ...typography.captionMedium, color: SECTION_COLORS[sectionKey]?.text ?? colors.tealLight }}>
+                            {exercise.sets}×{exercise.reps ?? '—'}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                  {/* Duration + side info */}
+                  {(exercise.duration_seconds != null || exercise.side || exercise.notes) && (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 4 }}>
+                      {exercise.duration_seconds != null && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="time-outline" size={12} color={colors.textTertiary} />
+                          <Text style={{ ...typography.small, color: colors.textTertiary }}>
+                            {exercise.duration_seconds}s
+                          </Text>
+                        </View>
+                      )}
+                      {exercise.side && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="swap-horizontal-outline" size={12} color={colors.textTertiary} />
+                          <Text style={{ ...typography.small, color: colors.textTertiary }}>
+                            {exercise.side}
+                          </Text>
+                        </View>
+                      )}
+                      {exercise.notes && (
+                        <Text style={{ ...typography.small, color: colors.textTertiary }}>
+                          {exercise.notes}
+                        </Text>
+                      )}
+                    </View>
+                  )}
                   {exercise.reason ? (
-                    <Text className="text-teal-300 text-xs mt-1">{exercise.reason}</Text>
+                    <Text style={{ ...typography.small, color: colors.tealLight, marginTop: 6 }}>
+                      {exercise.reason}
+                    </Text>
                   ) : null}
                 </View>
               )}
@@ -451,9 +524,10 @@ export default function DailyPlanScreen() {
         {isEditing && (
           <Pressable
             onPress={() => addExercise(sectionKey)}
-            className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"
+            style={[shared.btnSecondary, { borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' }]}
           >
-            <Text className="text-slate-300 text-sm">Add Exercise</Text>
+            <Ionicons name="add-outline" size={16} color={colors.textTertiary} />
+            <Text style={shared.btnSecondaryText}>Add Exercise</Text>
           </Pressable>
         )}
       </View>
@@ -462,17 +536,53 @@ export default function DailyPlanScreen() {
 
   const renderSection = (sectionKey: keyof DailyPlanPayload, section?: DailyPlanSection | null) => {
     if (!section) return null;
+    const sectionColor = SECTION_COLORS[sectionKey];
+    const exerciseCount = section.exercises.length;
 
     return (
-      <View key={sectionKey} className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-4">
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-white font-semibold text-lg">
-            {section.title || SECTION_LABELS[sectionKey]}
-          </Text>
-          <Ionicons name="sparkles" size={16} color="#5eead4" />
+      <View
+        key={sectionKey}
+        style={{
+          backgroundColor: colors.bgBase,
+          borderRadius: radii.xl,
+          padding: spacing.lg,
+          borderWidth: 1,
+          borderColor: sectionColor?.border ?? colors.border,
+          marginBottom: spacing.lg,
+        }}
+      >
+        <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
+          <View style={[shared.row, { gap: spacing.sm }]}>
+            <Text style={{ fontSize: 20 }}>{SECTION_ICONS[sectionKey] ?? '✦'}</Text>
+            <View>
+              <Text style={{ ...typography.h3, color: colors.textPrimary }}>
+                {section.title || SECTION_LABELS[sectionKey]}
+              </Text>
+              <Text style={{ ...typography.small, color: colors.textTertiary }}>
+                {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''} · {estimateSessionDuration(exerciseCount)}
+              </Text>
+            </View>
+          </View>
+          {/* Color-coded session badge */}
+          <View
+            style={{
+              backgroundColor: sectionColor?.bg ?? colors.tealDim,
+              paddingHorizontal: spacing.sm + 2,
+              paddingVertical: spacing.xs,
+              borderRadius: radii.full,
+              borderWidth: 1,
+              borderColor: sectionColor?.border ?? colors.tealBorder,
+            }}
+          >
+            <Text style={{ ...typography.tiny, color: sectionColor?.text ?? colors.tealLight }}>
+              {SECTION_LABELS[sectionKey]}
+            </Text>
+          </View>
         </View>
         {section.focus ? (
-          <Text className="text-slate-400 text-sm mb-3">{section.focus}</Text>
+          <Text style={{ ...typography.caption, color: colors.textTertiary, marginBottom: spacing.md }}>
+            {section.focus}
+          </Text>
         ) : null}
         {renderExercises(sectionKey, section)}
       </View>
@@ -484,63 +594,89 @@ export default function DailyPlanScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#0b1020]"
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      style={shared.screen}
+      contentContainerStyle={shared.screenContent}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
-      <View className="flex-row items-center justify-between mb-6">
+      {/* Header */}
+      <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
         <View>
-          <Text className="text-2xl font-semibold text-white">Today's Plan</Text>
-          <Text className="text-slate-400 text-sm">{format(new Date(todayKey), 'MMMM d, yyyy')}</Text>
+          <Text style={{ ...typography.caption, color: colors.tealLight, marginBottom: 2 }}>
+            {getGreeting()} ✦
+          </Text>
+          <Text style={shared.pageTitle}>Today&apos;s Plan</Text>
+          <Text style={shared.pageSubtitle}>{format(new Date(todayKey), 'EEEE, MMMM d')}</Text>
         </View>
         <Pressable
           onPress={handleGenerate}
           disabled={isGenerating}
-          className={`px-4 py-2 rounded-xl flex-row items-center gap-2 ${
-            isGenerating ? 'bg-slate-800' : 'bg-teal-500'
-          }`}
+          style={[
+            shared.btnPrimary,
+            shared.btnSmall,
+            isGenerating && { backgroundColor: colors.bgCard },
+          ]}
         >
-          <Ionicons name="sparkles" size={16} color="#fff" />
-          <Text className="text-white font-medium text-sm">
+          <Ionicons name="sparkles" size={14} color="#fff" />
+          <Text style={{ ...typography.captionMedium, color: '#fff' }}>
             {isGenerating ? 'Generating...' : 'Generate'}
           </Text>
         </Pressable>
       </View>
 
-      <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800 mb-6">
-        <Text className="text-white font-semibold mb-3">Plan inputs</Text>
-        <View className="flex-row gap-3 mb-3">
-          <View className="flex-1">
-            <Text className="text-slate-400 text-xs mb-1">Pain (1-10)</Text>
+      {/* Daily Tip */}
+      <View
+        style={{
+          backgroundColor: colors.tealDim,
+          borderRadius: radii.lg,
+          padding: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.tealBorder,
+          marginBottom: spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: spacing.sm,
+        }}
+      >
+        <Text style={{ ...typography.caption, color: colors.tealLight, flex: 1, lineHeight: 20 }}>
+          {getDailyTip()}
+        </Text>
+      </View>
+
+      {/* Plan Inputs */}
+      <View style={[shared.card, { marginBottom: spacing.lg }]}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md }}>Plan Inputs</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Text style={shared.inputLabel}>Pain (1-10)</Text>
             <TextInput
               value={painOverride}
               onChangeText={setPainOverride}
               placeholder={latestMetric?.pain_level != null ? String(latestMetric.pain_level) : '—'}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textPlaceholder}
               keyboardType="numeric"
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+              style={shared.input}
             />
           </View>
-          <View className="flex-1">
-            <Text className="text-slate-400 text-xs mb-1">Energy (1-10)</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={shared.inputLabel}>Energy (1-10)</Text>
             <TextInput
               value={energyOverride}
               onChangeText={setEnergyOverride}
               placeholder={latestMetric?.energy_level != null ? String(latestMetric.energy_level) : '—'}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textPlaceholder}
               keyboardType="numeric"
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+              style={shared.input}
             />
           </View>
         </View>
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-slate-300">Gym day today</Text>
+        <View style={[shared.rowBetween, { marginBottom: spacing.sm }]}>
+          <Text style={{ ...typography.bodyMedium, color: colors.textSecondary }}>Gym day today</Text>
           <Switch
             value={gymDay}
             onValueChange={setGymDay}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
+            trackColor={{ false: '#334155', true: colors.teal }}
             thumbColor="#fff"
           />
         </View>
@@ -549,61 +685,102 @@ export default function DailyPlanScreen() {
             value={gymFocus}
             onChangeText={setGymFocus}
             placeholder="Gym focus (e.g. Upper body)"
-            placeholderTextColor="#64748b"
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+            placeholderTextColor={colors.textPlaceholder}
+            style={[shared.input, { marginTop: spacing.sm }]}
           />
         )}
-        <Text className="text-slate-500 text-xs mt-3">
-          Yesterday workouts: {yesterdayWorkouts.length} | Corrective done: {correctiveSessions.total}/3
-        </Text>
+
+        {/* Quick stats row */}
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: spacing.sm,
+            marginTop: spacing.md,
+            paddingTop: spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.borderLight,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: correctiveSessions.total >= 3 ? colors.success : colors.warning }} />
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>
+              Corrective: {correctiveSessions.total}/3
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="barbell-outline" size={12} color={colors.textTertiary} />
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>
+              Yesterday: {yesterdayWorkouts.length} workouts
+            </Text>
+          </View>
+        </View>
       </View>
 
       {isLoading ? (
-        <LoadingState label="Loading daily plan..." />
+        <LoadingState label="Loading daily plan..." rows={4} />
       ) : !plan ? (
-        <View className="bg-slate-900 rounded-2xl p-8 border border-slate-800 border-dashed items-center">
-          <Text className="text-slate-300 text-center">
-            No plan generated yet. Tap Generate to create today&apos;s plan.
+        <View
+          style={[shared.card, {
+            borderStyle: 'dashed',
+            alignItems: 'center',
+            paddingVertical: spacing['3xl'],
+          }]}
+        >
+          <Ionicons name="sparkles-outline" size={40} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No plan yet</Text>
+          <Text style={shared.emptyStateText}>
+            Tap Generate to create today&apos;s AI-powered plan based on your metrics and progress.
           </Text>
         </View>
       ) : (
         <View>
-          <View className="flex-row items-center justify-between mb-4">
-            <View>
-              <Text className="text-white font-semibold">Status: {plan.status}</Text>
+          {/* Status bar */}
+          <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
+            <View style={[shared.row, { gap: spacing.sm }]}>
+              {/* Status badge */}
+              <View
+                style={[shared.badge, {
+                  backgroundColor: plan.status === 'accepted' ? colors.successDim : plan.status === 'modified' ? colors.warningDim : colors.tealDim,
+                }]}
+              >
+                <Ionicons
+                  name={plan.status === 'accepted' ? 'checkmark-circle' : 'ellipse'}
+                  size={12}
+                  color={plan.status === 'accepted' ? colors.success : plan.status === 'modified' ? colors.warning : colors.tealLight}
+                />
+                <Text style={{
+                  ...typography.small,
+                  color: plan.status === 'accepted' ? colors.success : plan.status === 'modified' ? colors.warning : colors.tealLight,
+                  textTransform: 'capitalize',
+                }}>
+                  {plan.status}
+                </Text>
+              </View>
               {plan.model ? (
-                <Text className="text-slate-500 text-xs mt-1">Model: {plan.model}</Text>
+                <Text style={{ ...typography.small, color: colors.textMuted }}>
+                  {plan.model}
+                </Text>
               ) : null}
             </View>
-            <View className="flex-row gap-2">
+            <View style={[shared.row, { gap: spacing.sm }]}>
               {!editingPlan ? (
                 <>
-                  <Pressable
-                    onPress={startEditing}
-                    className="bg-slate-800 px-3 py-2 rounded-xl"
-                  >
-                    <Text className="text-slate-200 text-xs">Edit</Text>
+                  <Pressable onPress={startEditing} style={[shared.btnSecondary, shared.btnSmall]}>
+                    <Ionicons name="create-outline" size={14} color={colors.textSecondary} />
+                    <Text style={{ ...typography.small, color: colors.textSecondary }}>Edit</Text>
                   </Pressable>
-                  <Pressable
-                    onPress={() => updatePlanStatus('accepted')}
-                    className="bg-teal-500 px-3 py-2 rounded-xl"
-                  >
-                    <Text className="text-white text-xs font-semibold">Accept</Text>
+                  <Pressable onPress={() => updatePlanStatus('accepted')} style={[shared.btnPrimary, shared.btnSmall]}>
+                    <Ionicons name="checkmark" size={14} color="#fff" />
+                    <Text style={{ ...typography.small, color: '#fff' }}>Accept</Text>
                   </Pressable>
                 </>
               ) : (
                 <>
-                  <Pressable
-                    onPress={saveEdits}
-                    className="bg-teal-500 px-3 py-2 rounded-xl"
-                  >
-                    <Text className="text-white text-xs font-semibold">Save</Text>
+                  <Pressable onPress={saveEdits} style={[shared.btnPrimary, shared.btnSmall]}>
+                    <Text style={{ ...typography.small, color: '#fff' }}>Save</Text>
                   </Pressable>
-                  <Pressable
-                    onPress={() => setEditingPlan(null)}
-                    className="bg-slate-800 px-3 py-2 rounded-xl"
-                  >
-                    <Text className="text-slate-200 text-xs">Cancel</Text>
+                  <Pressable onPress={() => setEditingPlan(null)} style={[shared.btnSecondary, shared.btnSmall]}>
+                    <Text style={{ ...typography.small, color: colors.textSecondary }}>Cancel</Text>
                   </Pressable>
                 </>
               )}
@@ -613,12 +790,26 @@ export default function DailyPlanScreen() {
           {activePlan && SECTION_ORDER.map((key) => renderSection(key, activePlan[key]))}
 
           {reasoning.length > 0 && (
-            <View className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-              <Text className="text-white font-semibold mb-3">Why this plan</Text>
+            <View style={[shared.card, { marginTop: spacing.xs }]}>
+              <View style={[shared.row, { gap: spacing.sm, marginBottom: spacing.md }]}>
+                <Ionicons name="bulb-outline" size={18} color={colors.tealLight} />
+                <Text style={{ ...typography.h3, color: colors.textPrimary }}>Why this plan</Text>
+              </View>
               {reasoning.map((item, index) => (
-                <Text key={`reason-${index}`} className="text-slate-300 text-sm mb-2">
- | {item}
-                </Text>
+                <View
+                  key={`reason-${index}`}
+                  style={{
+                    flexDirection: 'row',
+                    gap: spacing.sm,
+                    marginBottom: spacing.sm,
+                    paddingLeft: spacing.xs,
+                  }}
+                >
+                  <Text style={{ ...typography.caption, color: colors.tealLight }}>•</Text>
+                  <Text style={{ ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 20 }}>
+                    {item}
+                  </Text>
+                </View>
               ))}
             </View>
           )}
@@ -626,22 +817,49 @@ export default function DailyPlanScreen() {
       )}
 
       {recentPlans.length > 1 && (
-        <View className="mt-8">
-          <Text className="text-white font-semibold mb-3">Recent plans</Text>
+        <View style={{ marginTop: spacing['3xl'] }}>
+          <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md }}>
+            Recent Plans
+          </Text>
           {recentPlans
             .filter((item) => item.id !== plan?.id)
             .slice(0, 3)
             .map((item) => (
               <View
                 key={item.id}
-                className="bg-slate-900 rounded-2xl p-3 border border-slate-800 mb-2"
+                style={{
+                  backgroundColor: colors.bgBase,
+                  borderRadius: radii.lg,
+                  padding: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: spacing.sm,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
               >
-                <Text className="text-slate-200 text-sm">
-                  {format(new Date(item.plan_date), 'MMM d')} | {item.status}
-                </Text>
-                <Text className="text-slate-500 text-xs mt-1">
-                  Generated {format(new Date(item.created_at), 'h:mm a')}
-                </Text>
+                <View>
+                  <Text style={{ ...typography.bodyMedium, color: colors.textSecondary }}>
+                    {format(new Date(item.plan_date), 'MMM d, yyyy')}
+                  </Text>
+                  <Text style={{ ...typography.small, color: colors.textMuted, marginTop: 2 }}>
+                    Generated {format(new Date(item.created_at), 'h:mm a')}
+                  </Text>
+                </View>
+                <View
+                  style={[shared.badge, {
+                    backgroundColor: item.status === 'accepted' ? colors.successDim : colors.bgCard,
+                  }]}
+                >
+                  <Text style={{
+                    ...typography.tiny,
+                    color: item.status === 'accepted' ? colors.success : colors.textTertiary,
+                    textTransform: 'capitalize',
+                  }}>
+                    {item.status}
+                  </Text>
+                </View>
               </View>
             ))}
         </View>
