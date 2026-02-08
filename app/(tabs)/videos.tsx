@@ -10,6 +10,7 @@ import {
   Dimensions,
   RefreshControl,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
+import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { Video, VideoCategory, VideoAnalysisResult } from '../../lib/types';
 
 const VIDEO_BUCKET = 'progress-videos';
@@ -26,6 +28,13 @@ const screenWidth = Dimensions.get('window').width;
 const numColumns = screenWidth > 600 ? 3 : 2;
 const gap = 8;
 const cardWidth = (screenWidth - gap * (numColumns + 1)) / numColumns;
+
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  pending: { bg: colors.warningDim, text: colors.warning },
+  analyzing: { bg: colors.infoDim, text: colors.info },
+  complete: { bg: colors.successDim, text: colors.success },
+  failed: { bg: colors.errorDim, text: colors.error },
+};
 
 const normalizeAnalysisResult = (result: unknown): VideoAnalysisResult | null => {
   if (!result) return null;
@@ -155,7 +164,6 @@ export default function VideosScreen() {
         const publicUrl = supabase.storage.from(VIDEO_BUCKET).getPublicUrl(storagePath).data
           .publicUrl;
 
-        // Use the asset's creation time if available, otherwise now
         let recordedAt = new Date().toISOString();
         if ((asset as any).creationTime) {
           recordedAt = new Date((asset as any).creationTime).toISOString();
@@ -225,27 +233,17 @@ export default function VideosScreen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const statusColor = (status: string) => {
-    const map: Record<string, { bg: string; text: string }> = {
-      pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-300' },
-      analyzing: { bg: 'bg-blue-500/20', text: 'text-blue-300' },
-      complete: { bg: 'bg-emerald-500/20', text: 'text-emerald-300' },
-      failed: { bg: 'bg-rose-500/20', text: 'text-rose-300' },
-    };
-    return map[status] ?? map.pending;
-  };
-
   const renderVideo = ({ item }: { item: Video }) => {
-    const sc = statusColor(item.analysis_status);
+    const sc = STATUS_COLORS[item.analysis_status] ?? STATUS_COLORS.pending;
     return (
       <Pressable
         onPress={() => router.push(`/video/${item.id}`)}
         onLongPress={() => deleteVideo(item.id)}
         style={{ width: cardWidth, margin: gap / 2 }}
       >
-        <View className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
+        <View style={s.videoCard}>
           {/* Thumbnail */}
-          <View style={{ width: cardWidth, height: cardWidth * 0.56 }} className="bg-slate-800 items-center justify-center">
+          <View style={[s.thumbnailWrap, { width: cardWidth, height: cardWidth * 0.56 }]}>
             {item.thumbnail_url ? (
               <Image
                 source={{ uri: item.thumbnail_url }}
@@ -253,18 +251,18 @@ export default function VideosScreen() {
                 resizeMode="cover"
               />
             ) : (
-              <Ionicons name="film-outline" size={32} color="#475569" />
+              <Ionicons name="film-outline" size={32} color={colors.textPlaceholder} />
             )}
             {/* Play overlay */}
-            <View className="absolute inset-0 items-center justify-center">
-              <View className="w-10 h-10 rounded-full bg-slate-950/60 items-center justify-center">
+            <View style={s.playOverlay}>
+              <View style={s.playButton}>
                 <Ionicons name="play" size={20} color="#fff" style={{ marginLeft: 2 }} />
               </View>
             </View>
             {/* Duration */}
             {item.duration_seconds && (
-              <View className="absolute bottom-1 right-1 bg-slate-950/70 px-1.5 py-0.5 rounded">
-                <Text className="text-white text-xs font-mono">
+              <View style={s.durationBadge}>
+                <Text style={s.durationText}>
                   {formatDuration(item.duration_seconds)}
                 </Text>
               </View>
@@ -272,19 +270,19 @@ export default function VideosScreen() {
           </View>
 
           {/* Card body */}
-          <View className="p-2 gap-1.5">
-            <View className="flex-row items-center justify-between gap-1">
-              <View className="bg-slate-800 px-2 py-0.5 rounded-full">
-                <Text className="text-slate-300 text-xs capitalize">{item.category}</Text>
+          <View style={s.videoBody}>
+            <View style={s.videoMeta}>
+              <View style={s.categoryChip}>
+                <Text style={s.categoryChipText}>{item.category}</Text>
               </View>
-              <View className={`${sc.bg} px-2 py-0.5 rounded-full flex-row items-center gap-1`}>
+              <View style={[s.statusChip, { backgroundColor: sc.bg }]}>
                 {item.analysis_status === 'analyzing' && (
-                  <ActivityIndicator size={10} color="#93c5fd" />
+                  <ActivityIndicator size={10} color={sc.text} />
                 )}
-                <Text className={`${sc.text} text-xs`}>{item.analysis_status}</Text>
+                <Text style={[s.statusChipText, { color: sc.text }]}>{item.analysis_status}</Text>
               </View>
             </View>
-            <Text className="text-slate-400 text-xs">
+            <Text style={s.videoDate}>
               {format(new Date(item.recorded_at), 'MMM d, yyyy')}
             </Text>
           </View>
@@ -294,29 +292,27 @@ export default function VideosScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#0b1020]">
+    <View style={shared.screen}>
       {/* Header */}
-      <View className="px-4 pt-4 pb-2">
-        <View className="flex-row items-center justify-between mb-3">
+      <View style={s.headerWrap}>
+        <View style={s.headerRow}>
           <View>
-            <Text className="text-2xl font-semibold text-white">Video Gallery</Text>
-            <Text className="text-slate-400 text-sm">Record & analyze movement patterns</Text>
+            <Text style={shared.pageTitle}>Video Gallery</Text>
+            <Text style={shared.pageSubtitle}>Record & analyze movement patterns</Text>
           </View>
         </View>
 
         {/* Upload controls */}
-        <View className="flex-row gap-2 mb-3">
+        <View style={s.uploadRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row bg-slate-900 rounded-xl border border-slate-800 p-1">
+            <View style={s.catSelectorWrap}>
               {CATEGORIES.map((cat) => (
                 <Pressable
                   key={cat}
                   onPress={() => setUploadCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg ${uploadCategory === cat ? 'bg-teal-500' : ''}`}
+                  style={[s.catSelectorBtn, uploadCategory === cat && s.catSelectorBtnActive]}
                 >
-                  <Text
-                    className={`text-xs capitalize ${uploadCategory === cat ? 'text-white font-semibold' : 'text-slate-400'}`}
-                  >
+                  <Text style={[s.catSelectorText, uploadCategory === cat && s.catSelectorTextActive]}>
                     {cat}
                   </Text>
                 </Pressable>
@@ -327,10 +323,10 @@ export default function VideosScreen() {
           <Pressable
             onPress={handleUpload}
             disabled={isUploading}
-            className={`px-4 py-2 rounded-xl flex-row items-center gap-2 ${isUploading ? 'bg-teal-500/50' : 'bg-teal-500'}`}
+            style={[shared.btnPrimary, s.uploadBtn, isUploading && { opacity: 0.5 }]}
           >
             <Ionicons name="cloud-upload" size={18} color="#fff" />
-            <Text className="text-white font-medium text-sm">
+            <Text style={shared.btnPrimaryText}>
               {isUploading ? '...' : 'Upload'}
             </Text>
           </Pressable>
@@ -338,20 +334,14 @@ export default function VideosScreen() {
 
         {/* Category filter */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-2 pb-2">
+          <View style={s.filterPillRow}>
             {(['all', ...CATEGORIES] as const).map((cat) => (
               <Pressable
                 key={cat}
                 onPress={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full ${
-                  selectedCategory === cat ? 'bg-teal-500' : 'bg-slate-900'
-                }`}
+                style={[s.filterPill, selectedCategory === cat && s.filterPillActive]}
               >
-                <Text
-                  className={`text-sm capitalize ${
-                    selectedCategory === cat ? 'text-white font-semibold' : 'text-slate-300'
-                  }`}
-                >
+                <Text style={[s.filterPillText, selectedCategory === cat && s.filterPillTextActive]}>
                   {cat}
                 </Text>
               </Pressable>
@@ -362,22 +352,19 @@ export default function VideosScreen() {
 
       {/* Video grid */}
       {isLoading ? (
-        <View className="p-8">
+        <View style={{ padding: spacing['3xl'] }}>
           <LoadingState label="Loading videos..." />
         </View>
       ) : filteredVideos.length === 0 ? (
-        <View className="flex-1 items-center justify-center p-8">
-          <Ionicons name="film-outline" size={48} color="#64748b" />
-          <Text className="text-lg font-semibold text-slate-200 mt-4">No videos yet</Text>
-          <Text className="text-slate-400 text-center mt-2">
+        <View style={shared.emptyState}>
+          <Ionicons name="film-outline" size={48} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No videos yet</Text>
+          <Text style={shared.emptyStateText}>
             Upload your first movement video to start tracking
           </Text>
-          <Pressable
-            onPress={handleUpload}
-            className="mt-4 bg-teal-500 px-6 py-3 rounded-xl flex-row items-center gap-2"
-          >
+          <Pressable onPress={handleUpload} style={[shared.btnPrimary, { marginTop: spacing.lg }]}>
             <Ionicons name="cloud-upload" size={18} color="#fff" />
-            <Text className="text-white font-medium">Upload Video</Text>
+            <Text style={shared.btnPrimaryText}>Upload Video</Text>
           </Pressable>
         </View>
       ) : (
@@ -388,10 +375,156 @@ export default function VideosScreen() {
           numColumns={numColumns}
           contentContainerStyle={{ padding: gap / 2 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
           }
         />
       )}
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  headerWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  catSelectorWrap: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xs,
+  },
+  catSelectorBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
+  },
+  catSelectorBtnActive: {
+    backgroundColor: colors.teal,
+  },
+  catSelectorText: {
+    ...typography.small,
+    color: colors.textTertiary,
+    textTransform: 'capitalize',
+  },
+  catSelectorTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  uploadBtn: {
+    paddingVertical: spacing.sm,
+  },
+  filterPillRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  filterPill: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.bgBase,
+  },
+  filterPillActive: {
+    backgroundColor: colors.teal,
+  },
+  filterPillText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  filterPillTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  videoCard: {
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.bgBase,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  thumbnailWrap: {
+    backgroundColor: colors.bgCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(2,6,23,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: colors.bgOverlay,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  durationText: {
+    ...typography.small,
+    color: colors.textPrimary,
+    fontFamily: 'monospace',
+  },
+  videoBody: {
+    padding: spacing.sm,
+    gap: 6,
+  },
+  videoMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  categoryChip: {
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+  },
+  categoryChipText: {
+    ...typography.small,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  statusChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statusChipText: {
+    ...typography.small,
+  },
+  videoDate: {
+    ...typography.small,
+    color: colors.textTertiary,
+  },
+});
