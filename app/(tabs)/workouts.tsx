@@ -7,7 +7,11 @@ import {
   TextInput,
   RefreshControl,
   Alert,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
@@ -16,6 +20,7 @@ import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
 import { computeWorkoutSummary } from '../../lib/workouts';
 import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
+import { buildWorkoutCSV, buildWorkoutExportPayload } from '../../lib/exportData';
 import { colors, typography, spacing, radii, shared, getSideColor } from '@/lib/theme';
 import type {
   Exercise,
@@ -157,6 +162,8 @@ export default function WorkoutsScreen() {
   const [historyStartDate, setHistoryStartDate] = useState('');
   const [historyEndDate, setHistoryEndDate] = useState('');
   const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
   const { pushToast } = useToast();
 
   const exerciseById = useMemo(() => {
@@ -334,6 +341,86 @@ export default function WorkoutsScreen() {
     await loadAll();
     setRefreshing(false);
   };
+
+  const handleExport = useCallback(async () => {
+    if (isExporting || filteredHistory.length === 0) return;
+    setIsExporting(true);
+    
+    try {
+      const timestamp = format(new Date(), 'yyyy-MM-dd-HHmm');
+      
+      if (exportFormat === 'csv') {
+        const csv = buildWorkoutCSV(filteredHistory, exerciseById);
+        const fileName = `workouts-${timestamp}.csv`;
+        
+        if (Platform.OS === 'web') {
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          pushToast('CSV exported!', 'success');
+        } else {
+          const fileUri = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory}${fileName}`;
+          await FileSystem.writeAsStringAsync(fileUri, csv, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'text/csv',
+              dialogTitle: 'Export Workout Data',
+              UTI: 'public.comma-separated-values-text',
+            });
+            pushToast('CSV ready to share.', 'success');
+          } else {
+            pushToast('Sharing unavailable on this device.', 'error');
+          }
+        }
+      } else {
+        const payload = buildWorkoutExportPayload(filteredHistory, exerciseById);
+        const json = JSON.stringify(payload, null, 2);
+        const fileName = `workouts-${timestamp}.json`;
+        
+        if (Platform.OS === 'web') {
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          pushToast('JSON exported!', 'success');
+        } else {
+          const fileUri = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory}${fileName}`;
+          await FileSystem.writeAsStringAsync(fileUri, json, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/json',
+              dialogTitle: 'Export Workout Data',
+              UTI: 'public.json',
+            });
+            pushToast('JSON ready to share.', 'success');
+          } else {
+            pushToast('Sharing unavailable on this device.', 'error');
+          }
+        }
+      }
+    } catch (error) {
+      pushToast('Export failed. Please try again.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, filteredHistory, exerciseById, exportFormat, pushToast]);
 
   const resetWorkoutState = () => {
     setActiveWorkout(null);
@@ -1549,7 +1636,32 @@ export default function WorkoutsScreen() {
         </View>
       )}
 
-      <Text style={{ ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md }}>Workout History</Text>
+      <View style={[shared.rowBetween, { marginBottom: spacing.md }]}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary }}>Workout History</Text>
+        <Pressable
+          onPress={handleExport}
+          disabled={isExporting || filteredHistory.length === 0}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            backgroundColor: filteredHistory.length > 0 ? colors.bgCard : colors.bgDeep,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            borderRadius: radii.full,
+            borderWidth: 1,
+            borderColor: colors.border,
+            opacity: filteredHistory.length === 0 ? 0.5 : 1,
+          }}
+        >
+          {isExporting ? (
+            <ActivityIndicator size="small" color={colors.tealLight} />
+          ) : (
+            <Ionicons name="download-outline" size={16} color={colors.tealLight} />
+          )}
+          <Text style={{ ...typography.small, color: colors.tealLight }}>Export</Text>
+        </Pressable>
+      </View>
 
       <View style={[shared.card, { marginBottom: spacing.md }]}>
         <TextInput
@@ -1596,9 +1708,40 @@ export default function WorkoutsScreen() {
             />
           </View>
         </View>
-        <Text style={{ ...typography.small, color: colors.textMuted, marginTop: spacing.md }}>
-          Showing {filteredHistory.length} of {workouts.length} workouts
-        </Text>
+        <View style={[shared.rowBetween, { marginTop: spacing.md }]}>
+          <Text style={{ ...typography.small, color: colors.textMuted }}>
+            Showing {filteredHistory.length} of {workouts.length} workouts
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>Export:</Text>
+            <Pressable
+              onPress={() => setExportFormat('csv')}
+              style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                borderRadius: radii.sm,
+                backgroundColor: exportFormat === 'csv' ? colors.tealDim : 'transparent',
+                borderWidth: 1,
+                borderColor: exportFormat === 'csv' ? colors.tealBorder : colors.border,
+              }}
+            >
+              <Text style={{ ...typography.tiny, color: exportFormat === 'csv' ? colors.tealLight : colors.textTertiary }}>CSV</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setExportFormat('json')}
+              style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                borderRadius: radii.sm,
+                backgroundColor: exportFormat === 'json' ? colors.tealDim : 'transparent',
+                borderWidth: 1,
+                borderColor: exportFormat === 'json' ? colors.tealBorder : colors.border,
+              }}
+            >
+              <Text style={{ ...typography.tiny, color: exportFormat === 'json' ? colors.tealLight : colors.textTertiary }}>JSON</Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
 
       {isLoading ? (

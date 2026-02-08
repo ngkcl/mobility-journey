@@ -25,11 +25,12 @@ import {
   buildSideVolumeTrend,
   buildWeeklyConsistency,
   buildWeeklyWorkoutVolume,
-  computeWorkoutStreak,
+  computeStreakStats,
   computeAsymmetrySummary,
   computePainImpact,
   type WorkoutHistoryItem,
 } from '../../lib/workoutAnalytics';
+import StreakCard from '../../components/StreakCard';
 
 const screenWidth = Dimensions.get('window').width - 32;
 
@@ -109,7 +110,7 @@ export default function ChartsScreen() {
   );
 
   const weeklyConsistency = useMemo(() => buildWeeklyConsistency(workoutHistory), [workoutHistory]);
-  const workoutStreak = useMemo(() => computeWorkoutStreak(workoutHistory), [workoutHistory]);
+  const streakStats = useMemo(() => computeStreakStats(workoutHistory), [workoutHistory]);
   const volumeTrend = useMemo(() => buildWeeklyWorkoutVolume(workoutHistory), [workoutHistory]);
   const weightTrend = useMemo(
     () => (selectedGymExerciseId ? buildExerciseWeightTrend(workoutHistory, selectedGymExerciseId) : []),
@@ -568,15 +569,22 @@ export default function ChartsScreen() {
         <Text style={{ ...typography.caption, color: colors.textTertiary }}>Consistency, volume, and imbalance trends</Text>
       </View>
 
+      {/* Streak Card with Calendar Heat Map */}
+      <StreakCard 
+        workoutHistory={workoutHistory} 
+        onPressWorkout={() => router.push('/workouts')}
+      />
+
+      {/* Weekly Consistency Chart */}
       <View style={[shared.card, { marginBottom: spacing.lg }]}>
         <View style={[shared.rowBetween, { marginBottom: spacing.lg }]}>
           <View>
-            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Consistency & Streak</Text>
+            <Text style={{ ...typography.h3, color: colors.textPrimary }}>Weekly Consistency</Text>
             <Text style={{ ...typography.caption, color: colors.textTertiary }}>Corrective sessions out of 21 per week</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ ...typography.small, color: colors.textTertiary }}>Current streak</Text>
-            <Text style={{ ...typography.h2, color: colors.tealLight }}>{workoutStreak} days</Text>
+            <Text style={{ ...typography.small, color: colors.textTertiary }}>Best streak</Text>
+            <Text style={{ ...typography.h2, color: colors.warning }}>{streakStats.bestStreak} days</Text>
           </View>
         </View>
 

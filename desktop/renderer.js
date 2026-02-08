@@ -153,6 +153,8 @@ async function detectLoop() {
 // ===== POSE RESULTS =====
 
 function onPoseResults(results) {
+  console.log('[Posture] onPoseResults called, hasLandmarks:', !!results.poseLandmarks, 'isCalibrated:', isCalibrated);
+  
   if (!results.poseLandmarks) return;
 
   const landmarks = extractLandmarks(results.poseLandmarks);
@@ -192,6 +194,7 @@ function onPoseResults(results) {
 
   // State machine with timing
   stats.totalFrames++;
+  console.log('[Posture] Frame analyzed - state:', frameState, 'totalFrames:', stats.totalFrames, 'headDelta:', headDelta.toFixed(1), 'shoulderDelta:', shoulderDelta.toFixed(1));
 
   if (frameState === 'GOOD') {
     warningStart = null;
@@ -242,7 +245,11 @@ function onPoseResults(results) {
   // Notify main for tray icon
   if (window.electron) {
     const stateMap = { 'GOOD': 'good', 'WARNING': 'warning', 'SLOUCHING': 'slouching' };
-    window.electron.send('posture-state-changed', stateMap[stats.currentState] || 'good');
+    const state = stateMap[stats.currentState] || 'good';
+    console.log('[Posture] Sending to main process:', state);
+    window.electron.send('posture-state-changed', state);
+  } else {
+    console.warn('[Posture] window.electron not available!');
   }
 }
 

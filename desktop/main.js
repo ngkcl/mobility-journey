@@ -501,7 +501,7 @@ mb.on('ready', () => {
 
 // IPC handlers
 ipcMain.on('posture-state-changed', (event, state) => {
-  console.log('Posture state changed:', state);
+  console.log('[Main] Posture state changed:', state, '- statsManager exists:', !!statsManager);
   currentPostureState = state;
   updateTrayIcon(state);
 
@@ -556,7 +556,9 @@ ipcMain.on('camera-error', (event, error) => {
 
 // Stats request handler
 ipcMain.handle('get-stats', async () => {
+  console.log('[Main] get-stats requested, statsManager exists:', !!statsManager);
   if (!statsManager) {
+    console.log('[Main] No statsManager, returning defaults');
     return {
       today: { goodPosturePercent: 0, slouchCount: 0, totalSamples: 0 },
       weekly: { scores: [], average: 0, dates: [] },
@@ -564,7 +566,9 @@ ipcMain.handle('get-stats', async () => {
       bestStreak: 0
     };
   }
-  return statsManager.getAllStats();
+  const stats = statsManager.getAllStats();
+  console.log('[Main] Returning stats:', JSON.stringify(stats.today));
+  return stats;
 });
 
 // Reset stats handler
@@ -788,6 +792,29 @@ if (originalPostureHandler) {
 mb.on('after-create-window', () => {
   if (process.env.NODE_ENV === 'development') {
     mb.window.webContents.openDevTools({ mode: 'detach' });
+  }
+  
+  // Log renderer console messages for debugging
+  mb.window.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    const levelStr = ['DEBUG', 'INFO', 'WARNING', 'ERROR'][level] || 'LOG';
+    console.log(`[Renderer ${levelStr}] ${message}`);
+  });
+  
+  // Log when window is shown/hidden
+  mb.window.on('show', () => {
+    console.log('[Main] Window shown');
+  });
+  
+  mb.window.on('hide', () => {
+    console.log('[Main] Window hidden');
+  });
+});
+
+// When menubar is shown, notify renderer to ensure camera is running
+mb.on('show', () => {
+  console.log('[Main] Menubar shown event');
+  if (mb.window) {
+    mb.window.webContents.send('camera:start');
   }
 });
 
