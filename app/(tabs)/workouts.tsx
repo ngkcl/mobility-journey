@@ -16,6 +16,7 @@ import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
 import { computeWorkoutSummary } from '../../lib/workouts';
 import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
+import { colors, getSideColor } from '@/lib/theme';
 import type {
   Exercise,
   ExerciseCategory,
@@ -824,7 +825,7 @@ export default function WorkoutsScreen() {
       className="flex-1 bg-[#0b1020]"
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
       }
     >
       <View className="flex-row items-center justify-between mb-6">
@@ -1384,19 +1385,26 @@ export default function WorkoutsScreen() {
                   <View className="mt-4">
                     {entry.exercise.side_specific && (
                       <View className="flex-row gap-2 mb-3">
-                        {sideOptions.map((side) => (
-                          <Pressable
-                            key={side}
-                            onPress={() => updateSetDraft(entry.id, { side })}
-                            className={`px-3 py-1.5 rounded-full border ${
-                              draft.side === side ? 'bg-amber-500/30 border-amber-400' : 'border-slate-700'
-                            }`}
-                          >
-                            <Text className={`text-xs ${draft.side === side ? 'text-white' : 'text-slate-300'}`}>
-                              {side}
-                            </Text>
-                          </Pressable>
-                        ))}
+                        {sideOptions.map((side) => {
+                          const sc = getSideColor(side);
+                          const active = draft.side === side;
+                          return (
+                            <Pressable
+                              key={side}
+                              onPress={() => updateSetDraft(entry.id, { side })}
+                              style={{
+                                paddingHorizontal: 12, paddingVertical: 6,
+                                borderRadius: 999, borderWidth: 1,
+                                backgroundColor: active ? sc.bg : 'transparent',
+                                borderColor: active ? sc.text : colors.border,
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, color: active ? sc.text : colors.textSecondary }}>
+                                {sc.label} — {side}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
                       </View>
                     )}
 
@@ -1600,9 +1608,16 @@ export default function WorkoutsScreen() {
                 {item.workout.duration_minutes ?? 0} min · {summary.totalSets} sets · {Math.round(summary.totalVolumeKg)} kg
               </Text>
               {summary.leftVolumeKg + summary.rightVolumeKg > 0 && (
-                <Text className="text-slate-400 text-xs mt-1">
-                  L/R {summary.leftVolumeKg} / {summary.rightVolumeKg} kg
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.leftSideDim, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#60a5fa' }}>L</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>{summary.leftVolumeKg} kg</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.rightSideDim, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#fb923c' }}>R</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>{summary.rightVolumeKg} kg</Text>
+                  </View>
+                </View>
               )}
               {item.workout.notes && (
                 <Text className="text-slate-300 text-sm mt-2">{item.workout.notes}</Text>
@@ -1624,10 +1639,18 @@ export default function WorkoutsScreen() {
                             {exercise.sets.map((set, setIndex) => (
                               <View
                                 key={`${exercise.id}-${setIndex}`}
-                                className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"
+                                style={{
+                                  backgroundColor: set.side === 'left' ? colors.leftSideDim : set.side === 'right' ? colors.rightSideDim : colors.bgDeep,
+                                  borderWidth: 1, borderColor: colors.border,
+                                  borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
+                                }}
                               >
-                                <Text className="text-slate-300 text-xs">
-                                  {set.side ? `${set.side} ` : ''}
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                  {set.side ? (
+                                    <Text style={{ fontWeight: '600', color: set.side === 'left' ? '#60a5fa' : set.side === 'right' ? '#fb923c' : colors.tealLight }}>
+                                      {getSideColor(set.side).label}{' '}
+                                    </Text>
+                                  ) : null}
                                   {set.reps ?? 0} reps · {set.weight_kg ?? 0} kg
                                   {set.duration_seconds ? ` · ${set.duration_seconds}s` : ''}
                                   {set.rpe ? ` · RPE ${set.rpe}` : ''}
