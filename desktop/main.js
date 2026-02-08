@@ -16,31 +16,46 @@ let currentPostureState = POSTURE_STATES.GOOD;
 let lastNotificationTime = 0;
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
-// Create a fallback icon if image files don't exist
-function getIcon(state) {
-  const iconPath = getTrayIconPath(state);
-  try {
-    const icon = nativeImage.createFromPath(iconPath);
-    if (icon.isEmpty()) throw new Error('empty');
-    return icon.resize({ width: 22, height: 22 });
-  } catch (e) {
-    // Fallback: create a colored circle programmatically
-    const colors = {
-      [POSTURE_STATES.GOOD]: '#14b8a6',
-      [POSTURE_STATES.WARNING]: '#eab308',
-      [POSTURE_STATES.SLOUCHING]: '#ef4444'
-    };
-    return null; // Will use title fallback
+// Create a template image for the menu bar (proper macOS style)
+function createTemplateIcon() {
+  // Create a 32x32 template image (spine/posture icon)
+  // Template images are black + alpha, macOS handles light/dark mode
+  const size = 32;
+  const canvas = Buffer.alloc(size * size * 4, 0);
+  
+  // Draw a simple spine shape (vertical line with dots)
+  for (let y = 4; y < 28; y++) {
+    for (let x = 14; x < 18; x++) {
+      const i = (y * size + x) * 4;
+      canvas[i] = 0;     // R
+      canvas[i+1] = 0;   // G
+      canvas[i+2] = 0;   // B
+      canvas[i+3] = 200; // A
+    }
   }
+  // Head circle
+  for (let y = 2; y < 8; y++) {
+    for (let x = 12; x < 20; x++) {
+      const dx = x - 16, dy = y - 5;
+      if (dx*dx + dy*dy <= 9) {
+        const i = (y * size + x) * 4;
+        canvas[i] = 0; canvas[i+1] = 0; canvas[i+2] = 0; canvas[i+3] = 220;
+      }
+    }
+  }
+  
+  const icon = nativeImage.createFromBuffer(canvas, { width: size, height: size });
+  icon.setTemplateImage(true);
+  return icon;
 }
 
 // Create menubar app
 const mb = menubar({
   index: `file://${path.join(__dirname, 'index.html')}`,
-  icon: getTrayIconPath(POSTURE_STATES.GOOD),
+  icon: createTemplateIcon(),
   browserWindow: {
-    width: 320,
-    height: 400,
+    width: 340,
+    height: 520,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -66,28 +81,20 @@ function getTrayIconPath(state) {
   return path.join(__dirname, 'assets', iconMap[state]);
 }
 
-// Update tray icon
+// Update tray icon with state indicator
 function updateTrayIcon(state) {
   if (!mb.tray) return;
 
-  // Update emoji title (always visible)
-  const emojiMap = {
-    [POSTURE_STATES.GOOD]: '🟢',
-    [POSTURE_STATES.WARNING]: '🟡',
-    [POSTURE_STATES.SLOUCHING]: '🔴'
-  };
-  mb.tray.setTitle(emojiMap[state] || '🟢');
-
-  // Also try to update the icon image
+  // Use colored PNG icons if available, otherwise template icon stays
   try {
     const iconPath = getTrayIconPath(state);
     const icon = nativeImage.createFromPath(iconPath);
     if (!icon.isEmpty()) {
-      const resizedIcon = icon.resize({ width: 22, height: 22 });
+      const resizedIcon = icon.resize({ width: 18, height: 18 });
       mb.tray.setImage(resizedIcon);
     }
   } catch (e) {
-    // Emoji title is the fallback
+    // Template icon stays as fallback
   }
 }
 
@@ -116,7 +123,7 @@ function showSlouchNotification() {
 mb.on('ready', () => {
   console.log('Menubar app is ready');
   mb.tray.setToolTip('Posture Monitor');
-  mb.tray.setTitle('🟢');  // Shows text next to icon in menu bar
+  // No emoji title — clean template icon only
 
   // Set auto-start on login
   app.setLoginItemSettings({

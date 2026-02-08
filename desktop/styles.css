@@ -24,10 +24,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     background-color: var(--bg-deep);
     color: var(--text-primary);
-    width: 320px;
+    width: 340px;
     overflow-x: hidden;
+    overflow-y: auto;
     -webkit-font-smoothing: antialiased;
     user-select: none;
+    border-radius: 12px;
 }
 
 .container {
@@ -41,7 +43,7 @@ body {
 .camera-section {
     position: relative;
     width: 100%;
-    height: 180px;
+    height: 160px;
     background-color: var(--bg-card);
     border-radius: 12px;
     overflow: hidden;
