@@ -17,6 +17,9 @@
       "bundleIdentifier": "com.mandel.mobilityjourney",
       "buildNumber": "1",
       "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "Mobility Journey uses your camera to analyze your posture and capture progress photos so you can track improvements over time.",
         "NSMotionUsageDescription": "Mobility Journey uses AirPods motion sensors to monitor your head and neck posture in real time, helping you build better posture habits.",
