@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Platform,
   Modal,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +20,7 @@ import { getSupabase } from '../../lib/supabase';
 import { analyzePhoto } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import LoadingState from '../../components/LoadingState';
+import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 import type { Photo, PhotoView } from '../../lib/types';
 
 const PHOTO_BUCKET = 'progress-photos';
@@ -109,7 +111,6 @@ export default function PhotosScreen() {
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
         const storagePath = `progress/${fileName}`;
 
-        // Fetch file as blob for upload
         const response = await fetch(asset.uri);
         const blob = await response.blob();
 
@@ -125,20 +126,17 @@ export default function PhotosScreen() {
         const publicUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath).data
           .publicUrl;
 
-        // Use EXIF date if available, otherwise fall back to now
         let takenAt = new Date().toISOString();
         if (asset.exif) {
           const exifDate = (asset.exif as any).DateTimeOriginal
             || (asset.exif as any).DateTimeDigitized
             || (asset.exif as any).DateTime;
           if (exifDate) {
-            // EXIF format: "2026:02:07 15:30:00" → ISO
             const parsed = exifDate.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
             const d = new Date(parsed);
             if (!isNaN(d.getTime())) takenAt = d.toISOString();
           }
         }
-        // Also check asset.creationTime (Expo provides this on some platforms)
         if (takenAt === new Date().toISOString() && (asset as any).creationTime) {
           takenAt = new Date((asset as any).creationTime).toISOString();
         }
@@ -171,10 +169,9 @@ export default function PhotosScreen() {
           ...prev,
         ]);
 
-        // Trigger AI analysis in background
         analyzePhoto(publicUrl, inserted.id)
           .then(() => pushToast('AI analysis complete — check Analysis tab', 'success'))
-          .catch(() => {}); // silent fail
+          .catch(() => {});
       } catch (err) {
         pushToast('Upload failed.', 'error');
       }
@@ -315,28 +312,27 @@ export default function PhotosScreen() {
       onLongPress={() => deletePhoto(item.id)}
       style={{ width: imageSize, margin: gap / 2 }}
     >
-      <View className="rounded-xl overflow-hidden bg-slate-800 border border-slate-700">
+      <View style={s.photoCard}>
         <Image
           source={{ uri: item.public_url }}
           style={{ width: imageSize, height: imageSize * 1.33 }}
           resizeMode="cover"
         />
         {compareMode && (
-          <View className="absolute top-2 right-2">
+          <View style={s.checkmarkOverlay}>
             <View
-              className={`h-6 w-6 rounded-full border ${
-                compareSelection.includes(item.id)
-                  ? 'bg-teal-500 border-teal-300'
-                  : 'bg-slate-900/80 border-slate-600'
-              }`}
+              style={[
+                s.checkCircle,
+                compareSelection.includes(item.id) && s.checkCircleActive,
+              ]}
             />
           </View>
         )}
-        <View className="absolute top-2 left-2 bg-slate-900/70 px-2 py-1 rounded">
-          <Text className="text-white text-xs capitalize">{item.view}</Text>
+        <View style={s.viewBadge}>
+          <Text style={s.viewBadgeText}>{item.view}</Text>
         </View>
-        <View className="p-2">
-          <Text className="text-slate-400 text-xs">
+        <View style={s.photoDate}>
+          <Text style={s.photoDateText}>
             {format(new Date(item.taken_at), 'MMM d, yyyy')}
           </Text>
         </View>
@@ -345,71 +341,65 @@ export default function PhotosScreen() {
   );
 
   return (
-    <View className="flex-1 bg-[#0b1020]">
+    <View style={shared.screen}>
       {/* Header controls */}
-      <View className="px-4 pt-4 pb-2">
-        <View className="flex-row items-center justify-between mb-3">
+      <View style={s.headerWrap}>
+        <View style={s.headerRow}>
           <View>
-            <Text className="text-2xl font-semibold text-white">Progress Photos</Text>
-            <Text className="text-slate-400 text-sm">Track visual changes over time</Text>
+            <Text style={shared.pageTitle}>Progress Photos</Text>
+            <Text style={shared.pageSubtitle}>Track visual changes over time</Text>
           </View>
           <Pressable
             onPress={() => {
               setCompareMode((prev) => !prev);
               setCompareSelection([]);
             }}
-            className={`px-3 py-2 rounded-xl border ${
-              compareMode ? 'bg-teal-500 border-teal-400' : 'bg-slate-900 border-slate-800'
-            }`}
+            style={[
+              s.compareBtnOuter,
+              compareMode && s.compareBtnActive,
+            ]}
           >
-            <Text
-              className={`text-xs font-semibold ${compareMode ? 'text-white' : 'text-slate-300'}`}
-            >
+            <Text style={[s.compareBtnText, compareMode && s.compareBtnTextActive]}>
               {compareMode ? 'Comparing' : 'Compare'}
             </Text>
           </Pressable>
         </View>
 
         {/* Upload controls */}
-        <View className="flex-row gap-2 mb-3">
-          {/* View selector */}
-          <View className="flex-row bg-slate-900 rounded-xl border border-slate-800 p-1">
+        <View style={s.uploadRow}>
+          <View style={s.viewSelectorWrap}>
             {UPLOAD_VIEWS.map((v) => (
               <Pressable
                 key={v}
                 onPress={() => setUploadView(v)}
-                className={`px-3 py-1.5 rounded-lg ${uploadView === v ? 'bg-teal-500' : ''}`}
+                style={[s.viewSelectorBtn, uploadView === v && s.viewSelectorBtnActive]}
               >
-                <Text
-                  className={`text-xs capitalize ${uploadView === v ? 'text-white font-semibold' : 'text-slate-400'}`}
-                >
+                <Text style={[s.viewSelectorText, uploadView === v && s.viewSelectorTextActive]}>
                   {v}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <View className="flex-1" />
+          <View style={{ flex: 1 }} />
 
-          {/* Camera button (native only) */}
           {Platform.OS !== 'web' && (
             <Pressable
               onPress={handleCamera}
               disabled={isUploading}
-              className="bg-slate-800 px-3 py-2 rounded-xl flex-row items-center gap-1"
+              style={s.cameraBtn}
             >
-              <Ionicons name="camera" size={18} color="#5eead4" />
+              <Ionicons name="camera" size={18} color={colors.tealLight} />
             </Pressable>
           )}
 
-          {/* Upload button */}
           <Pressable
             onPress={handleUpload}
             disabled={isUploading}
-            className={`px-4 py-2 rounded-xl flex-row items-center gap-2 ${isUploading ? 'bg-teal-500/50' : 'bg-teal-500'}`}
+            style={[shared.btnPrimary, s.uploadBtn, isUploading && { opacity: 0.5 }]}
           >
             <Ionicons name="cloud-upload" size={18} color="#fff" />
-            <Text className="text-white font-medium text-sm">
+            <Text style={shared.btnPrimaryText}>
               {isUploading ? 'Uploading...' : 'Upload'}
             </Text>
           </Pressable>
@@ -417,20 +407,14 @@ export default function PhotosScreen() {
 
         {/* View filter pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-2 pb-2">
+          <View style={s.filterPillRow}>
             {VIEWS.map((view) => (
               <Pressable
                 key={view}
                 onPress={() => setSelectedView(view)}
-                className={`px-4 py-2 rounded-full ${
-                  selectedView === view ? 'bg-teal-500' : 'bg-slate-900'
-                }`}
+                style={[s.filterPill, selectedView === view && s.filterPillActive]}
               >
-                <Text
-                  className={`text-sm capitalize ${
-                    selectedView === view ? 'text-white font-semibold' : 'text-slate-300'
-                  }`}
-                >
+                <Text style={[s.filterPillText, selectedView === view && s.filterPillTextActive]}>
                   {view}
                 </Text>
               </Pressable>
@@ -439,26 +423,23 @@ export default function PhotosScreen() {
         </ScrollView>
 
         {compareMode && (
-          <View className="mt-3 flex-row items-center gap-2">
-            <Text className="text-slate-300 text-xs">
+          <View style={s.compareBar}>
+            <Text style={s.compareBarText}>
               Selected {compareSelection.length}/2
             </Text>
             <Pressable
               onPress={openCompare}
-              className={`px-3 py-1.5 rounded-full ${
-                compareSelection.length === 2 ? 'bg-teal-500' : 'bg-slate-800'
-              }`}
+              style={[
+                s.compareViewBtn,
+                compareSelection.length === 2 && s.compareViewBtnReady,
+              ]}
             >
-              <Text
-                className={`text-xs font-semibold ${
-                  compareSelection.length === 2 ? 'text-white' : 'text-slate-400'
-                }`}
-              >
+              <Text style={[s.compareViewBtnText, compareSelection.length === 2 && s.compareViewBtnTextReady]}>
                 View Compare
               </Text>
             </Pressable>
-            <Pressable onPress={clearCompare} className="px-3 py-1.5 rounded-full bg-slate-900">
-              <Text className="text-xs text-slate-400">Clear</Text>
+            <Pressable onPress={clearCompare} style={s.compareClearBtn}>
+              <Text style={s.compareClearText}>Clear</Text>
             </Pressable>
           </View>
         )}
@@ -466,19 +447,19 @@ export default function PhotosScreen() {
 
       {/* Photo grid */}
       {isLoading ? (
-        <View className="p-8">
+        <View style={{ padding: spacing['3xl'] }}>
           <LoadingState label="Loading photos..." />
         </View>
       ) : filteredPhotos.length === 0 ? (
-        <View className="flex-1 items-center justify-center p-8">
-          <Ionicons name="camera-outline" size={48} color="#64748b" />
-          <Text className="text-lg font-semibold text-slate-200 mt-4">No photos yet</Text>
-          <Text className="text-slate-400 text-center mt-2">
+        <View style={shared.emptyState}>
+          <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
+          <Text style={shared.emptyStateTitle}>No photos yet</Text>
+          <Text style={shared.emptyStateText}>
             Upload your first progress photos to start tracking
           </Text>
-          <Pressable onPress={handleUpload} className="mt-4 bg-teal-500 px-6 py-3 rounded-xl flex-row items-center gap-2">
+          <Pressable onPress={handleUpload} style={[shared.btnPrimary, { marginTop: spacing.lg }]}>
             <Ionicons name="cloud-upload" size={18} color="#fff" />
-            <Text className="text-white font-medium">Upload Photos</Text>
+            <Text style={shared.btnPrimaryText}>Upload Photos</Text>
           </Pressable>
         </View>
       ) : (
@@ -489,33 +470,33 @@ export default function PhotosScreen() {
           numColumns={numColumns}
           contentContainerStyle={{ padding: gap / 2 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5eead4" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tealLight} />
           }
         />
       )}
 
       <Modal visible={compareOpen} animationType="slide" onRequestClose={clearCompare}>
-        <View className="flex-1 bg-[#0b1020] p-4">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-semibold text-white">Compare Photos</Text>
-            <Pressable onPress={clearCompare} className="px-3 py-2 rounded-xl bg-slate-800">
-              <Text className="text-slate-200 text-xs font-semibold">Close</Text>
+        <View style={s.compareModal}>
+          <View style={s.compareModalHeader}>
+            <Text style={s.compareModalTitle}>Compare Photos</Text>
+            <Pressable onPress={clearCompare} style={shared.btnSecondary}>
+              <Text style={shared.btnSecondaryText}>Close</Text>
             </Pressable>
           </View>
-          <View className="flex-1 flex-row gap-3">
+          <View style={s.compareImagesRow}>
             {compareSelection.map((id) => {
               const photo = photos.find((p) => p.id === id);
               if (!photo) return null;
               return (
-                <View key={photo.id} className="flex-1 rounded-2xl overflow-hidden bg-slate-900">
+                <View key={photo.id} style={s.compareImage}>
                   <Image
                     source={{ uri: photo.public_url }}
                     style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                   />
-                  <View className="absolute bottom-0 left-0 right-0 bg-slate-950/70 px-3 py-2">
-                    <Text className="text-white text-xs capitalize">{photo.view}</Text>
-                    <Text className="text-slate-300 text-[10px]">
+                  <View style={s.compareOverlay}>
+                    <Text style={s.compareViewLabel}>{photo.view}</Text>
+                    <Text style={s.compareDateLabel}>
                       {format(new Date(photo.taken_at), 'MMM d, yyyy')}
                     </Text>
                   </View>
@@ -528,3 +509,224 @@ export default function PhotosScreen() {
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  headerWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  compareBtnOuter: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgBase,
+  },
+  compareBtnActive: {
+    backgroundColor: colors.teal,
+    borderColor: colors.teal,
+  },
+  compareBtnText: {
+    ...typography.small,
+    color: colors.textSecondary,
+  },
+  compareBtnTextActive: {
+    color: '#fff',
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  viewSelectorWrap: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xs,
+  },
+  viewSelectorBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
+  },
+  viewSelectorBtnActive: {
+    backgroundColor: colors.teal,
+  },
+  viewSelectorText: {
+    ...typography.small,
+    color: colors.textTertiary,
+    textTransform: 'capitalize',
+  },
+  viewSelectorTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  cameraBtn: {
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+  },
+  uploadBtn: {
+    paddingVertical: spacing.sm,
+  },
+  filterPillRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  filterPill: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.bgBase,
+  },
+  filterPillActive: {
+    backgroundColor: colors.teal,
+  },
+  filterPillText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  filterPillTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  compareBar: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  compareBarText: {
+    ...typography.small,
+    color: colors.textSecondary,
+  },
+  compareViewBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    backgroundColor: colors.bgCard,
+  },
+  compareViewBtnReady: {
+    backgroundColor: colors.teal,
+  },
+  compareViewBtnText: {
+    ...typography.small,
+    color: colors.textTertiary,
+  },
+  compareViewBtnTextReady: {
+    color: '#fff',
+  },
+  compareClearBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    backgroundColor: colors.bgBase,
+  },
+  compareClearText: {
+    ...typography.small,
+    color: colors.textTertiary,
+  },
+  photoCard: {
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  checkmarkOverlay: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+  },
+  checkCircle: {
+    height: 24,
+    width: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    backgroundColor: colors.bgOverlay,
+  },
+  checkCircleActive: {
+    backgroundColor: colors.teal,
+    borderColor: colors.tealLight,
+  },
+  viewBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: colors.bgOverlay,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+  },
+  viewBadgeText: {
+    ...typography.small,
+    color: colors.textPrimary,
+    textTransform: 'capitalize',
+  },
+  photoDate: {
+    padding: spacing.sm,
+  },
+  photoDateText: {
+    ...typography.small,
+    color: colors.textTertiary,
+  },
+  compareModal: {
+    flex: 1,
+    backgroundColor: colors.bgDeep,
+    padding: spacing.lg,
+  },
+  compareModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  compareModalTitle: {
+    ...typography.h2,
+    color: colors.textPrimary,
+  },
+  compareImagesRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  compareImage: {
+    flex: 1,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.bgBase,
+  },
+  compareOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.bgOverlay,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  compareViewLabel: {
+    ...typography.small,
+    color: colors.textPrimary,
+    textTransform: 'capitalize',
+  },
+  compareDateLabel: {
+    ...typography.tiny,
+    color: colors.textSecondary,
+  },
+});
