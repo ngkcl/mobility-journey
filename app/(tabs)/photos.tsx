@@ -95,6 +95,7 @@ export default function PhotosScreen() {
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 0.8,
+      exif: true,
     });
 
     if (result.canceled || !result.assets?.length) return;
@@ -123,7 +124,24 @@ export default function PhotosScreen() {
 
         const publicUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath).data
           .publicUrl;
-        const takenAt = new Date().toISOString();
+
+        // Use EXIF date if available, otherwise fall back to now
+        let takenAt = new Date().toISOString();
+        if (asset.exif) {
+          const exifDate = (asset.exif as any).DateTimeOriginal
+            || (asset.exif as any).DateTimeDigitized
+            || (asset.exif as any).DateTime;
+          if (exifDate) {
+            // EXIF format: "2026:02:07 15:30:00" → ISO
+            const parsed = exifDate.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+            const d = new Date(parsed);
+            if (!isNaN(d.getTime())) takenAt = d.toISOString();
+          }
+        }
+        // Also check asset.creationTime (Expo provides this on some platforms)
+        if (takenAt === new Date().toISOString() && (asset as any).creationTime) {
+          takenAt = new Date((asset as any).creationTime).toISOString();
+        }
 
         const { data: inserted, error: insertError } = await supabase
           .from('photos')

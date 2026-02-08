@@ -155,7 +155,13 @@ export default function VideosScreen() {
         const publicUrl = supabase.storage.from(VIDEO_BUCKET).getPublicUrl(storagePath).data
           .publicUrl;
 
-        const recordedAt = new Date().toISOString();
+        // Use the asset's creation time if available, otherwise now
+        let recordedAt = new Date().toISOString();
+        if ((asset as any).creationTime) {
+          recordedAt = new Date((asset as any).creationTime).toISOString();
+        } else if ((asset as any).modificationTime) {
+          recordedAt = new Date((asset as any).modificationTime).toISOString();
+        }
         const duration = asset.duration ? Math.round(asset.duration / 1000) : null;
 
         const { data: inserted, error: insertError } = await supabase
