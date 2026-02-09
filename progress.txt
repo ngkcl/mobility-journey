@@ -3,6 +3,7 @@
 - Keep Expo/React Native runtime-only modules (e.g. notifications) isolated from testable logic to avoid Node test loader issues.
 - For streak calculations that check "active" status, use relative dates (today/yesterday) in tests.
 - CSV export: escape commas/quotes properly, use native share sheet on mobile.
+- For date logic that uses local `Date` methods (`getHours`, `getDay`), build test dates with numeric constructors instead of UTC strings to avoid timezone drift.
 
 ---
 ## 2025-02-10 - Overnight Feature Sprint: Streak Tracking + Data Export
@@ -346,3 +347,27 @@ Found and committed ~2400 lines of uncommitted work on weekly reports system:
 - Auto-generates last week's report on Monday app open
 
 All 6 weekly report user stories (WR-001 through WR-006) now complete.
+
+---
+## [2026-02-09 05:10] - Story MAINT-001: Restore baseline home summary tests
+
+### Completed
+- Fixed `lib/homeSummary.test.js` ts-node loader config so Node tests can import `lib/homeSummary.ts` and its dependencies reliably.
+- Reworked date fixtures in the same test to use local numeric date constructors for timezone-safe assertions.
+- Updated daily tip expectation to match the implementation of `getDayOfYear`.
+- Re-ran `pnpm typecheck && pnpm lint && pnpm test` with all checks passing.
+
+### Next Up (for next iteration)
+- [ ] If a new story is started, keep this test-loader/date pattern for any new `homeSummary`-style date logic tests.
+- [ ] Decide whether to centralize ts-node test bootstrap config to avoid per-file overrides.
+
+### Blockers/Warnings
+- Unrelated untracked file exists in workspace: `prd-goals.json` (left untouched).
+
+### Files Changed
+- lib/homeSummary.test.js
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- Expo tsconfig defaults can conflict with ts-node in Node tests; overriding ts-node compiler options in test bootstrap may be required.
+---
