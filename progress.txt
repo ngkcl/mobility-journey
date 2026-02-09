@@ -3,6 +3,7 @@
 - Keep Expo/React Native runtime-only modules (e.g. notifications) isolated from testable logic to avoid Node test loader issues.
 - For streak calculations that check "active" status, use relative dates (today/yesterday) in tests.
 - CSV export: escape commas/quotes properly, use native share sheet on mobile.
+- For date logic that uses local time (`getHours`, `getDate`), write tests with local timestamps (no `Z`) to avoid timezone-dependent failures.
 
 ---
 ## 2025-02-10 - Overnight Feature Sprint: Streak Tracking + Data Export
@@ -346,3 +347,33 @@ Found and committed ~2400 lines of uncommitted work on weekly reports system:
 - Auto-generates last week's report on Monday app open
 
 All 6 weekly report user stories (WR-001 through WR-006) now complete.
+---
+## [2026-02-09 05:14] - Story GL-001: Goal data model and storage
+
+### Completed
+- Added `lib/goals.ts` with goal domain types (`Goal`, `GoalType`, `GoalStatus`, `GoalProgress`) and progress-summary typing.
+- Implemented goals data access helpers: `createGoal`, `updateGoal`, `deleteGoal`, `getGoals`, `getGoalProgress`.
+- Implemented `computeGoalProgress(goal)` with direction-aware progress logic (pain goals decrease, score/consistency/streak goals increase), on-track calculation, projected completion, and trend detection.
+- Added `lib/goals.test.js` with coverage for improvement goals, pain reduction, completion, regression, overdue goals, and projection behavior.
+- Added Supabase migration `20260209_goals.sql` creating `goals` and `goal_progress` tables with constraints and indexes.
+- Fixed pre-existing baseline test instability in `lib/homeSummary.test.js` (timezone-sensitive assertions and rotation expectation) so test suite is reliable.
+
+### Next Up (for next iteration)
+- [ ] Start GL-002: implement the goal creation wizard in `app/goals/new.tsx` with validation and smart defaults.
+- [ ] Wire created goals into UI navigation flow and confirm create/save path against Supabase.
+
+### Blockers/Warnings
+- No blockers in this iteration.
+- Existing workspace has unrelated modifications in `prd-workouts.json`; left untouched.
+
+### Files Changed
+- lib/goals.ts
+- lib/goals.test.js
+- supabase/migrations/20260209_goals.sql
+- lib/homeSummary.test.js
+- prd.json
+- progress.txt
+
+### Learnings (add to Codebase Patterns if reusable)
+- Date tests for local-time logic should avoid `Z` timestamps to prevent timezone-dependent failures.
+---
