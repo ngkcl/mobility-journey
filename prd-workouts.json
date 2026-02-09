@@ -24,7 +24,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "The side_specific flag is important — many corrective exercises should be done more on the weak (left) side. Include common gym exercises too (squat, bench, deadlift, rows, etc.) for gym tracking."
     },
     {
@@ -43,7 +43,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "The left/right tracking is key — for unilateral exercises (single arm rows, clamshells, etc.), we want to see if the imbalance is improving over time. RPE (rate of perceived exertion) per set helps track fatigue."
     },
     {
@@ -62,7 +62,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The guided mode is important — Nick should be able to tap 'Morning Protocol' and just follow along without thinking. Timer beeps when rest is over, shows next exercise, etc."
     },
     {
@@ -81,7 +81,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The AI prompt should include Nick's specific condition (right-thoracic scoliosis, right-side imbalance), his correction strategy (release tight → activate weak → integrate → maintain), and recent data. Use the existing API pattern from lib/api.ts."
     },
     {
@@ -101,7 +101,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "The left/right comparison over time is the most valuable analytics feature — shows if the muscular imbalance is actually improving."
     },
     {
@@ -119,7 +119,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "This replaces the manual cron-based exercise reminders I currently have set up. The app should handle its own notifications."
     }
   ]
