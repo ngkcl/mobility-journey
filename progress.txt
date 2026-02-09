@@ -319,3 +319,30 @@ Nick reported that after calibrating the posture monitor, stats stay at 0 and no
 - [ ] Test on Nick's laptop with camera to verify full flow
 - [ ] Consider adding a "mock camera" mode for development on devices without camera
 - [ ] Add visual feedback when calibration countdown is happening
+
+## Feb 9, 2026 — Evening Session (Jared)
+
+### Weekly Reports Feature Committed! 🎉
+
+Found and committed ~2400 lines of uncommitted work on weekly reports system:
+
+**What was shipped:**
+- `lib/weeklyReport.ts` — Core report generation with workout summaries, metric aggregation, photo tracking
+- `lib/reportInsights.ts` — Smart insight engine (achievements, warnings, tips) that generates actionable feedback
+- `lib/weeklyReportStorage.ts` — Supabase persistence layer with auto-generation logic
+- `app/(tabs)/reports.tsx` — Full 734-line Reports tab with beautiful card UI
+- Tests for both report generation and insights (19 tests, all passing)
+- Supabase migration for `weekly_reports` table
+
+**Navigation change:**
+- Reports tab now in main nav (replaced Charts)
+- Charts still accessible via router.push() — moved to hidden tabs
+
+**Key features:**
+- Insight engine surfaces max 5 most important observations per week
+- Trends comparison (current week vs previous)
+- Photo side-by-side comparison when available
+- Share button with formatted text export
+- Auto-generates last week's report on Monday app open
+
+All 6 weekly report user stories (WR-001 through WR-006) now complete.
