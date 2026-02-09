@@ -1,0 +1,112 @@
+{
+  "project": "mobility-app",
+  "branchName": "ralph/weekly-reports",
+  "description": "Weekly progress report system that automatically generates comprehensive weekly summaries. Reports aggregate workout data, posture metrics, pain trends, and photo comparison to show tangible progress and areas needing attention.",
+  "context": {
+    "purpose": "Nick wants to see tangible progress toward fixing his scoliosis. Weekly reports provide accountability and motivation by showing clear progress metrics.",
+    "existingData": "App already tracks: workouts (sets, reps, weights, side-specific), posture sessions, metrics (pain, posture, energy, symmetry scores), and progress photos.",
+    "keyInsight": "Left/right asymmetry improvement is the most important metric - it directly measures if the muscular imbalance is correcting."
+  },
+  "userStories": [
+    {
+      "id": "WR-001",
+      "title": "Weekly report data model and generator",
+      "description": "Create the data structures and core logic for generating weekly progress reports.",
+      "acceptanceCriteria": [
+        "Create lib/weeklyReport.ts with types: WeeklyReport, WorkoutSummary, MetricsSummary, PhotoSummary, Insights",
+        "WeeklyReport includes: weekStart, weekEnd, workoutSummary, metricsSummary, photoSummary, insights[], overallScore",
+        "WorkoutSummary: totalSessions, correctiveSessions, gymSessions, totalVolume, leftVolume, rightVolume, asymmetryChange, consistencyPct, streakStatus",
+        "MetricsSummary: avgPainLevel, painTrend (better/worse/stable), avgPostureScore, postureTrend, avgEnergyLevel, avgSymmetryScore",
+        "PhotoSummary: photosThisWeek, earliestPhotoUrl, latestPhotoUrl (for comparison), hasComparisonPair boolean",
+        "Insights: array of {type: 'achievement'|'warning'|'tip', title, description} - e.g., 'Consistency improved by 20%', 'Left side volume dropped - focus on unilateral work'",
+        "generateWeeklyReport(weekStart: Date): Promise<WeeklyReport> - fetches all data and computes report",
+        "Add tests for report generation logic",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "The insights are the most valuable part - they should surface actionable observations. Compare current week to previous week for trend analysis."
+    },
+    {
+      "id": "WR-002",
+      "title": "Supabase storage for generated reports",
+      "description": "Persist generated reports to Supabase for history and offline access.",
+      "acceptanceCriteria": [
+        "Create Supabase migration: weekly_reports table (id, week_start, week_end, report_json, created_at, shared_at)",
+        "Add lib/weeklyReportStorage.ts: saveReport(report), getReport(weekStart), listReports(limit), deleteReport(id)",
+        "Auto-save report after generation",
+        "Reports should only be generated once per week - check if exists before regenerating",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "store the full report as JSONB for flexibility. We can query by week_start to check if a report exists."
+    },
+    {
+      "id": "WR-003",
+      "title": "Weekly Report viewer screen",
+      "description": "Create a new screen to view the current and past weekly reports.",
+      "acceptanceCriteria": [
+        "Add app/(tabs)/reports.tsx or app/reports/[week].tsx",
+        "Current week report view with: summary header, workout stats section, metrics section, photo comparison (side by side if available), insights list",
+        "Visual design: clean cards for each section, color-coded trends (green=improving, red=declining, gray=stable)",
+        "Navigation: ability to view past weeks' reports (date picker or week list)",
+        "Empty state when no data available for a week",
+        "Add Reports tab to bottom navigation (or accessible from home/charts)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "This should feel like a polished 'weekly review' experience. Maybe a trophy or progress emoji at the top based on overall score."
+    },
+    {
+      "id": "WR-004",
+      "title": "Report insights engine",
+      "description": "Smart insight generation that surfaces meaningful observations and recommendations.",
+      "acceptanceCriteria": [
+        "lib/reportInsights.ts with generateInsights(currentWeek, previousWeek): Insight[]",
+        "Achievement insights: streak milestones (7 days, 30 days), consistency improvements, pain reduction, personal bests",
+        "Warning insights: missed sessions, increasing pain, worsening asymmetry, declining posture scores",
+        "Tip insights: contextual suggestions based on data - e.g., 'Your right side is still dominant, try adding 1 extra set on left-side exercises'",
+        "Each insight has an icon, color, and action (optional - deep link to relevant screen)",
+        "Limit to 5 most important insights per report",
+        "Add tests for insight generation",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "The insights should feel like having a coach review your week. Be specific with numbers - '15% improvement' not just 'improved'."
+    },
+    {
+      "id": "WR-005",
+      "title": "Report sharing and export",
+      "description": "Export weekly reports as shareable images or text summaries.",
+      "acceptanceCriteria": [
+        "Share button on report screen",
+        "Generate shareable text summary: 'Week of Feb 3-9: 5/7 sessions completed, pain down 12%, posture up 8%...'",
+        "Option to share via native share sheet (expo-sharing)",
+        "Mark report as shared (shared_at timestamp) for tracking",
+        "Optional: Generate PNG image of report card for social sharing",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Keep the text summary concise and motivating. The image export is optional/bonus."
+    },
+    {
+      "id": "WR-006",
+      "title": "Automatic weekly report generation",
+      "description": "Auto-generate reports on Sunday night or Monday morning.",
+      "acceptanceCriteria": [
+        "Add scheduling logic: check on app open if it's Monday and no report exists for last week",
+        "If conditions met, generate last week's report in background",
+        "Show 'New report available' indicator on home screen or notification",
+        "User can also manually trigger report generation for any past week",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Don't be intrusive - just show a subtle indicator that the report is ready to view."
+    }
+  ]
+}

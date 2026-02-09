@@ -10,7 +10,7 @@ const visibleTabs: { name: string; title: string; icon: TabIcon; iconFocused: Ta
   { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
   { name: 'plan', title: 'Plan', icon: 'sparkles-outline', iconFocused: 'sparkles' },
   { name: 'workouts', title: 'Workouts', icon: 'fitness-outline', iconFocused: 'fitness' },
-  { name: 'charts', title: 'Progress', icon: 'trending-up-outline', iconFocused: 'trending-up' },
+  { name: 'reports', title: 'Reports', icon: 'document-text-outline', iconFocused: 'document-text' },
   { name: 'profile', title: 'Profile', icon: 'person-outline', iconFocused: 'person' },
 ];
 
@@ -26,6 +26,7 @@ const hiddenTabs: string[] = [
   'todos',
   'health',
   'program',
+  'charts',
 ];
 
 export default function TabLayout() {
