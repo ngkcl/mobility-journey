@@ -8,7 +8,7 @@ type TabIcon = React.ComponentProps<typeof Ionicons>['name'];
 /** Tabs that appear in the bottom bar */
 const visibleTabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }[] = [
   { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
-  { name: 'plan', title: 'Plan', icon: 'sparkles-outline', iconFocused: 'sparkles' },
+  { name: 'goals', title: 'Goals', icon: 'flag-outline', iconFocused: 'flag' },
   { name: 'workouts', title: 'Workouts', icon: 'fitness-outline', iconFocused: 'fitness' },
   { name: 'reports', title: 'Reports', icon: 'document-text-outline', iconFocused: 'document-text' },
   { name: 'profile', title: 'Profile', icon: 'person-outline', iconFocused: 'person' },
@@ -27,6 +27,7 @@ const hiddenTabs: string[] = [
   'health',
   'program',
   'charts',
+  'plan',
 ];
 
 export default function TabLayout() {
