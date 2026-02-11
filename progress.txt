@@ -407,3 +407,34 @@ All 6 weekly report user stories (WR-001 through WR-006) now complete.
 - app/goals/new.tsx (new)
 - prd.json (GL-002 marked as passes: true)
 - progress.txt
+
+---
+## [2026-02-11 05:00] - Stories GL-003, GL-004, GL-005: Goals dashboard, detail screen, auto-tracking
+
+### Completed
+- GL-003: Goals dashboard (`app/(tabs)/goals.tsx`) — new tab with summary stats, goal cards, progress bars, FAB, empty state, collapsible past goals
+- GL-004: Goal detail screen (`app/goals/[id].tsx`) — progress ring, stats, milestones, projection, history, actions (complete/pause/delete)
+- GL-005: Automatic progress tracking (`lib/goalTracker.ts`) — metric→goal mapping, auto-update on metric save, workout consistency/streak recalc, batch refresh, auto-completion
+- Tab layout updated: Goals replaces Plan in visible tabs, Plan moved to hidden tabs
+- 12 new tests all passing, TypeScript clean
+
+### Next Up (for next iteration)
+- [ ] Start GL-006: Goal celebrations and notifications (confetti, milestone toasts, badges)
+- [ ] Start GL-007: Goal suggestions based on data (AI-powered recommendations)
+- [ ] Wire goalTracker into metric entry screens (call trackMetricUpdate when saving metrics)
+- [ ] Wire goalTracker into workout completion flow (call trackWorkoutCompleted)
+
+### Blockers/Warnings
+- None. Clean build.
+
+### Files Changed
+- app/(tabs)/_layout.tsx (Goals tab added, Plan moved to hidden)
+- app/(tabs)/goals.tsx (new - Goals dashboard)
+- app/goals/[id].tsx (new - Goal detail screen)
+- lib/goalTracker.ts (new - Automatic progress tracking)
+- lib/goalTracker.test.js (new - 12 tests)
+- prd.json (GL-003, GL-004, GL-005 marked passes)
+
+### Learnings
+- When narrowing type with conditional (goal.status === 'active'), TypeScript won't allow checking for other status values inside. Use wider union guard.
+- Goal detail needs getGoals() then filter since there's no single-goal fetch endpoint.

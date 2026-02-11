@@ -69,7 +69,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This should feel motivating, not overwhelming. Progress bars and color coding give quick visual feedback."
     },
     {
@@ -89,7 +89,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The projection feature is key for motivation - showing that effort is paying off."
     },
     {
@@ -109,7 +109,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "This is the magic - progress should update automatically without user doing anything extra. Just log your metrics and goals update."
     },
     {
