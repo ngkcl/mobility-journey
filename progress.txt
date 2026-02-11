@@ -377,3 +377,33 @@ All 6 weekly report user stories (WR-001 through WR-006) now complete.
 ### Learnings (add to Codebase Patterns if reusable)
 - Date tests for local-time logic should avoid `Z` timestamps to prevent timezone-dependent failures.
 ---
+---
+## [2026-02-11 01:04] - Story GL-002: Goal creation wizard
+
+### Completed
+- Created `app/goals/_layout.tsx` with Stack navigator + theme styling
+- Created `app/goals/new.tsx` — full 4-step wizard (580 lines):
+  - Step 1: Select from 6 goal types (pain reduction, symmetry, posture score, consistency, streak, custom) — each with icon, color, description, example
+  - Step 2: Set starting/target values with +/- adjusters, direction-aware validation (lower-is-better for pain, higher-is-better for scores)
+  - Step 3: Deadline picker with 4 presets (4/8/12/26 weeks), showing computed dates
+  - Step 4: Review card with summary stats, projected pace per week, and milestone timeline (25/50/75/100%)
+- Saves to Supabase via existing `createGoal()` from `lib/goals.ts`
+- Full theme integration (colors, typography, radii from lib/theme)
+- Step indicator with progress dots and connecting lines
+- Bottom navigation bar with Back/Next/Create Goal actions
+- Validation prevents impossible goals (target must be achievable relative to start)
+- TypeScript clean — `npx tsc --noEmit` passes
+
+### Next Up (for next iteration)
+- [ ] Start GL-003: Goals dashboard and list view (app/(tabs)/goals.tsx)
+- [ ] Add goals tab to main navigation in _layout.tsx
+- [ ] Wire "Add Goal" button from goals list to /goals/new
+
+### Blockers/Warnings
+- None. Clean build.
+
+### Files Changed
+- app/goals/_layout.tsx (new)
+- app/goals/new.tsx (new)
+- prd.json (GL-002 marked as passes: true)
+- progress.txt

@@ -48,7 +48,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Keep the wizard simple - 4 screens max. The smart defaults should make it easy to create good goals quickly."
     },
     {
