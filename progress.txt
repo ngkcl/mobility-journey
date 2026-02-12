@@ -438,3 +438,38 @@ All 6 weekly report user stories (WR-001 through WR-006) now complete.
 ### Learnings
 - When narrowing type with conditional (goal.status === 'active'), TypeScript won't allow checking for other status values inside. Use wider union guard.
 - Goal detail needs getGoals() then filter since there's no single-goal fetch endpoint.
+
+---
+## [2026-02-12 01:15] - Story GL-006: Goal celebrations, milestones, and badge system
+
+### Completed
+- GoalCelebration.tsx (285 lines): Full-screen celebration modal with trophy animation, congrats message with stats (started at X, now at Y, took Z days), share button (clipboard), dismiss
+- MilestoneToast.tsx (122 lines): Animated slide-in toast for 25/50/75% milestones, auto-dismiss after 3s
+- lib/celebrations.ts (108 lines): Milestone detection (checkMilestones), celebration type determination (shouldCelebrate), integration points with goalTracker
+- lib/badges.ts (175 lines): 7 badge types (first_goal, pain_crusher, consistency_king, streak_master, posture_pro, five_goals, perfect_week), CRUD functions, checkAndAwardBadges logic
+- supabase/migrations/20260210_badges.sql: badges table with user_id, type, title, description, icon, earned_at
+- Updated app/(tabs)/goals.tsx with badge count display
+- Updated app/goals/[id].tsx with badges section
+- Added expo-clipboard dependency for share functionality
+- TypeScript clean (no new errors)
+
+### Next Up (for next iteration)
+- [ ] Start GL-007: Goal suggestions based on data (AI-powered recommendations)
+- [ ] Wire celebrations into goalTracker (trigger toasts/modals on metric updates)
+- [ ] Wire badges into workout completion flow
+- [ ] Add badge display to profile screen
+- [ ] Add confetti animation library (react-native-confetti-cannon) for richer celebrations
+
+### Blockers/Warnings
+- None. Clean build.
+
+### Files Changed
+- components/GoalCelebration.tsx (new)
+- components/MilestoneToast.tsx (new)
+- lib/badges.ts (new)
+- lib/celebrations.ts (new)
+- supabase/migrations/20260210_badges.sql (new)
+- app/(tabs)/goals.tsx (modified - badge count)
+- app/goals/[id].tsx (modified - badges section)
+- package.json (modified - expo-clipboard)
+- prd.json (GL-006 marked passes)

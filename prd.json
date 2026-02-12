@@ -127,7 +127,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "The dopamine hit from celebrations keeps users motivated. Don't overdo it - save the big celebration for actual goal completion."
     },
     {
