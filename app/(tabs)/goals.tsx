@@ -22,6 +22,7 @@ import {
 } from '../../lib/goals';
 import { type Badge, getBadges } from '../../lib/badges';
 import EmptyState from '../../components/EmptyState';
+import SuggestedGoals from '../../components/SuggestedGoals';
 
 // ── Goal type metadata ──────────────────────────────────────────────────────
 
@@ -340,6 +341,9 @@ export default function GoalsScreen() {
             )}
           </View>
         )}
+
+        {/* ── AI Suggestions ── */}
+        <SuggestedGoals onGoalCreated={loadGoals} />
 
         {/* ── Active goals ── */}
         {activeGoals.length > 0 && (

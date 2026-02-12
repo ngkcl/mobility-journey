@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { colors, typography, spacing, radii, shared } from '../../lib/theme';
 import { createGoal, type GoalType, type CreateGoalInput } from '../../lib/goals';
 
@@ -137,8 +137,15 @@ type WizardStep = 1 | 2 | 3 | 4;
 
 export default function NewGoalScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    prefillType?: string;
+    prefillTarget?: string;
+    prefillStarting?: string;
+    prefillWeeks?: string;
+  }>();
   const [step, setStep] = useState<WizardStep>(1);
   const [saving, setSaving] = useState(false);
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   // Step 1: Goal type
   const [selectedType, setSelectedType] = useState<GoalTypeOption | null>(null);
@@ -149,6 +156,20 @@ export default function NewGoalScreen() {
 
   // Step 3: Deadline
   const [deadlineWeeks, setDeadlineWeeks] = useState(8);
+
+  // Apply prefill from suggestion (one-time)
+  React.useEffect(() => {
+    if (prefillApplied || !params.prefillType) return;
+    const match = GOAL_TYPES.find((gt) => gt.type === params.prefillType);
+    if (match) {
+      setSelectedType(match);
+      if (params.prefillStarting) setStartValue(Number(params.prefillStarting));
+      if (params.prefillTarget) setTargetValue(Number(params.prefillTarget));
+      if (params.prefillWeeks) setDeadlineWeeks(Number(params.prefillWeeks));
+      setStep(2); // Skip type selection, go to values
+    }
+    setPrefillApplied(true);
+  }, [params, prefillApplied]);
 
   const deadline = addWeeks(deadlineWeeks);
 
