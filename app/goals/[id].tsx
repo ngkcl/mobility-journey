@@ -23,6 +23,9 @@ import {
   deleteGoal,
   computeGoalProgress,
 } from '../../lib/goals';
+import { type Badge, getBadges, checkAndAwardBadges, BADGE_DEFINITIONS } from '../../lib/badges';
+import { shouldCelebrate, type CelebrationEvent } from '../../lib/celebrations';
+import GoalCelebration from '../../components/GoalCelebration';
 
 // ── Goal type metadata (same as dashboard) ──────────────────────────────────
 
@@ -84,7 +87,10 @@ export default function GoalDetailScreen() {
   const router = useRouter();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [history, setHistory] = useState<GoalProgress[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const loadGoal = useCallback(async () => {
     if (!id) return;
@@ -97,6 +103,10 @@ export default function GoalDetailScreen() {
       const progress = await getGoalProgress(found.id);
       setHistory(progress);
     }
+
+    // Load badges
+    const earnedBadges = await getBadges();
+    setBadges(earnedBadges);
   }, [id]);
 
   useEffect(() => {
@@ -135,7 +145,23 @@ export default function GoalDetailScreen() {
       status: 'completed',
       completed_at: new Date().toISOString(),
     });
-    if (updated) setGoal(updated);
+    if (updated) {
+      setGoal(updated);
+
+      // Trigger celebration
+      const event = shouldCelebrate(updated);
+      if (event) {
+        setCelebrationEvent(event);
+        setShowCelebration(true);
+      }
+
+      // Check and award badges
+      const allCompleted = await getGoals('completed');
+      const newBadges = await checkAndAwardBadges(allCompleted);
+      if (newBadges.length > 0) {
+        setBadges((prev) => [...newBadges, ...prev]);
+      }
+    }
   };
 
   if (isLoading) {
@@ -247,6 +273,22 @@ export default function GoalDetailScreen() {
           </View>
         </View>
 
+        {/* Badges */}
+        {badges.length > 0 && (
+          <View style={styles.section}>
+            <Text style={shared.sectionTitle}>Earned Badges</Text>
+            <View style={styles.badgeGrid}>
+              {badges.map((badge) => (
+                <View key={badge.id} style={styles.badgeItem}>
+                  <Text style={styles.badgeIcon}>{badge.icon}</Text>
+                  <Text style={styles.badgeTitle} numberOfLines={1}>{badge.title}</Text>
+                  <Text style={styles.badgeDesc} numberOfLines={2}>{badge.description}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Recent Progress History */}
         {history.length > 0 && (
           <View style={styles.section}>
@@ -299,6 +341,13 @@ export default function GoalDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Celebration modal */}
+      <GoalCelebration
+        visible={showCelebration}
+        event={celebrationEvent}
+        onDismiss={() => setShowCelebration(false)}
+      />
     </View>
   );
 }
@@ -498,6 +547,39 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textTertiary,
     maxWidth: 120,
+  },
+
+  // Badges
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  badgeItem: {
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    alignItems: 'center',
+    width: 100,
+  },
+  badgeIcon: {
+    fontSize: 28,
+    marginBottom: spacing.xs,
+  },
+  badgeTitle: {
+    ...typography.small,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  badgeDesc: {
+    ...typography.tiny,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: 2,
   },
 
   // Actions

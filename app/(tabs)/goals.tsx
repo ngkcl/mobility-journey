@@ -20,6 +20,7 @@ import {
   type GoalStatus,
   type GoalProgressSummary,
 } from '../../lib/goals';
+import { type Badge, getBadges } from '../../lib/badges';
 import EmptyState from '../../components/EmptyState';
 
 // ── Goal type metadata ──────────────────────────────────────────────────────
@@ -210,19 +211,22 @@ export default function GoalsScreen() {
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [completedGoals, setCompletedGoals] = useState<Goal[]>([]);
   const [failedGoals, setFailedGoals] = useState<Goal[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
 
   const loadGoals = useCallback(async () => {
-    const [active, completed, failed] = await Promise.all([
+    const [active, completed, failed, earnedBadges] = await Promise.all([
       getGoals('active'),
       getGoals('completed'),
       getGoals('failed'),
+      getBadges(),
     ]);
     setActiveGoals(active);
     setCompletedGoals(completed);
     setFailedGoals(failed);
+    setBadges(earnedBadges);
   }, []);
 
   useEffect(() => {
@@ -323,6 +327,17 @@ export default function GoalsScreen() {
               <Text style={styles.summaryValue}>{completedGoals.length}</Text>
               <Text style={styles.summaryLabel}>Completed</Text>
             </View>
+            {badges.length > 0 && (
+              <>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: colors.warning }]}>
+                    {badges.length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Badges</Text>
+                </View>
+              </>
+            )}
           </View>
         )}
 
