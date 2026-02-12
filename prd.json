@@ -147,7 +147,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Keep suggestions smart but not pushy. Max 2-3 suggestions at a time."
     }
   ]
