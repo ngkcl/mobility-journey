@@ -543,3 +543,46 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - [ ] Wire badges into profile screen display
 - [ ] Add confetti animation library (expo-confetti-cannon?) for richer celebration
 - [ ] Create new PRD: Workout plan AI generation or AirPods integration deep-dive
+
+---
+## [2026-02-13 05:30] - Comprehensive Profile Screen + Training Program PRD
+
+### Completed
+1. **Profile Stats Data Layer** (`lib/profileStats.ts`, 225 lines)
+   - `loadProfileStats()` aggregates data from workouts, goals, badges, metrics, photos
+   - Computes: days since start, total workouts/minutes/sets, streak stats, goal counts, badge counts, latest metrics, photo count
+   - Milestone generator: auto-generates journey milestones (first workout, first goal, workout count milestones, first badge, first photo)
+   - All data fetched in parallel for performance
+
+2. **Comprehensive Profile Screen** (`app/(tabs)/profile.tsx`, 600+ lines)
+   - Hero card: journey day count, start date, current/best streak with fire/trophy emoji
+   - 4-tile stat grid: total workouts, active time, sets done, check-ins
+   - Current Status section: pain/posture/symmetry metric pills with progress bars (pain is inverted — lower = better)
+   - Goals summary: active/completed/total with link to goals tab
+   - **Badges grid**: shows all 7 badge types with earned/locked states, earned dates, full definitions
+   - Journey Milestones: vertical timeline with icons, titles, descriptions, dates
+   - Explore section: 6 quick links to Photos, Exercises, Health, Charts, Program, Metrics
+   - Photo CTA card with total count
+   - Pull-to-refresh, focus-effect reload
+
+3. **Profile Stats Tests** (`lib/profileStats.test.js`, 10 tests passing)
+   - formatMinutes helper (under/over hour, exact hours)
+   - Milestone sorting, date computation, workout count triggering
+   - Metric pill percentage (regular + inverted for pain)
+
+4. **Training Program PRD** (`prd-training-program.json`)
+   - 6 user stories (TP-001 through TP-006) for next feature cycle
+   - Smart multi-week rehabilitation programs with 4-phase approach
+   - Data model, AI generator, overview screen, session execution, weekly review, completion flow
+   - Progressive overload, deload weeks, auto-adjustment based on pain/adherence
+   - Designed for scoliosis rehabilitation: release → activate → strengthen → integrate
+
+### What's Next (immediate polish)
+- [ ] Add confetti animation library for richer celebrations
+- [ ] Start TP-001: Training program data model
+
+### Files Changed
+- lib/profileStats.ts (new — stats aggregation)
+- lib/profileStats.test.js (new — 10 tests)
+- app/(tabs)/profile.tsx (rewritten — comprehensive profile)
+- prd-training-program.json (new — next feature cycle PRD)

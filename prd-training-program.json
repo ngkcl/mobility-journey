@@ -1,0 +1,132 @@
+{
+  "project": "mobility-app",
+  "branchName": "ralph/training-programs",
+  "prdFileName": "prd-training-program.json",
+  "description": "Smart multi-week training program system. Users get structured rehabilitation programs with progressive overload, corrective phases, and deload weeks — tailored to their scoliosis, metrics, and goals.",
+  "context": {
+    "purpose": "Daily plans are good for single-day workouts, but scoliosis rehabilitation needs structured multi-week programs that progressively build strength, address imbalances, and include recovery periods. This transforms the app from a tracker into a true rehabilitation companion.",
+    "existingData": "App tracks: exercises (corrective + gym), workout history with volume/sets/reps, pain levels, posture scores, symmetry scores, goals, streak data, templates (morning/midday/evening corrective protocols).",
+    "keyInsight": "Scoliosis correction follows a pattern: (1) release tight tissues, (2) activate weak muscles, (3) strengthen in corrected position, (4) integrate into daily movement. Programs should follow this 4-phase approach across weeks."
+  },
+  "userStories": [
+    {
+      "id": "TP-001",
+      "title": "Training program data model",
+      "description": "Create data structures for multi-week training programs with phases, weeks, and sessions.",
+      "acceptanceCriteria": [
+        "Create lib/trainingProgram.ts with types: TrainingProgram, ProgramPhase, ProgramWeek, ProgramSession, ProgramExerciseSlot",
+        "TrainingProgram: { id, name, description, goal_type, duration_weeks, current_week, status ('active'|'completed'|'paused'), phases, created_at, started_at, completed_at }",
+        "ProgramPhase: { id, program_id, name, description, phase_number, duration_weeks, focus ('release'|'activate'|'strengthen'|'integrate') }",
+        "ProgramWeek: { id, phase_id, week_number, is_deload, intensity_pct, notes }",
+        "ProgramSession: { id, week_id, day_of_week, session_type ('corrective'|'gym'|'rest'|'active_recovery'), exercises: ProgramExerciseSlot[] }",
+        "ProgramExerciseSlot: { exercise_id, sets, reps, hold_seconds, weight_pct_1rm, side, rest_seconds, notes, progression_rule }",
+        "Create Supabase migration for training_programs, program_phases, program_weeks, program_sessions tables",
+        "Add CRUD: createProgram, updateProgram, getActiveProgram, getProgramDetail, completeWeek, advanceWeek",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "TP-002",
+      "title": "AI program generator",
+      "description": "Generate a personalized multi-week training program based on user's metrics, goals, and history.",
+      "acceptanceCriteria": [
+        "Create lib/programGenerator.ts with generateProgram(userContext): TrainingProgram",
+        "userContext includes: current metrics (pain, posture, symmetry), active goals, workout history stats, available exercises",
+        "Generator creates 4-8 week program with 2-4 phases",
+        "Phase 1 (Release): focus on stretching, foam rolling, breathing — 1-2 weeks",
+        "Phase 2 (Activate): corrective exercises for weak side, low resistance — 1-2 weeks",
+        "Phase 3 (Strengthen): progressive overload, compound movements, asymmetry correction — 2-3 weeks",
+        "Phase 4 (Integrate): full-body training with corrective maintenance — 1-2 weeks",
+        "Every 3rd or 4th week is a deload week (reduced volume/intensity)",
+        "Sessions per week: 4-6 (mix of corrective and gym based on available time)",
+        "Progressive overload: each week increases sets/reps/weight by small increments within a phase",
+        "Use existing exercise library to populate sessions (match by category, target muscles)",
+        "API call to generate reasoning and customization (or rule-based fallback)",
+        "Add tests for phase generation logic",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "TP-003",
+      "title": "Program overview screen",
+      "description": "Main screen showing the active training program with phase timeline and weekly breakdown.",
+      "acceptanceCriteria": [
+        "Add app/(tabs)/training.tsx — replace 'plan' in visible tab bar",
+        "If no active program: show CTA to generate one",
+        "If active program: show program card with name, description, current week/total, phase indicator",
+        "Phase timeline: horizontal progress bar with phase labels and current position",
+        "Weekly breakdown: cards for each week showing sessions, intensity level, deload marker",
+        "Current week highlighted with accent border",
+        "Tap week card to see session details",
+        "Stats row: weeks completed, sessions done this week, adherence percentage",
+        "Floating action button: 'Start Today's Session' (routes to the current day's workout)",
+        "Pull to refresh",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "TP-004",
+      "title": "Session execution screen",
+      "description": "Guided workout flow for executing a specific program session.",
+      "acceptanceCriteria": [
+        "Add app/training/session.tsx — guided session execution",
+        "Receive session data via route params (week_id, day_of_week)",
+        "Show exercise list with sets, reps, weight targets, rest timers",
+        "Each exercise shows: name, target muscles, side emphasis, notes from program",
+        "Set tracking: tap to mark complete, enter actual reps/weight",
+        "Rest timer between sets (auto-starts, configurable)",
+        "Progress indicator: exercises completed / total",
+        "For deload weeks: show reduced targets with 'Recovery Week' badge",
+        "On completion: save as workout to workout history, mark session complete in program",
+        "Show summary: actual vs programmed (volume, reps, exercises completed)",
+        "Offer to log pain/energy levels post-session",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "TP-005",
+      "title": "Weekly review and progression",
+      "description": "End-of-week review that adjusts next week's programming based on performance.",
+      "acceptanceCriteria": [
+        "Create lib/weeklyReview.ts with reviewWeek(programId, weekNumber): WeekReview",
+        "WeekReview includes: adherence_pct, total_volume, pain_trend, sessions_completed, sessions_missed",
+        "Auto-advance to next week when all sessions are done (or week ends)",
+        "If adherence < 60%: suggest repeating the week or reducing intensity",
+        "If pain increased: auto-reduce next week intensity by 10-20%",
+        "If pain decreased and adherence high: confirm progression for next week",
+        "Show weekly review modal on first app open of new week",
+        "Review shows: stats comparison (this week vs last), pain trend, volume trend",
+        "User can accept suggested adjustments or override",
+        "Log review decisions to program history",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "TP-006",
+      "title": "Program completion and next program",
+      "description": "Celebrate program completion and generate the next program based on results.",
+      "acceptanceCriteria": [
+        "When final week is completed: show program completion celebration (reuse GoalCelebration pattern)",
+        "Completion summary: before/after metrics comparison, total volume lifted, sessions completed, streak maintained",
+        "Outcome assessment: did pain decrease? did posture/symmetry improve?",
+        "Suggest next program: based on outcomes, generate a follow-up program (harder/different focus)",
+        "One-tap to generate and start next program",
+        "Program history: list of completed programs with dates and outcomes on profile screen",
+        "If program was paused/abandoned: offer to resume or start fresh",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false
+    }
+  ]
+}
