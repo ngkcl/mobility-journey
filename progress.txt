@@ -520,3 +520,26 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - app/goals/new.tsx (modified - prefill params support)
 - prd.json (GL-007 marked passes)
 - progress.txt
+
+## Feb 13, 2026 — Evening Session: Celebration Wiring
+
+### What was done
+**Wired celebration system into goal tracking pipeline (post-PRD polish #1)**
+
+- Created `lib/CelebrationContext.tsx` (188 lines): React context + provider
+  - `CelebrationProvider` wraps app root, renders MilestoneToast + GoalCelebration overlay
+  - `useCelebration()` hook: checkAndCelebrate, showMilestoneToast, showCelebration
+  - Celebration queue: processes multiple milestones sequentially (toast → toast → full modal)
+  - Auto-awards badges via `checkAndAwardBadges` on goal completion
+- Updated `lib/goalTracker.ts`: New `TrackResult` return type with `previousValues` map
+  - `trackMetricUpdate()` and `trackWorkoutCompleted()` now return previous values
+  - Enables milestone detection (was 20% → now 26% = crossed 25% milestone)
+- Updated `app/_layout.tsx`: Added CelebrationProvider to root layout
+- Updated `app/(tabs)/metrics.tsx`: After saving a check-in, tracks pain/posture/symmetry goals and fires celebrations
+- Updated `app/(tabs)/workouts.tsx`: After logging workout (manual + guided), tracks consistency/streak goals and fires celebrations
+- TypeScript clean, all 5 files modified, 268 insertions
+
+### What's next (remaining polish)
+- [ ] Wire badges into profile screen display
+- [ ] Add confetti animation library (expo-confetti-cannon?) for richer celebration
+- [ ] Create new PRD: Workout plan AI generation or AirPods integration deep-dive
