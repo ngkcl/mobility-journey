@@ -17,6 +17,8 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
+import { useCelebration } from '../../lib/CelebrationContext';
+import { trackWorkoutCompleted } from '../../lib/goalTracker';
 import LoadingState from '../../components/LoadingState';
 import { computeWorkoutSummary } from '../../lib/workouts';
 import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
@@ -165,6 +167,7 @@ export default function WorkoutsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
   const { pushToast } = useToast();
+  const { checkAndCelebrate } = useCelebration();
 
   const exerciseById = useMemo(() => {
     return new Map(exercises.map((exercise) => [exercise.id, exercise]));
@@ -582,6 +585,16 @@ export default function WorkoutsScreen() {
     resetWorkoutState();
     await loadAll();
     pushToast('Workout logged.', 'success');
+
+    // Track workout goals and trigger celebrations
+    try {
+      const result = await trackWorkoutCompleted();
+      if (result.updatedGoals.length > 0) {
+        checkAndCelebrate(result.updatedGoals, result.previousValues);
+      }
+    } catch (err) {
+      console.error('Workout goal tracking failed:', err);
+    }
   };
 
   const cancelWorkout = () => {
@@ -813,8 +826,18 @@ export default function WorkoutsScreen() {
       stopGuidedTemplate();
       await loadAll();
       pushToast('Guided workout logged.', 'success');
+
+      // Track workout goals and trigger celebrations
+      try {
+        const result = await trackWorkoutCompleted();
+        if (result.updatedGoals.length > 0) {
+          checkAndCelebrate(result.updatedGoals, result.previousValues);
+        }
+      } catch (err) {
+        console.error('Workout goal tracking failed:', err);
+      }
     },
-    [guidedTemplate, guidedStartedAt, guidedSets, pushToast, stopGuidedTemplate, loadAll],
+    [guidedTemplate, guidedStartedAt, guidedSets, pushToast, stopGuidedTemplate, loadAll, checkAndCelebrate],
   );
 
   const completeGuidedSet = useCallback(() => {

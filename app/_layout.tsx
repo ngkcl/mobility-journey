@@ -2,11 +2,13 @@ import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ToastProvider } from '../components/Toast';
+import { CelebrationProvider } from '../lib/CelebrationContext';
 import { View } from 'react-native';
 
 export default function RootLayout() {
   return (
     <ToastProvider>
+      <CelebrationProvider>
       <View style={{ flex: 1, backgroundColor: '#0b1020' }}>
         <Stack
           screenOptions={{
@@ -37,6 +39,7 @@ export default function RootLayout() {
       </Stack>
         <StatusBar style="light" />
       </View>
+      </CelebrationProvider>
     </ToastProvider>
   );
 }

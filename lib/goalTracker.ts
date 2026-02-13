@@ -26,28 +26,40 @@ const METRIC_TO_GOAL_TYPE: Record<MetricName, GoalType> = {
   energy_level: 'custom', // no specific goal type for energy
 };
 
+// ── Result type with previous values for celebration checks ─────────────────
+
+export interface TrackResult {
+  updatedGoals: Goal[];
+  /** Map of goalId → previous current_value (before this update) */
+  previousValues: Record<string, number>;
+}
+
 // ── Core: Track metric update ───────────────────────────────────────────────
 
 /**
  * Call this when a metric entry is saved. Finds matching active goals
  * and auto-creates progress entries + updates current_value.
  *
- * Returns the list of goals that were updated (empty if none).
+ * Returns updated goals AND their previous values (for celebration checks).
  */
 export async function trackMetricUpdate(
   metricName: MetricName,
   value: number,
-): Promise<Goal[]> {
+): Promise<TrackResult> {
   const goalType = METRIC_TO_GOAL_TYPE[metricName];
-  if (!goalType || goalType === 'custom') return [];
+  if (!goalType || goalType === 'custom') return { updatedGoals: [], previousValues: {} };
 
   const activeGoals = await getGoals('active');
   const matching = activeGoals.filter((g) => g.type === goalType);
-  if (matching.length === 0) return [];
+  if (matching.length === 0) return { updatedGoals: [], previousValues: {} };
 
-  const updated: Goal[] = [];
+  const updatedGoals: Goal[] = [];
+  const previousValues: Record<string, number> = {};
 
   for (const goal of matching) {
+    // Capture previous value before updating
+    previousValues[goal.id] = goal.current_value;
+
     // Insert progress entry
     await insertGoalProgress(goal.id, value);
 
@@ -65,10 +77,10 @@ export async function trackMetricUpdate(
       updatedGoal.completed_at = new Date().toISOString();
     }
 
-    updated.push(updatedGoal);
+    updatedGoals.push(updatedGoal);
   }
 
-  return updated;
+  return { updatedGoals, previousValues };
 }
 
 // ── Workout consistency tracking ────────────────────────────────────────────
@@ -77,19 +89,23 @@ export async function trackMetricUpdate(
  * Call after a workout is completed. Updates workout_consistency
  * and workout_streak goals based on actual workout history.
  */
-export async function trackWorkoutCompleted(): Promise<Goal[]> {
+export async function trackWorkoutCompleted(): Promise<TrackResult> {
   const activeGoals = await getGoals('active');
   const consistencyGoals = activeGoals.filter((g) => g.type === 'workout_consistency');
   const streakGoals = activeGoals.filter((g) => g.type === 'workout_streak');
 
-  if (consistencyGoals.length === 0 && streakGoals.length === 0) return [];
+  if (consistencyGoals.length === 0 && streakGoals.length === 0) {
+    return { updatedGoals: [], previousValues: {} };
+  }
 
-  const updated: Goal[] = [];
+  const updatedGoals: Goal[] = [];
+  const previousValues: Record<string, number> = {};
 
   // Calculate consistency: workouts this week / 7 * 100
   if (consistencyGoals.length > 0) {
     const consistency = await computeWeeklyConsistency();
     for (const goal of consistencyGoals) {
+      previousValues[goal.id] = goal.current_value;
       await insertGoalProgress(goal.id, consistency);
       const updatedGoal = await updateGoal(goal.id, { current_value: consistency });
       if (!updatedGoal) continue;
@@ -102,7 +118,7 @@ export async function trackWorkoutCompleted(): Promise<Goal[]> {
         updatedGoal.status = 'completed';
         updatedGoal.completed_at = new Date().toISOString();
       }
-      updated.push(updatedGoal);
+      updatedGoals.push(updatedGoal);
     }
   }
 
@@ -110,6 +126,7 @@ export async function trackWorkoutCompleted(): Promise<Goal[]> {
   if (streakGoals.length > 0) {
     const streak = await computeCurrentStreak();
     for (const goal of streakGoals) {
+      previousValues[goal.id] = goal.current_value;
       await insertGoalProgress(goal.id, streak);
       const updatedGoal = await updateGoal(goal.id, { current_value: streak });
       if (!updatedGoal) continue;
@@ -122,11 +139,11 @@ export async function trackWorkoutCompleted(): Promise<Goal[]> {
         updatedGoal.status = 'completed';
         updatedGoal.completed_at = new Date().toISOString();
       }
-      updated.push(updatedGoal);
+      updatedGoals.push(updatedGoal);
     }
   }
 
-  return updated;
+  return { updatedGoals, previousValues };
 }
 
 // ── Batch refresh: recalculate all active goals ─────────────────────────────

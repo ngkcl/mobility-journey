@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { getSupabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
+import { useCelebration } from '../../lib/CelebrationContext';
+import { trackMetricUpdate } from '../../lib/goalTracker';
 import LoadingState from '../../components/LoadingState';
 import { colors, typography, spacing, radii, shared, getGreeting } from '@/lib/theme';
 import type { MetricEntry as MetricRow } from '../../lib/types';
@@ -65,6 +67,7 @@ export default function MetricsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { pushToast } = useToast();
+  const { checkAndCelebrate } = useCelebration();
   const [newEntry, setNewEntry] = useState<Partial<MetricEntryView>>({
     date: new Date().toISOString().split('T')[0],
     exerciseDone: false,
@@ -188,6 +191,26 @@ export default function MetricsScreen() {
     setNewEntry({ date: new Date().toISOString().split('T')[0], exerciseDone: false });
     setShowAddForm(false);
     pushToast('Check-in saved!', 'success');
+
+    // Track goal progress and trigger celebrations for each metric saved
+    const metricChecks: Array<{ name: 'pain_level' | 'posture_score' | 'symmetry_score'; value: number | undefined }> = [
+      { name: 'pain_level', value: entry.painLevel },
+      { name: 'posture_score', value: entry.postureScore },
+      { name: 'symmetry_score', value: entry.symmetryScore },
+    ];
+
+    for (const { name, value } of metricChecks) {
+      if (value !== undefined) {
+        try {
+          const result = await trackMetricUpdate(name, value);
+          if (result.updatedGoals.length > 0) {
+            checkAndCelebrate(result.updatedGoals, result.previousValues);
+          }
+        } catch (err) {
+          console.error(`Goal tracking failed for ${name}:`, err);
+        }
+      }
+    }
   };
 
   const deleteEntry = (id: string) => {
