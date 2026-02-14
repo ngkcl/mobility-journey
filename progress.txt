@@ -586,3 +586,28 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - lib/profileStats.test.js (new — 10 tests)
 - app/(tabs)/profile.tsx (rewritten — comprehensive profile)
 - prd-training-program.json (new — next feature cycle PRD)
+
+## 2026-02-14 — TP-001: Training Program Data Model (Evening Session)
+
+### Completed
+1. **Supabase Migration** (`supabase/migrations/20260214_training_programs.sql`)
+   - 5 tables: training_programs, program_phases, program_weeks, program_sessions, program_exercise_slots
+   - Full constraint validation: status, goal_type, phase focus, session type, exercise side, day of week, intensity %
+   - Indexes on all foreign keys + status fields
+
+2. **TypeScript Data Layer** (`lib/trainingProgram.ts`, 320 lines)
+   - Complete type system: TrainingProgram, ProgramPhase, ProgramWeek, ProgramSession, ProgramExerciseSlot
+   - Nested CRUD: createProgram inserts full tree (program → phases → weeks → sessions → exercise slots)
+   - getProgramDetail fetches and assembles full tree from 5 tables
+   - advanceWeek handles week progression and auto-completion
+   - completeSession, getWeekSessions, deleteProgram (cascade)
+
+3. **Unit Tests** (`lib/trainingProgram.test.js`, 9 tests passing)
+   - Type shape validation for all entities
+   - Deload week properties, phase focus types, session types
+   - Full nested program structure assembly
+   - Week number accumulation across phases
+
+### What's Next
+- [ ] TP-002: AI program generator (rule-based + optional API)
+- [ ] TP-003: Program overview screen (tab replacement)
