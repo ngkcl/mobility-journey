@@ -2,7 +2,7 @@
   "project": "mobility-app",
   "branchName": "ralph/training-programs",
   "prdFileName": "prd-training-program.json",
-  "description": "Smart multi-week training program system. Users get structured rehabilitation programs with progressive overload, corrective phases, and deload weeks — tailored to their scoliosis, metrics, and goals.",
+  "description": "Smart multi-week training program system. Users get structured rehabilitation programs with progressive overload, corrective phases, and deload weeks \u2014 tailored to their scoliosis, metrics, and goals.",
   "context": {
     "purpose": "Daily plans are good for single-day workouts, but scoliosis rehabilitation needs structured multi-week programs that progressively build strength, address imbalances, and include recovery periods. This transforms the app from a tracker into a true rehabilitation companion.",
     "existingData": "App tracks: exercises (corrective + gym), workout history with volume/sets/reps, pain levels, posture scores, symmetry scores, goals, streak data, templates (morning/midday/evening corrective protocols).",
@@ -25,7 +25,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false
+      "passes": true
     },
     {
       "id": "TP-002",
@@ -35,10 +35,10 @@
         "Create lib/programGenerator.ts with generateProgram(userContext): TrainingProgram",
         "userContext includes: current metrics (pain, posture, symmetry), active goals, workout history stats, available exercises",
         "Generator creates 4-8 week program with 2-4 phases",
-        "Phase 1 (Release): focus on stretching, foam rolling, breathing — 1-2 weeks",
-        "Phase 2 (Activate): corrective exercises for weak side, low resistance — 1-2 weeks",
-        "Phase 3 (Strengthen): progressive overload, compound movements, asymmetry correction — 2-3 weeks",
-        "Phase 4 (Integrate): full-body training with corrective maintenance — 1-2 weeks",
+        "Phase 1 (Release): focus on stretching, foam rolling, breathing \u2014 1-2 weeks",
+        "Phase 2 (Activate): corrective exercises for weak side, low resistance \u2014 1-2 weeks",
+        "Phase 3 (Strengthen): progressive overload, compound movements, asymmetry correction \u2014 2-3 weeks",
+        "Phase 4 (Integrate): full-body training with corrective maintenance \u2014 1-2 weeks",
         "Every 3rd or 4th week is a deload week (reduced volume/intensity)",
         "Sessions per week: 4-6 (mix of corrective and gym based on available time)",
         "Progressive overload: each week increases sets/reps/weight by small increments within a phase",
@@ -55,7 +55,7 @@
       "title": "Program overview screen",
       "description": "Main screen showing the active training program with phase timeline and weekly breakdown.",
       "acceptanceCriteria": [
-        "Add app/(tabs)/training.tsx — replace 'plan' in visible tab bar",
+        "Add app/(tabs)/training.tsx \u2014 replace 'plan' in visible tab bar",
         "If no active program: show CTA to generate one",
         "If active program: show program card with name, description, current week/total, phase indicator",
         "Phase timeline: horizontal progress bar with phase labels and current position",
@@ -75,7 +75,7 @@
       "title": "Session execution screen",
       "description": "Guided workout flow for executing a specific program session.",
       "acceptanceCriteria": [
-        "Add app/training/session.tsx — guided session execution",
+        "Add app/training/session.tsx \u2014 guided session execution",
         "Receive session data via route params (week_id, day_of_week)",
         "Show exercise list with sets, reps, weight targets, rest timers",
         "Each exercise shows: name, target muscles, side emphasis, notes from program",
