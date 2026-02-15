@@ -68,7 +68,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false
+      "passes": true
     },
     {
       "id": "TP-004",

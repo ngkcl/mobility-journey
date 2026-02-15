@@ -650,3 +650,33 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - lib/programGenerator.ts (new — 475 lines)
 - lib/programGenerator.test.js (new — 510 lines, 51 tests)
 - prd-training-program.json (TP-002 marked passes)
+
+---
+## [2026-02-15 01:00] - Story TP-003: Program Overview Screen (Training Tab)
+
+### Completed
+1. **app/(tabs)/training.tsx** (853 lines): Full program overview screen
+   - `EmptyState` — CTA to generate program when none active
+   - `ProgramHeader` — name, description, goal type badge, week X/Y, start date
+   - `PhaseTimeline` — horizontal bar with color-coded segments (release=purple, activate=blue, strengthen=amber, integrate=green), current phase highlighted
+   - `StatsRow` — weeks completed, sessions done this week, adherence % with color coding
+   - `WeekCard` — per-week cards with phase badge, session dots (completed=green/empty=border), intensity %, deload badge, progress bar
+   - Current week highlighted with teal accent border + "Current" badge
+   - Floating "Start Today's Session" button (visible when today has an uncompleted session)
+   - Pull to refresh, loading spinner, error state with retry
+   
+2. **Tab layout updated** — training.tsx added to visible tabs (barbell icon), replaces plan in nav
+
+### TypeScript
+- Clean compile (0 errors)
+- Fixed typography refs: label→captionMedium, bodySmall→caption (matching theme.ts)
+
+### What's Next
+- [ ] TP-004: Session execution screen
+- [ ] TP-005: Weekly review and progression
+- [ ] TP-006: Program completion and next program
+
+### Files Changed
+- app/(tabs)/training.tsx (new — 853 lines)
+- app/(tabs)/_layout.tsx (training added to visible tabs)
+- prd-training-program.json (TP-003 marked passes)
