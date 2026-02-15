@@ -9,6 +9,7 @@ type TabIcon = React.ComponentProps<typeof Ionicons>['name'];
 const visibleTabs: { name: string; title: string; icon: TabIcon; iconFocused: TabIcon }[] = [
   { name: 'index', title: 'Home', icon: 'home-outline', iconFocused: 'home' },
   { name: 'goals', title: 'Goals', icon: 'flag-outline', iconFocused: 'flag' },
+  { name: 'training', title: 'Training', icon: 'barbell-outline', iconFocused: 'barbell' },
   { name: 'workouts', title: 'Workouts', icon: 'fitness-outline', iconFocused: 'fitness' },
   { name: 'reports', title: 'Reports', icon: 'document-text-outline', iconFocused: 'document-text' },
   { name: 'profile', title: 'Profile', icon: 'person-outline', iconFocused: 'person' },
