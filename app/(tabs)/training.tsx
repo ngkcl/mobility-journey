@@ -479,7 +479,20 @@ export default function TrainingScreen() {
               phase={week.phase}
               isCurrent={week.week_number === program.current_week}
               onPress={() => {
-                // TODO: Navigate to week detail / session list
+                // Navigate to first uncompleted session, or first session if all done
+                const sessions = week.sessions ?? [];
+                const target = sessions.find((s) => !s.completed) ?? sessions[0];
+                if (target) {
+                  router.push({
+                    pathname: '/training/session',
+                    params: {
+                      programId: program.id,
+                      weekNumber: String(week.week_number),
+                      dayOfWeek: String(target.day_of_week),
+                      sessionId: target.id ?? '',
+                    },
+                  });
+                }
               }}
             />
           ))}
@@ -491,7 +504,15 @@ export default function TrainingScreen() {
         <Pressable
           style={styles.fab}
           onPress={() => {
-            // TODO: Navigate to session execution screen (TP-004)
+            router.push({
+              pathname: '/training/session',
+              params: {
+                programId: program.id,
+                weekNumber: String(program.current_week),
+                dayOfWeek: String(new Date().getDay()),
+                sessionId: todaySession.id ?? '',
+              },
+            });
           }}
         >
           <Ionicons name="play" size={22} color={colors.bgDeep} />

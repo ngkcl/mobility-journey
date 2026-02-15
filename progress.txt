@@ -680,3 +680,52 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - app/(tabs)/training.tsx (new — 853 lines)
 - app/(tabs)/_layout.tsx (training added to visible tabs)
 - prd-training-program.json (TP-003 marked passes)
+
+---
+## [2026-02-15 05:30] - Story TP-004: Session Execution Screen (Guided Workout)
+
+### Completed
+1. **app/training/_layout.tsx** (30 lines): Stack navigator for training sub-screens
+2. **app/training/session.tsx** (930+ lines): Full guided session execution screen
+   - Loading state with program/session data fetch
+   - Exercise list with expandable cards showing slot details, target muscles, notes
+   - Per-set tracking: reps/weight/duration/RPE inputs with tap-to-complete
+   - Automatic rest timer overlay with countdown, progress bar, skip button, vibration on completion
+   - Progress bar + badge row: phase badge, session type badge, deload badge, set counter
+   - Post-session check-in screen: pain before/after, energy before/after, session notes
+   - Full summary screen: programmed vs actual stats, duration, volume, L/R balance, completion %
+   - Saves completed exercises to workout_exercises table (workout history integration)
+   - Marks program_sessions as completed
+   - Triggers goal tracker for workout consistency/streak goals
+   - Clean back navigation and Finish button with ready state
+
+3. **lib/sessionExecution.ts** (185 lines): Testable pure helpers
+   - createSetsForSlot: converts ProgramExerciseSlot → SetLog[]
+   - calculateProgress: progress % from exercise logs
+   - buildSessionSummary: programmed vs actual comparison
+   - sessionTypeToWorkoutType: type mapping
+   - findSession: nested program structure traversal
+   - setLogToWorkoutSet: SetLog → WorkoutSet for persistence
+
+4. **lib/sessionExecution.test.js** (260 lines): 18 tests all passing
+   - createSetsForSlot: 3 tests (reps, duration, side default)
+   - calculateProgress: 3 tests (empty, partial, all done)
+   - buildSessionSummary: 2 tests (partial completion, full completion)
+   - sessionTypeToWorkoutType: 4 tests
+   - findSession: 4 tests (by id, by day, no match, missing week)
+   - setLogToWorkoutSet: 2 tests (filled, empty)
+
+5. **Wiring**: Training overview FAB + week cards now navigate to session screen
+
+### What's Next
+- [ ] TP-005: Weekly review and progression
+- [ ] TP-006: Program completion and next program
+
+### Files Changed
+- app/training/_layout.tsx (new)
+- app/training/session.tsx (new)
+- lib/sessionExecution.ts (new)
+- lib/sessionExecution.test.js (new)
+- app/(tabs)/training.tsx (wired FAB + week card navigation)
+- prd-training-program.json (TP-004 marked passes)
+- progress.txt
