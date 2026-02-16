@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
+import { shouldAutoGenerateReport, getOrGenerateReport } from '../../lib/weeklyReportStorage';
 import {
   buildGreeting,
   buildNextSessionSummary,
@@ -51,6 +52,7 @@ export default function HomeScreen() {
   const [nextSession, setNextSession] = useState<NextSessionSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [newReportReady, setNewReportReady] = useState(false);
 
   const greeting = useMemo(() => buildGreeting(new Date()), []);
   const tip = useMemo(() => getDailyTip(), []);
@@ -91,6 +93,19 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadSummary();
+    // WR-006: Auto-generate last week's report on app open (Mon/Tue)
+    (async () => {
+      try {
+        const { should, weekStart } = await shouldAutoGenerateReport();
+        if (should && weekStart) {
+          await getOrGenerateReport(weekStart);
+          setNewReportReady(true);
+        }
+      } catch (e) {
+        // Silent fail — don't block home screen
+        console.warn('Auto-report generation failed:', e);
+      }
+    })();
   }, []);
 
   const onRefresh = async () => {
@@ -213,6 +228,24 @@ export default function HomeScreen() {
             <Text style={styles.secondaryBody}>Log pain and posture scores.</Text>
           </Pressable>
         </View>
+
+        {/* New Report Banner */}
+        {newReportReady && (
+          <Pressable
+            onPress={() => {
+              setNewReportReady(false);
+              router.push('/reports');
+            }}
+            style={({ pressed }) => [
+              styles.reportBanner,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Ionicons name="document-text" size={20} color={colors.teal} />
+            <Text style={styles.reportBannerText}>New weekly report available</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </Pressable>
+        )}
 
         {/* Daily Tip */}
         <View style={styles.tipCard}>
@@ -425,6 +458,23 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     ...typography.small,
     marginTop: spacing.xs + 2,
+  },
+  reportBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.xl,
+    padding: spacing.md + 2,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.teal,
+    gap: spacing.sm,
+  },
+  reportBannerText: {
+    flex: 1,
+    color: colors.textPrimary,
+    ...typography.body,
+    fontWeight: '600',
   },
   tipCard: {
     backgroundColor: colors.bgBase,

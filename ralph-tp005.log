@@ -1,0 +1,92 @@
+📦 Archiving previous run: ralph/training-programs
+   Archived to: /Users/theministallion/clawd/ralph-tool/archive/2026-02-16-training-programs
+
+🔁 Starting Ralph Loop
+   Tool: claude
+   Max iterations: 20
+   TDD mode: false
+   Scope: feature
+   Stuck threshold: 3
+
+
+═══════════════════════════════════════════════════════════════
+  Ralph Iteration 1 of 20 (claude)
+═══════════════════════════════════════════════════════════════
+Clean state verified:
+- **202 tests pass, 0 fail**
+- **All changes committed and pushed**
+- **Only untracked files are ralph-tp005.log/pid (process files, not code)**
+- **progress.txt updated with handoff notes**
+- **prd-training-program.json: TP-005 passes: true**
+
+## Completion Check
+
+Checking `prd-training-program.json`:
+- TP-001: `passes: true`
+- TP-002: `passes: true`
+- TP-003: `passes: true`
+- TP-004: `passes: true`
+- TP-005: `passes: true`
+- TP-006: `passes: false` — stories remain
+
+## Summary
+
+**TP-005: Weekly Review and Progression** — Completed
+
+**What was built:**
+
+1. **`lib/weeklyReview.ts`** — Pure logic for weekly review:
+   - `computeWeekReview()` — computes adherence, volume, pain trend from session data
+   - `compareWeeks()` — diffs current vs previous week metrics
+   - `suggestAdjustments()` — rule-based progression suggestions (repeat, reduce, advance, continue, increase)
+   - `isWeekReadyForReview()` / `getWeekNeedingReview()` — auto-detect when review is needed
+   - `applyAdjustment()` / `submitReviewDecision()` — apply intensity changes and advance program
+
+2. **`lib/weeklyReview.test.js`** — 25 tests covering all pure functions
+
+3. **`app/training/weekly-review.tsx`** — Review modal screen with:
+   - Stats grid (adherence, sessions, volume, intensity) with week-over-week changes
+   - Pain trend badge with before/after averages
+   - Selectable adjustment cards
+   - Bottom action bar (Skip / Apply & Continue)
+
+4. **`app/(tabs)/training.tsx`** — Added review banner on the training overview
+
+5. **Fixed 6 pre-existing broken test files** — converted from Jest to Node test runner (+25 tests restored → 202 total)
+/Users/theministallion/clawd/ralph-tool/ralph.sh: line 374:  : command not found
+   Iteration 1 complete. Continuing...
+
+═══════════════════════════════════════════════════════════════
+  Ralph Iteration 2 of 20 (claude)
+═══════════════════════════════════════════════════════════════
+All 6 stories have `passes: true`.
+
+<<<RALPH_DONE>>>
+
+## Summary
+
+**TP-006: Program Completion and Next Program** is complete. Here's what was built:
+
+### New Files
+- **`lib/programCompletion.ts`** (240 lines) — Pure logic for program completion: outcome assessment, before/after metric comparison (direction-aware for pain vs posture/symmetry), adherence calculation, intelligent next program suggestions (progression from pain relief → posture → scoliosis → maintenance)
+- **`lib/programCompletion.test.js`** (31 tests) — Full coverage of all pure functions
+- **`app/training/completion.tsx`** (500+ lines) — Celebration screen with confetti animation, stats grid, metric before/after comparison cards, outcome badge, next program suggestion with one-tap generation CTA
+
+### Modified Files  
+- **`app/training/_layout.tsx`** — Registered completion screen in training stack
+- **`app/(tabs)/training.tsx`** — Added program history section (fetches completed/paused programs from Supabase), ProgramHistoryCard component with status indicators
+- **`prd-training-program.json`** — TP-006 marked as `passes: true`
+
+### Training Program PRD Complete
+All 6 stories (TP-001 through TP-006) are shipped:
+1. Data model
+2. AI program generator  
+3. Program overview screen
+4. Session execution screen
+5. Weekly review and progression
+6. Program completion and next program
+/Users/theministallion/clawd/ralph-tool/ralph.sh: line 374:  : command not found
+
+🎉 Ralph completed all tasks!
+   Finished at iteration 2 of 20
+[agents/auth-profiles] synced openai-codex credentials from codex cli

@@ -24,7 +24,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "The insights are the most valuable part - they should surface actionable observations. Compare current week to previous week for trend analysis."
     },
     {
@@ -39,7 +39,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "store the full report as JSONB for flexibility. We can query by week_start to check if a report exists."
     },
     {
@@ -56,7 +56,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This should feel like a polished 'weekly review' experience. Maybe a trophy or progress emoji at the top based on overall score."
     },
     {
@@ -74,7 +74,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The insights should feel like having a coach review your week. Be specific with numbers - '15% improvement' not just 'improved'."
     },
     {
@@ -90,7 +90,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Keep the text summary concise and motivating. The image export is optional/bonus."
     },
     {
@@ -105,7 +105,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Don't be intrusive - just show a subtle indicator that the report is ready to view."
     }
   ]
