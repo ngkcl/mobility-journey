@@ -22,6 +22,7 @@ export default function TrainingLayout() {
       }}
     >
       <Stack.Screen name="session" options={{ title: 'Session', headerShown: false }} />
+      <Stack.Screen name="completion" options={{ title: 'Program Complete', headerShown: false }} />
     </Stack>
   );
 }

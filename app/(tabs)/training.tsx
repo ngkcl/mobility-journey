@@ -25,8 +25,11 @@ import type {
   ProgramWeek,
   ProgramSession,
   PhaseFocus,
+  ProgramGoalType,
 } from '../../lib/trainingProgram';
 import { getWeekNeedingReview } from '../../lib/weeklyReview';
+import { getSupabase } from '../../lib/supabase';
+import type { ProgramHistoryItem } from '../../lib/programCompletion';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 
 // ── Phase Colors ───────────────────────────────────────────────────
@@ -102,7 +105,63 @@ function getWeeksCompleted(phases: ProgramPhase[], currentWeek: number): number 
   return Math.max(0, currentWeek - 1);
 }
 
+const GOAL_LABELS: Record<ProgramGoalType, string> = {
+  scoliosis_correction: 'Scoliosis Correction',
+  pain_reduction: 'Pain Reduction',
+  posture_improvement: 'Posture Improvement',
+  general_mobility: 'General Mobility',
+  custom: 'Custom',
+};
+
 // ── Components ─────────────────────────────────────────────────────
+
+function ProgramHistoryCard({
+  item,
+  onPress,
+}: {
+  item: ProgramHistoryItem;
+  onPress: () => void;
+}) {
+  const isCompleted = item.status === 'completed';
+  const isPaused = item.status === 'paused';
+
+  return (
+    <Pressable style={styles.historyCard} onPress={onPress}>
+      <View style={styles.historyCardLeft}>
+        <View
+          style={[
+            styles.historyStatusDot,
+            {
+              backgroundColor: isCompleted
+                ? colors.success
+                : isPaused
+                  ? colors.warning
+                  : colors.textMuted,
+            },
+          ]}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.historyCardName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.historyCardMeta}>
+            {GOAL_LABELS[item.goal_type] ?? item.goal_type} · {item.duration_weeks} weeks
+            {item.completed_at
+              ? ` · ${new Date(item.completed_at).toLocaleDateString()}`
+              : item.started_at
+                ? ` · Started ${new Date(item.started_at).toLocaleDateString()}`
+                : ''}
+          </Text>
+        </View>
+      </View>
+      <View style={[styles.historyStatusBadge, { backgroundColor: isCompleted ? colors.successDim : isPaused ? colors.warningDim : colors.bgCard }]}>
+        <Text style={[styles.historyStatusText, { color: isCompleted ? colors.success : isPaused ? colors.warning : colors.textTertiary }]}>
+          {isCompleted ? 'Completed' : isPaused ? 'Paused' : item.status}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
 
 function EmptyState({ onGenerate }: { onGenerate: () => void }) {
   return (
@@ -373,6 +432,7 @@ export default function TrainingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [weekNeedingReview, setWeekNeedingReview] = useState<number | null>(null);
+  const [completedPrograms, setCompletedPrograms] = useState<ProgramHistoryItem[]>([]);
 
   const fetchProgram = useCallback(async () => {
     try {
@@ -381,7 +441,6 @@ export default function TrainingScreen() {
       if (active) {
         const detail = await getProgramDetail(active.id);
         setProgram(detail);
-        // Check if previous week needs review
         if (detail) {
           const reviewWeek = getWeekNeedingReview(detail);
           setWeekNeedingReview(reviewWeek);
@@ -389,6 +448,20 @@ export default function TrainingScreen() {
       } else {
         setProgram(null);
         setWeekNeedingReview(null);
+      }
+
+      // Fetch completed/paused programs for history
+      try {
+        const supabase = getSupabase();
+        const { data: history } = await supabase
+          .from('training_programs')
+          .select('id, name, goal_type, duration_weeks, status, started_at, completed_at')
+          .in('status', ['completed', 'paused'])
+          .order('completed_at', { ascending: false })
+          .limit(10);
+        setCompletedPrograms((history ?? []) as ProgramHistoryItem[]);
+      } catch {
+        // Non-critical — don't block the screen
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load program');
@@ -457,6 +530,33 @@ export default function TrainingScreen() {
         }
       >
         <EmptyState onGenerate={() => router.push('/program')} />
+
+        {/* Program History */}
+        {completedPrograms.length > 0 && (
+          <View style={styles.historySection}>
+            <Text style={styles.sectionTitle}>Program History</Text>
+            {completedPrograms.map((item) => (
+              <ProgramHistoryCard
+                key={item.id}
+                item={item}
+                onPress={() => {
+                  if (item.status === 'completed') {
+                    router.push({
+                      pathname: '/training/completion',
+                      params: { programId: item.id },
+                    });
+                  } else if (item.status === 'paused') {
+                    // For paused programs, navigate to completion screen as a review
+                    router.push({
+                      pathname: '/training/completion',
+                      params: { programId: item.id },
+                    });
+                  }
+                }}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     );
   }
@@ -909,6 +1009,52 @@ const styles = StyleSheet.create({
     ...typography.tiny,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+
+  // Program History
+  historySection: {
+    marginTop: spacing['2xl'],
+  },
+  historyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bgCard,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  historyCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  historyStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  historyCardName: {
+    ...typography.captionMedium,
+    color: colors.textPrimary,
+  },
+  historyCardMeta: {
+    ...typography.tiny,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
+  historyStatusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+    marginLeft: spacing.sm,
+  },
+  historyStatusText: {
+    ...typography.tiny,
+    fontWeight: '600',
   },
 
   // FAB
