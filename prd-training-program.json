@@ -109,7 +109,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false
+      "passes": true
     },
     {
       "id": "TP-006",

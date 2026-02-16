@@ -26,6 +26,7 @@ import type {
   ProgramSession,
   PhaseFocus,
 } from '../../lib/trainingProgram';
+import { getWeekNeedingReview } from '../../lib/weeklyReview';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 
 // ── Phase Colors ───────────────────────────────────────────────────
@@ -371,6 +372,7 @@ export default function TrainingScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [weekNeedingReview, setWeekNeedingReview] = useState<number | null>(null);
 
   const fetchProgram = useCallback(async () => {
     try {
@@ -379,8 +381,14 @@ export default function TrainingScreen() {
       if (active) {
         const detail = await getProgramDetail(active.id);
         setProgram(detail);
+        // Check if previous week needs review
+        if (detail) {
+          const reviewWeek = getWeekNeedingReview(detail);
+          setWeekNeedingReview(reviewWeek);
+        }
       } else {
         setProgram(null);
+        setWeekNeedingReview(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load program');
@@ -468,6 +476,33 @@ export default function TrainingScreen() {
         <ProgramHeader program={program} />
         <PhaseTimeline phases={program.phases} currentWeek={program.current_week} />
         <StatsRow phases={program.phases} currentWeek={program.current_week} />
+
+        {/* Weekly Review Banner */}
+        {weekNeedingReview != null && (
+          <Pressable
+            style={styles.reviewBanner}
+            onPress={() => {
+              router.push({
+                pathname: '/training/weekly-review',
+                params: {
+                  programId: program.id,
+                  weekNumber: String(weekNeedingReview),
+                },
+              });
+            }}
+          >
+            <View style={styles.reviewBannerIcon}>
+              <Ionicons name="analytics-outline" size={20} color={colors.teal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reviewBannerTitle}>Week {weekNeedingReview} Review Ready</Text>
+              <Text style={styles.reviewBannerSubtitle}>
+                Review your progress and adjust next week's plan
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+          </Pressable>
+        )}
 
         {/* Weekly Breakdown */}
         <View style={styles.weeklySection}>
@@ -843,6 +878,37 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     minWidth: 28,
     textAlign: 'right',
+  },
+
+  // Review Banner
+  reviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.tealDim,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.tealBorder,
+  },
+  reviewBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(20, 184, 166, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewBannerTitle: {
+    ...typography.captionMedium,
+    color: colors.teal,
+    fontWeight: '600',
+  },
+  reviewBannerSubtitle: {
+    ...typography.tiny,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 
   // FAB

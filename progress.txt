@@ -4,6 +4,73 @@
 - For streak calculations that check "active" status, use relative dates (today/yesterday) in tests.
 - CSV export: escape commas/quotes properly, use native share sheet on mobile.
 - For date logic that uses local time (`getHours`, `getDate`), write tests with local timestamps (no `Z`) to avoid timezone-dependent failures.
+- Tests MUST use `node:test` + `node:assert/strict` (NOT Jest). For `.ts` files, add ts-node register at top of test file.
+- Pure logic lives in `lib/*.ts`, UI in `app/`. Keep Supabase-dependent code separate from pure testable functions.
+
+---
+## 2026-02-16 15:00 - Story TP-005: Weekly review and progression
+
+### Completed
+1. **Fixed 6 pre-existing broken test files** — converted from Jest API (`@jest/globals`, `jest.fn()`, `jest.mock()`) to Node test runner (`node:test` + `node:assert/strict`). Added `ts-node/register/transpile-only` for TypeScript module loading.
+   - `goalSuggestions.test.js` — removed Jest mocks, tests pure `suggestionToGoalInput` + exports
+   - `goalTracker.test.js` — tests `isGoalComplete`/`computeGoalProgress` + module exports
+   - `profileStats.test.js` — simple API swap (describe/it/expect → describe/it/assert)
+   - `programGenerator.test.js` — added ts-node register, full test suite for all exported functions
+   - `sessionExecution.test.js` — added ts-node register, full test suite for all helper functions
+   - `trainingProgram.test.js` — converted to Node test runner, shape validation tests
+2. **Created `lib/weeklyReview.ts`** — weekly review data layer with:
+   - `WeekReview` type: adherence_pct, total_volume, pain_trend, sessions_completed/missed, energy
+   - `computeWeekReview()` — pure function computing review from week/phase/workout/pain data
+   - `compareWeeks()` — diff current vs previous week (adherence change, volume %, pain change)
+   - `suggestAdjustments()` — rule-based suggestions:
+     - <40% adherence → repeat_week
+     - 40-60% adherence → reduce_intensity (-10%)
+     - Pain worsened → reduce_intensity (-15% to -20% depending on severity)
+     - Pain improved + high adherence → advance
+     - Stable + decent adherence → continue
+     - Good deload week → increase_intensity (+5%)
+   - `isWeekReadyForReview()` / `getWeekNeedingReview()` — detect when review is needed
+   - `reviewWeek()` — async orchestrator fetching workout data + pain data from Supabase
+   - `applyAdjustment()` — modifies next week's intensity_pct
+   - `submitReviewDecision()` — applies adjustment + advances program (or repeats week)
+3. **Created `lib/weeklyReview.test.js`** — 25 tests covering all pure functions
+4. **Created `app/training/weekly-review.tsx`** — review modal screen with:
+   - Stats grid (adherence, sessions, volume, intensity) with week-over-week changes
+   - Pain trend badge with before/after averages
+   - Selectable adjustment cards with visual indicators
+   - Bottom action bar: Skip Review / Apply & Continue
+5. **Updated `app/(tabs)/training.tsx`** — added weekly review detection banner:
+   - On load, checks `getWeekNeedingReview(program)` for just-completed weeks
+   - Shows teal banner "Week N Review Ready" with link to review screen
+
+### Next Up (for next iteration)
+- [ ] TP-006: Program completion and next program
+  - Completion celebration screen
+  - Before/after metrics comparison
+  - Next program generation
+  - Program history on profile
+
+### Blockers/Warnings
+- The weekly review currently checks if ALL sessions are complete to trigger review — partial week review (when calendar week passes) relies on `programStartDate` calculation
+- `submitReviewDecision` doesn't persist the decision to a review_decisions table — it applies changes directly. A future iteration could add a `program_review_decisions` table for audit trail
+- Weekly review screen fetches data from Supabase via `reviewWeek()` — requires live DB connection
+
+### Files Changed
+- lib/weeklyReview.ts (NEW)
+- lib/weeklyReview.test.js (NEW)
+- app/training/weekly-review.tsx (NEW)
+- app/(tabs)/training.tsx (MODIFIED — added review banner)
+- lib/goalSuggestions.test.js (REWRITTEN — Jest → Node test runner)
+- lib/goalTracker.test.js (REWRITTEN — Jest → Node test runner)
+- lib/profileStats.test.js (REWRITTEN — Jest → Node test runner)
+- lib/programGenerator.test.js (REWRITTEN — Jest → Node test runner)
+- lib/sessionExecution.test.js (REWRITTEN — Jest → Node test runner)
+- lib/trainingProgram.test.js (REWRITTEN — Jest → Node test runner)
+- prd-training-program.json (MODIFIED — TP-005 passes: true)
+
+### Learnings (add to Codebase Patterns if reusable)
+- Tests MUST use `node:test` + `node:assert/strict` — NOT Jest. Previous iterations incorrectly used `@jest/globals` which doesn't exist in this project.
+- For TypeScript modules in tests, always add `process.env.TS_NODE_COMPILER_OPTIONS` + `require('ts-node/register/transpile-only')` at the top before any `require('./module')`.
 
 ---
 ## 2025-02-10 - Overnight Feature Sprint: Streak Tracking + Data Export
