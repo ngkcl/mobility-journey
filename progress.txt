@@ -876,3 +876,33 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - app/(tabs)/training.tsx (wired FAB + week card navigation)
 - prd-training-program.json (TP-004 marked passes)
 - progress.txt
+
+## Evening Session — Feb 16, 2026
+
+### Completed: Weekly Report PRD (WR-001 through WR-006) — ALL PASSING ✅
+
+**Discovery:** WR-001 through WR-004 were already fully implemented but PRD wasn't updated:
+- WR-001: weeklyReport.ts (545 lines) — types, data fetching, summary builders, generator
+- WR-002: weeklyReportStorage.ts (227 lines) — Supabase CRUD, upsert, cache check
+- WR-003: app/(tabs)/reports.tsx (734 lines) — full viewer with sections, trends, insights
+- WR-004: reportInsights.ts (310 lines) + 13 passing tests
+
+**WR-005 (Report Sharing):** Already implemented — Share.share() native sheet, markReportShared()
+
+**WR-006 (Auto-generation):** Implemented this session:
+- shouldAutoGenerateReport() checks Mon/Tue if last week's report is missing
+- Added auto-generation call on home screen mount (useEffect)
+- "New report available" teal banner on home screen with tap-to-navigate
+- Silent fail — never blocks home screen
+
+### PRD Status After Session
+- prd.json (Goals): 7/7 ✅
+- prd-workouts.json: 6/6 ✅
+- prd-training-program.json: 6/6 ✅
+- prd-weekly-report.json: 6/6 ✅ (ALL completed this session)
+- prd-airpods.json: 0/6 (requires dev build)
+
+### What's Next
+- prd-airpods.json stories (need expo-dev-client setup)
+- Polish/UX improvements across existing features
+- End-to-end testing with real Supabase data
