@@ -906,3 +906,32 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - prd-airpods.json stories (need expo-dev-client setup)
 - Polish/UX improvements across existing features
 - End-to-end testing with real Supabase data
+
+## Evening Session — Feb 17, 2026
+
+### Completed: App-Wide Haptic Feedback System ✅
+
+**New utility:** `lib/haptics.ts` — shared haptic feedback module with semantic methods:
+- `tapLight()` — button presses, navigation
+- `tapMedium()` — completing exercises, starting sessions  
+- `tapHeavy()` — finishing workouts, major milestones
+- `notifySuccess()` — goal created, session saved, program completed
+- `selectionTick()` — wizard steps, picker scrolling
+- All silently no-op on unsupported platforms
+
+**Wired into 7 screens:**
+- Training session: set completion, skip rest, finish, save
+- Training overview: Start Session FAB
+- Goals list: create new, navigate detail
+- Goal wizard: step transitions, type selection, save
+- Workouts: template save
+- Home: workout card tap
+- Completion: program celebration
+
+**Stats:** 8 files changed, 90 insertions. Zero type errors.
+
+### App Status
+- All PRDs complete (Goals 7/7, Workouts 6/6, Training 6/6, Reports 6/6)
+- AirPods PRD still blocked on dev build
+- Zero TypeScript errors, zero TODOs
+- Next: entry animations, skeleton loading states, or error boundaries
