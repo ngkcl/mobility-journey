@@ -31,6 +31,7 @@ import { getWeekNeedingReview } from '../../lib/weeklyReview';
 import { getSupabase } from '../../lib/supabase';
 import type { ProgramHistoryItem } from '../../lib/programCompletion';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
+import { tapLight, tapMedium } from '@/lib/haptics';
 
 // ── Phase Colors ───────────────────────────────────────────────────
 
@@ -639,6 +640,7 @@ export default function TrainingScreen() {
         <Pressable
           style={styles.fab}
           onPress={() => {
+            tapMedium();
             router.push({
               pathname: '/training/session',
               params: {

@@ -24,6 +24,7 @@ import { computeWorkoutSummary } from '../../lib/workouts';
 import { buildTemplateSet, getTemplateSetCount } from '../../lib/templates';
 import { buildWorkoutCSV, buildWorkoutExportPayload } from '../../lib/exportData';
 import { colors, typography, spacing, radii, shared, getSideColor } from '@/lib/theme';
+import { tapLight, tapMedium, notifySuccess } from '@/lib/haptics';
 import type {
   Exercise,
   ExerciseCategory,
@@ -735,6 +736,7 @@ export default function WorkoutsScreen() {
       return;
     }
 
+    notifySuccess();
     pushToast('Template updated.', 'success');
     closeTemplateEditor();
     await loadTemplates();

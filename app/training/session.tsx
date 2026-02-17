@@ -22,6 +22,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
+import { tapMedium, tapHeavy, notifySuccess, selectionTick } from '../../lib/haptics';
 import {
   getProgramDetail,
   completeSession,
@@ -254,6 +255,7 @@ export default function SessionExecution() {
   }, []);
 
   const skipRest = useCallback(() => {
+    selectionTick();
     if (restTimerRef.current) clearInterval(restTimerRef.current);
     restTimerRef.current = null;
     setRestTime(0);
@@ -281,6 +283,7 @@ export default function SessionExecution() {
 
         // If set just completed and there's rest configured, start rest timer
         if (s.completed) {
+          tapMedium();
           const restSec = ex.slot.rest_seconds ?? 60;
           // Don't start rest on last set of last exercise
           const isLastSetOfExercise = setIdx === ex.sets.length - 1;
@@ -340,6 +343,7 @@ export default function SessionExecution() {
   // ── Save & Complete ────────────────────────────────────────────
 
   const finishSession = useCallback(() => {
+    tapHeavy();
     setPhase('post-session');
   }, []);
 
@@ -422,6 +426,7 @@ export default function SessionExecution() {
         // Goal tracking is non-critical
       }
 
+      notifySuccess();
       setPhase('summary');
     } catch (err) {
       Alert.alert('Error', 'Failed to save session. Try again.');

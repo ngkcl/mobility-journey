@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { tapLight } from '../../lib/haptics';
 import {
   View,
   Text,
@@ -151,7 +152,7 @@ export default function HomeScreen() {
 
         {/* Today's Workout Card */}
         <Pressable
-          onPress={() => router.push('/workouts')}
+          onPress={() => { tapLight(); router.push('/workouts'); }}
           style={({ pressed, hovered }) => [
             styles.summaryCard,
             { borderColor: primaryCardAccent },

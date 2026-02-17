@@ -35,6 +35,7 @@ import {
 } from '../../lib/programCompletion';
 import type { ProgramOutcome, MetricSnapshot, NextProgramSuggestion } from '../../lib/programCompletion';
 import { colors, typography, spacing, radii } from '@/lib/theme';
+import { notifySuccess, tapHeavy } from '@/lib/haptics';
 
 // ── Confetti ────────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ export default function CompletionScreen() {
 
   useEffect(() => {
     if (!loading && outcome) {
+      notifySuccess();
       scaleAnim.setValue(0.5);
       opacityAnim.setValue(0);
       Animated.parallel([

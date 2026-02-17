@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
+import { tapLight, tapMedium } from '@/lib/haptics';
 import {
   getGoals,
   computeGoalProgress,
@@ -245,10 +246,12 @@ export default function GoalsScreen() {
   }, [loadGoals]);
 
   const navigateToNewGoal = () => {
+    tapMedium();
     router.push('/goals/new');
   };
 
   const navigateToGoalDetail = (goalId: string) => {
+    tapLight();
     router.push(`/goals/${goalId}` as any);
   };
 

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { colors, typography, spacing, radii, shared } from '../../lib/theme';
 import { createGoal, type GoalType, type CreateGoalInput } from '../../lib/goals';
+import { tapLight, notifySuccess, selectionTick } from '../../lib/haptics';
 
 // ─── Goal Type Config ─────────────────────────────────────────────────────────
 
@@ -194,15 +195,16 @@ export default function NewGoalScreen() {
   };
 
   const goNext = () => {
-    if (step < 4) setStep((step + 1) as WizardStep);
+    if (step < 4) { selectionTick(); setStep((step + 1) as WizardStep); }
   };
 
   const goBack = () => {
-    if (step > 1) setStep((step - 1) as WizardStep);
+    if (step > 1) { selectionTick(); setStep((step - 1) as WizardStep); }
     else router.back();
   };
 
   const selectGoalType = (option: GoalTypeOption) => {
+    tapLight();
     setSelectedType(option);
     setStartValue(option.defaultStart);
     setTargetValue(option.defaultTarget);
@@ -237,6 +239,7 @@ export default function NewGoalScreen() {
       };
       const goal = await createGoal(input);
       if (goal) {
+        notifySuccess();
         router.back();
       } else {
         Alert.alert('Error', 'Failed to create goal. Please try again.');
