@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { tapLight } from '../../lib/haptics';
 import {
   View,
@@ -30,6 +30,7 @@ import {
   type StreakStats,
 } from '../../lib/workoutAnalytics';
 import { generateInsights, type Insight } from '../../lib/insightsEngine';
+import { loadDismissedInsights, dismissInsight } from '../../lib/insightDismissals';
 import {
   colors,
   typography,
@@ -76,9 +77,10 @@ export default function HomeScreen() {
     [insights, dismissedInsights],
   );
 
-  const handleDismissInsight = (id: string) => {
+  const handleDismissInsight = useCallback((id: string) => {
     setDismissedInsights((prev) => new Set([...prev, id]));
-  };
+    dismissInsight(id); // persist to AsyncStorage
+  }, []);
 
   const loadSummary = async () => {
     const supabase = getSupabase();
@@ -148,6 +150,8 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
+    // Restore dismissed insights from AsyncStorage
+    loadDismissedInsights().then(setDismissedInsights);
     loadSummary();
     // WR-006: Auto-generate last week's report on app open (Mon/Tue)
     (async () => {
