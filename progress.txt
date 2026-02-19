@@ -935,3 +935,79 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - AirPods PRD still blocked on dev build
 - Zero TypeScript errors, zero TODOs
 - Next: entry animations, skeleton loading states, or error boundaries
+
+## Evening Session — Feb 19, 2026
+
+### Completed: Error Boundaries + Skeleton Loading States ✅
+
+**New component:** `components/ErrorBoundary.tsx`
+- Class-based React error boundary with graceful crash recovery
+- Themed error UI matching app design system (warning icon, card layout)
+- "Try Again" button to reset and re-render
+- Screen name context for debugging (`screenName` prop)
+- Logs errors to console (Sentry-ready)
+
+**New component:** `components/SkeletonLoader.tsx`
+- Shimmer animation system with pulsing opacity (0.3 ↔ 0.7)
+- 6 preset skeletons: Bone, CardSkeleton, StatsRowSkeleton, ListItemSkeleton, GoalCardSkeleton, ScreenSkeleton
+- All use design system tokens (colors, radii, spacing)
+
+**Wired into 4 locations:**
+- Root `_layout.tsx` — app-level crash protection
+- Home tab — ErrorBoundary wrap
+- Goals tab — ErrorBoundary + skeleton loading (replaced ActivityIndicator)
+- Training tab — ErrorBoundary + skeleton loading (replaced ActivityIndicator + text)
+
+**Stats:** 6 files changed, 330 insertions, 9 deletions. Zero type errors.
+
+### App Status
+- All PRDs complete (Goals 7/7, Workouts 6/6, Training 6/6, Reports 6/6)
+- AirPods PRD still blocked on dev build
+- Zero TypeScript errors, zero TODOs
+- UX polish: haptic feedback ✅, error boundaries ✅, skeleton loading ✅
+- Next: entry animations, pull-to-refresh on remaining screens, or Supabase query optimization
+
+## Late Afternoon Session — Feb 19, 2026
+
+### Completed: Smart Insights Engine ✅
+
+**New library:** `lib/insightsEngine.ts` — Core analytics engine that crunches data and generates actionable insights:
+- 10 insight generators analyzing different data dimensions
+- Pain trend analysis (7-day vs prior 7-day comparison)
+- Posture score trend detection (improving/declining)
+- Symmetry trend monitoring
+- Streak milestones (7/14/21/30/60/90/100 day celebrations)
+- Streak broken recovery nudges + personal best detection
+- Side imbalance alerts (using asymmetry summary data)
+- Recovery analysis (pain change after workouts — positive or concerning)
+- Consistency tracking (3x daily protocol compliance, gap detection)
+- Posture monitoring session quality analysis
+- Best workout day pattern detection
+- Total workout milestones (10/25/50/100/200/365/500)
+- Priority-sorted output (P1=urgent warnings, P5=fun facts)
+- Capped at 5 insights to avoid overwhelming the home screen
+
+**New component:** `components/InsightCard.tsx`
+- Individual insight card with accent glow, icon, title, body
+- Priority-based glow intensity (higher priority = stronger visual weight)
+- Tap to navigate (optional deep link to relevant screen)
+- Dismissible cards with close button
+- InsightList wrapper with header ("Smart Insights" + count badge)
+- Haptic feedback on interactions
+- Matches design system perfectly (dark theme, radii, spacing)
+
+**Wired into Home Screen:**
+- Fetches metrics (30 entries) and posture sessions (20 entries) alongside existing data
+- Runs generateInsights() with all data sources
+- Shows InsightList between hero card and workout card
+- Dismissable insights tracked in local state
+- Silent failure — insights never block the home screen
+
+**Stats:** 4 files changed, 840 insertions. Zero TypeScript errors.
+
+### App Status
+- All PRDs complete (Goals 7/7, Workouts 6/6, Training 6/6, Reports 6/6)
+- AirPods PRD still blocked on dev build
+- Zero TypeScript errors, zero TODOs
+- UX polish: haptic feedback ✅, error boundaries ✅, skeleton loading ✅, smart insights ✅
+- Next: entry animations, persist dismissed insights to AsyncStorage, workout exercise-level data for richer asymmetry insights

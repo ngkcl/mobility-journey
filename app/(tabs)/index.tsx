@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { ScreenSkeleton } from '../../components/SkeletonLoader';
+import { InsightList } from '../../components/InsightCard';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
@@ -21,7 +22,14 @@ import {
   type NextSessionSummary,
 } from '../../lib/homeSummary';
 import { loadWorkoutSchedule } from '../../lib/workoutSchedule';
-import { computeStreakStats, type WorkoutHistoryItem, type StreakStats } from '../../lib/workoutAnalytics';
+import {
+  computeStreakStats,
+  computeAsymmetrySummary,
+  computePainImpact,
+  type WorkoutHistoryItem,
+  type StreakStats,
+} from '../../lib/workoutAnalytics';
+import { generateInsights, type Insight } from '../../lib/insightsEngine';
 import {
   colors,
   typography,
@@ -31,7 +39,7 @@ import {
   getGreeting as getThemeGreeting,
   getDailyTip,
 } from '@/lib/theme';
-import type { Workout, WorkoutTemplate } from '../../lib/types';
+import type { Workout, WorkoutTemplate, MetricEntry, PostureSession } from '../../lib/types';
 
 const DAILY_TIPS = [
   'Release tight tissues first, then activate the weaker side.',
@@ -53,6 +61,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const [streakStats, setStreakStats] = useState<StreakStats>({ currentStreak: 0, bestStreak: 0, totalWorkoutDays: 0, workoutDates: [] });
   const [nextSession, setNextSession] = useState<NextSessionSummary | null>(null);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [newReportReady, setNewReportReady] = useState(false);
@@ -61,9 +71,18 @@ export default function HomeScreen() {
   const tip = useMemo(() => getDailyTip(), []);
   const accent = useMemo(() => getAccentForTime(greeting), [greeting]);
 
+  const visibleInsights = useMemo(
+    () => insights.filter((i) => !dismissedInsights.has(i.id)),
+    [insights, dismissedInsights],
+  );
+
+  const handleDismissInsight = (id: string) => {
+    setDismissedInsights((prev) => new Set([...prev, id]));
+  };
+
   const loadSummary = async () => {
     const supabase = getSupabase();
-    const [schedule, workoutsResult, templatesResult] = await Promise.all([
+    const [schedule, workoutsResult, templatesResult, metricsResult, postureResult] = await Promise.all([
       loadWorkoutSchedule(),
       supabase
         .from('workouts')
@@ -75,6 +94,16 @@ export default function HomeScreen() {
       supabase
         .from('workout_templates')
         .select('id, name, type, exercises, estimated_duration_minutes, created_at'),
+      supabase
+        .from('metrics')
+        .select('*')
+        .order('entry_date', { ascending: false })
+        .limit(30),
+      supabase
+        .from('posture_sessions')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(20),
     ]);
 
     const workouts = (workoutsResult.data ?? []) as Workout[];
@@ -89,8 +118,32 @@ export default function HomeScreen() {
       return acc;
     }, {} as Record<string, WorkoutTemplate>);
 
-    setStreakStats(computeStreakStats(history));
+    const stats = computeStreakStats(history);
+    setStreakStats(stats);
     setNextSession(buildNextSessionSummary(new Date(), schedule, templatesByName));
+
+    // Generate smart insights
+    try {
+      const metrics = (metricsResult.data ?? []) as MetricEntry[];
+      const postureSessions = (postureResult.data ?? []) as PostureSession[];
+      const asymmetry = computeAsymmetrySummary(history);
+      const painImpact = computePainImpact(history);
+
+      const generated = generateInsights({
+        metrics,
+        workouts,
+        workoutHistory: history,
+        streakStats: stats,
+        asymmetry,
+        postureSessions,
+        painImpact,
+      });
+      setInsights(generated);
+    } catch (e) {
+      // Silent — insights are nice-to-have, not critical
+      console.warn('Insight generation failed:', e);
+    }
+
     setIsLoading(false);
   };
 
@@ -152,6 +205,9 @@ export default function HomeScreen() {
             )}
           </View>
         </View>
+
+        {/* Smart Insights */}
+        <InsightList insights={visibleInsights} onDismiss={handleDismissInsight} />
 
         {/* Today's Workout Card */}
         <Pressable
