@@ -8,6 +8,8 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import { ScreenSkeleton } from '../../components/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getSupabase } from '../../lib/supabase';
@@ -118,6 +120,7 @@ export default function HomeScreen() {
   const primaryCardAccent = nextSession?.sessionKey === 'gym' ? colors.rightSide : accent;
 
   return (
+    <ErrorBoundary screenName="Home">
     <View style={shared.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -256,6 +259,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </View>
+    </ErrorBoundary>
   );
 }
 

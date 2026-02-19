@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,6 +22,8 @@ import {
 } from '../../lib/goals';
 import { type Badge, getBadges } from '../../lib/badges';
 import EmptyState from '../../components/EmptyState';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import { GoalCardSkeleton, StatsRowSkeleton } from '../../components/SkeletonLoader';
 import SuggestedGoals from '../../components/SuggestedGoals';
 
 // ── Goal type metadata ──────────────────────────────────────────────────────
@@ -258,8 +259,11 @@ export default function GoalsScreen() {
   // ── Loading state ──
   if (isLoading) {
     return (
-      <View style={[shared.screen, styles.center]}>
-        <ActivityIndicator size="large" color={colors.teal} />
+      <View style={[shared.screen, { padding: spacing.lg, gap: spacing.lg }]}>
+        <StatsRowSkeleton />
+        <GoalCardSkeleton />
+        <GoalCardSkeleton />
+        <GoalCardSkeleton />
       </View>
     );
   }
@@ -281,6 +285,7 @@ export default function GoalsScreen() {
       : 0;
 
   return (
+    <ErrorBoundary screenName="Goals">
     <View style={shared.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -407,6 +412,7 @@ export default function GoalsScreen() {
         </Pressable>
       )}
     </View>
+    </ErrorBoundary>
   );
 }
 

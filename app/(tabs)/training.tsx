@@ -7,6 +7,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import { ScreenSkeleton } from '../../components/SkeletonLoader';
 import {
   View,
   Text,
@@ -497,12 +499,7 @@ export default function TrainingScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.teal} />
-        <Text style={styles.loadingText}>Loading program...</Text>
-      </View>
-    );
+    return <ScreenSkeleton cards={4} />;
   }
 
   if (error) {
@@ -563,6 +560,7 @@ export default function TrainingScreen() {
   }
 
   return (
+    <ErrorBoundary screenName="Training">
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -657,6 +655,7 @@ export default function TrainingScreen() {
         </Pressable>
       )}
     </View>
+    </ErrorBoundary>
   );
 }
 

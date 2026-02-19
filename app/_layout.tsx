@@ -3,10 +3,12 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ToastProvider } from '../components/Toast';
 import { CelebrationProvider } from '../lib/CelebrationContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { View } from 'react-native';
 
 export default function RootLayout() {
   return (
+    <ErrorBoundary screenName="Root">
     <ToastProvider>
       <CelebrationProvider>
       <View style={{ flex: 1, backgroundColor: '#0b1020' }}>
@@ -41,5 +43,6 @@ export default function RootLayout() {
       </View>
       </CelebrationProvider>
     </ToastProvider>
+    </ErrorBoundary>
   );
 }
