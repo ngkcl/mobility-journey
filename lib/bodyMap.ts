@@ -264,3 +264,180 @@ export async function getTodayPainPointCount(): Promise<number> {
   const entries = await getLatestEntryPerZone();
   return Object.keys(entries).length;
 }
+
+// ─── Trend Types ─────────────────────────────────────────────────────────────
+
+export type TrendDirection = 'improving' | 'worsening' | 'stable';
+
+export interface ZoneTrend {
+  zone: BodyZoneId;
+  label: string;
+  direction: TrendDirection;
+  changePercent: number;
+  currentAvg: number;
+  previousAvg: number;
+  entryCount: number;
+}
+
+export interface WeeklySummary {
+  totalEntriesThisWeek: number;
+  totalEntriesLastWeek: number;
+  mostAffectedZone: string | null;
+  overallTrend: TrendDirection;
+  avgIntensityThisWeek: number;
+  avgIntensityLastWeek: number;
+}
+
+// ─── Trend Functions ─────────────────────────────────────────────────────────
+
+const ALL_ZONES = [...BODY_ZONES_FRONT, ...BODY_ZONES_BACK];
+function getZoneLabelById(id: BodyZoneId): string {
+  return ALL_ZONES.find((z) => z.id === id)?.label ?? id;
+}
+
+/** Get per-zone average intensity for a date range */
+async function getZoneAveragesForRange(
+  from: Date,
+  to: Date,
+): Promise<Record<string, { avg: number; count: number }>> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('body_map_entries')
+    .select('zone, intensity')
+    .gte('recorded_at', from.toISOString())
+    .lte('recorded_at', to.toISOString());
+
+  if (error || !data) return {};
+
+  const groups: Record<string, { sum: number; count: number }> = {};
+  for (const entry of data as { zone: string; intensity: number }[]) {
+    if (!groups[entry.zone]) groups[entry.zone] = { sum: 0, count: 0 };
+    groups[entry.zone].sum += entry.intensity;
+    groups[entry.zone].count += 1;
+  }
+
+  const result: Record<string, { avg: number; count: number }> = {};
+  for (const [zone, { sum, count }] of Object.entries(groups)) {
+    result[zone] = { avg: sum / count, count };
+  }
+  return result;
+}
+
+/** Get top pain zones by frequency and intensity over last N days */
+export async function getTopPainZones(
+  days: number = 7,
+  limit: number = 5,
+): Promise<ZoneTrend[]> {
+  const now = new Date();
+  const currentStart = new Date(now);
+  currentStart.setDate(currentStart.getDate() - days);
+  currentStart.setHours(0, 0, 0, 0);
+
+  const previousStart = new Date(currentStart);
+  previousStart.setDate(previousStart.getDate() - days);
+
+  const [currentAvgs, previousAvgs] = await Promise.all([
+    getZoneAveragesForRange(currentStart, now),
+    getZoneAveragesForRange(previousStart, currentStart),
+  ]);
+
+  const trends: ZoneTrend[] = [];
+  const allZoneIds = new Set([
+    ...Object.keys(currentAvgs),
+    ...Object.keys(previousAvgs),
+  ]);
+
+  for (const zone of allZoneIds) {
+    const curr = currentAvgs[zone];
+    const prev = previousAvgs[zone];
+
+    if (!curr) continue; // Only show zones active in current period
+
+    const currentAvg = curr.avg;
+    const previousAvg = prev?.avg ?? currentAvg;
+    const changePct =
+      previousAvg > 0
+        ? ((currentAvg - previousAvg) / previousAvg) * 100
+        : 0;
+
+    let direction: TrendDirection = 'stable';
+    if (changePct < -10) direction = 'improving'; // intensity went down = good
+    else if (changePct > 10) direction = 'worsening';
+
+    trends.push({
+      zone: zone as BodyZoneId,
+      label: getZoneLabelById(zone as BodyZoneId),
+      direction,
+      changePercent: Math.round(changePct),
+      currentAvg: Math.round(currentAvg * 10) / 10,
+      previousAvg: Math.round(previousAvg * 10) / 10,
+      entryCount: curr.count,
+    });
+  }
+
+  // Sort by entry count * avg intensity (most problematic first)
+  trends.sort((a, b) => b.currentAvg * b.entryCount - a.currentAvg * a.entryCount);
+  return trends.slice(0, limit);
+}
+
+/** Get weekly summary comparing this week to last week */
+export async function getWeeklySummary(): Promise<WeeklySummary> {
+  const now = new Date();
+  const thisWeekStart = new Date(now);
+  thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+  thisWeekStart.setHours(0, 0, 0, 0);
+
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  const [thisWeekAvgs, lastWeekAvgs] = await Promise.all([
+    getZoneAveragesForRange(thisWeekStart, now),
+    getZoneAveragesForRange(lastWeekStart, thisWeekStart),
+  ]);
+
+  // Total entries
+  let thisWeekTotal = 0;
+  let thisWeekIntensitySum = 0;
+  let thisWeekCount = 0;
+  let maxZone: string | null = null;
+  let maxScore = 0;
+
+  for (const [zone, { avg, count }] of Object.entries(thisWeekAvgs)) {
+    thisWeekTotal += count;
+    thisWeekIntensitySum += avg * count;
+    thisWeekCount += count;
+    const score = avg * count;
+    if (score > maxScore) {
+      maxScore = score;
+      maxZone = zone;
+    }
+  }
+
+  let lastWeekTotal = 0;
+  let lastWeekIntensitySum = 0;
+  let lastWeekCount = 0;
+  for (const { avg, count } of Object.values(lastWeekAvgs)) {
+    lastWeekTotal += count;
+    lastWeekIntensitySum += avg * count;
+    lastWeekCount += count;
+  }
+
+  const avgThis = thisWeekCount > 0 ? thisWeekIntensitySum / thisWeekCount : 0;
+  const avgLast = lastWeekCount > 0 ? lastWeekIntensitySum / lastWeekCount : 0;
+
+  let overallTrend: TrendDirection = 'stable';
+  if (avgLast > 0) {
+    const change = ((avgThis - avgLast) / avgLast) * 100;
+    if (change < -10) overallTrend = 'improving';
+    else if (change > 10) overallTrend = 'worsening';
+  }
+
+  return {
+    totalEntriesThisWeek: thisWeekTotal,
+    totalEntriesLastWeek: lastWeekTotal,
+    mostAffectedZone: maxZone ? getZoneLabelById(maxZone as BodyZoneId) : null,
+    overallTrend,
+    avgIntensityThisWeek: Math.round(avgThis * 10) / 10,
+    avgIntensityLastWeek: Math.round(avgLast * 10) / 10,
+  };
+}

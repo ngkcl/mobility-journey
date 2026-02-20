@@ -28,8 +28,12 @@ import {
   saveBodyMapEntry,
   deleteBodyMapEntry,
   intensityToSolidColor,
+  getTopPainZones,
+  getWeeklySummary,
   type BodyZoneId,
   type BodyMapEntry,
+  type ZoneTrend,
+  type WeeklySummary,
 } from '../../lib/bodyMap';
 import { colors, typography, spacing, radii, shared } from '@/lib/theme';
 
@@ -88,6 +92,8 @@ export default function BodyMapScreen() {
   >([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [zoneTrends, setZoneTrends] = useState<ZoneTrend[]>([]);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,15 +101,19 @@ export default function BodyMapScreen() {
 
   const loadData = useCallback(async () => {
     const { from, to } = getDateRange(dateRange);
-    const [entriesData, latestData, asymData] = await Promise.all([
+    const [entriesData, latestData, asymData, trends, summary] = await Promise.all([
       getBodyMapEntries(from, to),
       getLatestEntryPerZone(),
       getAsymmetryReport(),
+      getTopPainZones(7, 5),
+      getWeeklySummary(),
     ]);
 
     setAllEntries(entriesData);
     setEntries(latestData);
     setAsymmetry(asymData.filter((a) => a.diff >= 3));
+    setZoneTrends(trends);
+    setWeeklySummary(summary);
   }, [dateRange]);
 
   useEffect(() => {
@@ -365,6 +375,152 @@ export default function BodyMapScreen() {
             </View>
           )}
 
+          {/* Weekly Trends */}
+          {zoneTrends.length >= 1 && (
+            <View style={{ marginTop: spacing.lg }}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="analytics-outline" size={18} color={colors.teal} />
+                <Text style={styles.sectionTitle}>Weekly Trends</Text>
+              </View>
+
+              {/* Summary Card */}
+              {weeklySummary && (
+                <View style={styles.trendSummaryCard}>
+                  <View style={styles.trendSummaryRow}>
+                    <View style={styles.trendSummaryStat}>
+                      <Text style={styles.trendStatValue}>
+                        {weeklySummary.totalEntriesThisWeek}
+                      </Text>
+                      <Text style={styles.trendStatLabel}>This week</Text>
+                    </View>
+                    <View style={styles.trendSummaryStat}>
+                      <Text style={styles.trendStatValue}>
+                        {weeklySummary.totalEntriesLastWeek}
+                      </Text>
+                      <Text style={styles.trendStatLabel}>Last week</Text>
+                    </View>
+                    <View style={styles.trendSummaryStat}>
+                      <Ionicons
+                        name={
+                          weeklySummary.overallTrend === 'improving'
+                            ? 'trending-down'
+                            : weeklySummary.overallTrend === 'worsening'
+                              ? 'trending-up'
+                              : 'remove-outline'
+                        }
+                        size={22}
+                        color={
+                          weeklySummary.overallTrend === 'improving'
+                            ? '#22c55e'
+                            : weeklySummary.overallTrend === 'worsening'
+                              ? '#ef4444'
+                              : colors.textMuted
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.trendStatLabel,
+                          {
+                            color:
+                              weeklySummary.overallTrend === 'improving'
+                                ? '#22c55e'
+                                : weeklySummary.overallTrend === 'worsening'
+                                  ? '#ef4444'
+                                  : colors.textMuted,
+                          },
+                        ]}
+                      >
+                        {weeklySummary.overallTrend === 'improving'
+                          ? 'Improving'
+                          : weeklySummary.overallTrend === 'worsening'
+                            ? 'Worsening'
+                            : 'Stable'}
+                      </Text>
+                    </View>
+                  </View>
+                  {weeklySummary.mostAffectedZone && (
+                    <Text style={styles.trendMostAffected}>
+                      Most affected: {weeklySummary.mostAffectedZone} (avg{' '}
+                      {weeklySummary.avgIntensityThisWeek}/10)
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* Zone Trend Cards */}
+              {zoneTrends.map((trend) => (
+                <View key={trend.zone} style={styles.trendZoneCard}>
+                  <View style={styles.trendZoneHeader}>
+                    <Text style={styles.trendZoneName}>{trend.label}</Text>
+                    <View style={styles.trendArrowBadge}>
+                      <Ionicons
+                        name={
+                          trend.direction === 'improving'
+                            ? 'arrow-down'
+                            : trend.direction === 'worsening'
+                              ? 'arrow-up'
+                              : 'remove'
+                        }
+                        size={12}
+                        color={
+                          trend.direction === 'improving'
+                            ? '#22c55e'
+                            : trend.direction === 'worsening'
+                              ? '#ef4444'
+                              : colors.textMuted
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.trendArrowText,
+                          {
+                            color:
+                              trend.direction === 'improving'
+                                ? '#22c55e'
+                                : trend.direction === 'worsening'
+                                  ? '#ef4444'
+                                  : colors.textMuted,
+                          },
+                        ]}
+                      >
+                        {trend.direction === 'stable'
+                          ? 'Stable'
+                          : `${Math.abs(trend.changePercent)}%`}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.trendZoneBar}>
+                    <View
+                      style={[
+                        styles.trendZoneBarFill,
+                        {
+                          width: `${Math.min(trend.currentAvg * 10, 100)}%`,
+                          backgroundColor: intensityToSolidColor(Math.round(trend.currentAvg)),
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.trendZoneMeta}>
+                    Avg {trend.currentAvg}/10 · {trend.entryCount} entries
+                    {trend.previousAvg > 0 && trend.direction !== 'stable'
+                      ? ` · was ${trend.previousAvg}`
+                      : ''}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Trends Empty State */}
+          {zoneTrends.length === 0 && allEntries.length > 0 && (
+            <View style={styles.trendEmptyState}>
+              <Ionicons name="analytics-outline" size={28} color={colors.textMuted} />
+              <Text style={styles.trendEmptyText}>
+                Log a few more sessions to see your weekly trends
+              </Text>
+            </View>
+          )}
+
           {/* Empty State */}
           {allEntries.length === 0 && activeCount === 0 && (
             <View style={shared.emptyState}>
@@ -608,5 +764,95 @@ const styles = StyleSheet.create({
   entryTime: {
     ...typography.tiny,
     color: colors.textMuted,
+  },
+  // Trends
+  trendSummaryCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radii.lg,
+    padding: spacing.md + 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  trendSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  trendSummaryStat: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendStatValue: {
+    ...typography.h2,
+    color: colors.textPrimary,
+  },
+  trendStatLabel: {
+    ...typography.tiny,
+    color: colors.textTertiary,
+    fontWeight: '600',
+  },
+  trendMostAffected: {
+    ...typography.small,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  trendZoneCard: {
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    marginBottom: spacing.sm,
+  },
+  trendZoneHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  trendZoneName: {
+    ...typography.bodySemibold,
+    color: colors.textPrimary,
+  },
+  trendArrowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    backgroundColor: colors.bgCard,
+  },
+  trendArrowText: {
+    ...typography.tiny,
+    fontWeight: '700',
+  },
+  trendZoneBar: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.bgCard,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+  },
+  trendZoneBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  trendZoneMeta: {
+    ...typography.tiny,
+    color: colors.textMuted,
+  },
+  trendEmptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+  },
+  trendEmptyText: {
+    ...typography.small,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });

@@ -1,0 +1,43 @@
+{
+  "project": "mobility-app",
+  "branchName": "feat/body-map-trends",
+  "prdFileName": "prd-body-map-trends.json",
+  "description": "Body Map Trends — weekly heatmap and zone trend analysis showing how pain/tension changes over time.",
+  "context": {
+    "purpose": "Nick needs to see whether his posture/mobility work is actually reducing pain over time. This adds a Trends tab to the body map screen showing weekly intensity heatmaps and per-zone trend indicators.",
+    "existingData": "body_map_entries table in Supabase with zone, intensity (1-10), sensation type, notes, timestamps. lib/bodyMap.ts has getBodyMapEntries, getZoneHistory, getLatestEntryPerZone.",
+    "keyInsight": "Visual trends are more motivating than raw numbers. Seeing red zones turn green over weeks is powerful feedback."
+  },
+  "userStories": [
+    {
+      "id": "BMT-001",
+      "title": "Zone trend data functions",
+      "description": "Add lib functions to compute per-zone weekly averages and trends.",
+      "acceptanceCriteria": [
+        "Add to lib/bodyMap.ts: getWeeklyZoneAverages(weeks: number) — returns array of { week_start, zone_id, avg_intensity, entry_count } for last N weeks",
+        "Add getZoneTrend(zoneId: string, weeks: number) — returns { direction: 'improving' | 'worsening' | 'stable', change_percent: number, current_avg: number, previous_avg: number }",
+        "Add getTopPainZones(days: number, limit: number) — returns top N zones by frequency/intensity in last N days",
+        "Improving = avg intensity decreased by >10% vs prior period, worsening = increased >10%, stable = within 10%",
+        "Handle edge cases: no data returns empty arrays, single week returns 'stable'",
+        "Typecheck passes"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "BMT-002",
+      "title": "Trends section on body map screen",
+      "description": "Add a Trends section below the existing body map content showing zone trends and weekly summary.",
+      "acceptanceCriteria": [
+        "Add a 'Trends' section to app/(tabs)/body-map.tsx below the recent entries list",
+        "Section header: 'Weekly Trends' with a calendar icon",
+        "Show top pain zones (last 7 days) as horizontal cards with zone name, avg intensity, trend arrow (↑ worsening red, ↓ improving green, → stable gray)",
+        "Weekly summary card: total entries this week vs last week, most affected zone, overall trend direction",
+        "If fewer than 3 entries total, show encouraging empty state: 'Log a few more sessions to see your trends'",
+        "Trend arrows animate subtly on mount (fade in)",
+        "Uses existing theme colors and typography from lib/theme",
+        "Typecheck passes"
+      ],
+      "priority": 2
+    }
+  ]
+}
