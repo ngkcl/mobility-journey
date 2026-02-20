@@ -29,6 +29,7 @@ const hiddenTabs: string[] = [
   'program',
   'charts',
   'plan',
+  'body-map',
 ];
 
 export default function TabLayout() {

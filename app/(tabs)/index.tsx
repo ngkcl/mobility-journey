@@ -213,6 +213,26 @@ export default function HomeScreen() {
         {/* Smart Insights */}
         <InsightList insights={visibleInsights} onDismiss={handleDismissInsight} />
 
+        {/* Body Map Quick Access */}
+        <Pressable
+          onPress={() => { tapLight(); router.push('/body-map' as any); }}
+          style={({ pressed }) => [
+            styles.bodyMapCard,
+            pressed && styles.cardPressed,
+          ]}
+        >
+          <View style={styles.bodyMapIcon}>
+            <Ionicons name="body-outline" size={22} color={colors.teal} />
+          </View>
+          <View style={styles.bodyMapContent}>
+            <Text style={styles.bodyMapTitle}>Body Map</Text>
+            <Text style={styles.bodyMapSub}>
+              Log pain &amp; tension points
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
         {/* Today's Workout Card */}
         <Pressable
           onPress={() => { tapLight(); router.push('/workouts'); }}
@@ -570,6 +590,39 @@ const styles = StyleSheet.create({
     ...typography.body,
     marginTop: spacing.sm,
     lineHeight: 21,
+  },
+  bodyMapCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radii.lg,
+    padding: spacing.md + 2,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
+  },
+  bodyMapIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.tealDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.tealBorder,
+  },
+  bodyMapContent: {
+    flex: 1,
+    gap: 2,
+  },
+  bodyMapTitle: {
+    ...typography.bodySemibold,
+    color: colors.textPrimary,
+  },
+  bodyMapSub: {
+    ...typography.caption,
+    color: colors.textTertiary,
   },
   cardPressed: {
     transform: [{ scale: 0.98 }],
