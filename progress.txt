@@ -1033,3 +1033,64 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 ### Next up:
 - Entry animations for insight cards (FadeIn/SlideIn)
 - Workout exercise-level data for richer asymmetry insights
+
+## Late Night Session — Feb 20, 2026 (2:36 AM)
+
+### Completed: Interactive Body Map 🗺️
+
+**New major feature:** Tap anatomical zones on a human body silhouette to log pain, tension, and discomfort. Critical for scoliosis tracking — visualizing where pain occurs and how it changes over time.
+
+**New file: `lib/bodyMap.ts`** (266 lines)
+- Full data model: 15 anatomical zones, 5 sensation types (pain/tension/numbness/stiffness/weakness)
+- Zone configs for front view (13 zones) and back view (14 zones) with positions on 300×500 viewBox
+- Intensity-to-color mapping (green → yellow → orange → red gradient, 10 levels)
+- Supabase CRUD: save, get by date range, get latest per zone, get zone history, delete
+- Asymmetry detection: compares left/right zone pairs (shoulders, hips, knees, arms, legs)
+- `getTodayPainPointCount()` for home screen integration
+
+**New component: `components/BodyMap.tsx`** (292 lines)
+- SVG body silhouette using react-native-svg Path elements (front + back outlines)
+- Touchable elliptical zone overlays colored by intensity
+- Pulsing animation (react-native-reanimated) for high-intensity zones (≥7)
+- Intensity number labels on active zones
+- Haptic feedback on zone taps
+- Dark theme — body outline in textTertiary, subtle zone boundaries
+
+**New component: `components/BodyMapZoneModal.tsx`** (500 lines)
+- Bottom sheet modal triggered on zone tap
+- Sensation type picker (horizontal pills with icons: flash, contract, snow, lock, trending-down)
+- Stepped intensity picker (1-10 with color-coded buttons and badge)
+- Notes text input (optional, 200 char max)
+- Mini sparkline chart showing last 14 entries for the zone
+- Save/Update + Clear/Delete actions
+- Haptic feedback throughout
+
+**New screen: `app/(tabs)/body-map.tsx`** (612 lines)
+- Date range selector (Today / Yesterday / This Week pills)
+- Front/Back view toggle (segmented control)
+- BodyMap component centered with border card
+- Color legend (Low/Medium/High)
+- Asymmetry Alert section — warns when left/right pairs differ by ≥3 points
+- Recent Entries list with sensation icons, intensity, time
+- Pull-to-refresh
+- Empty state CTA
+- ErrorBoundary wrapped
+
+**Supabase migration:** `20260220_body_map.sql`
+- `body_map_entries` table: zone, intensity (1-10), sensation, notes, timestamps
+- Indexes on zone and recorded_at
+
+**Home screen integration:**
+- Body Map quick-access card between Smart Insights and Today's Workout
+- Teal body icon, "Log pain & tension points" subtitle, chevron arrow
+- Navigates to /body-map screen
+
+**Stats:** 8 files changed, 1,760 insertions. Zero TypeScript errors.
+
+### App Status
+- All PRDs complete (Goals 7/7, Workouts 6/6, Training 6/6, Reports 6/6)
+- **NEW:** Interactive Body Map — pain/tension visualization ✅
+- AirPods PRD still blocked on dev build
+- Zero TypeScript errors
+- UX polish: haptic feedback ✅, error boundaries ✅, skeleton loading ✅, smart insights ✅, body map ✅
+- Next: entry animations, workout exercise-level data, body map heatmap over time
