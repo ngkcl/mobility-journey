@@ -1119,3 +1119,57 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - [ ] Entry animations (fade-in for cards, zone pulse on tap)
 - [ ] Workout exercise-level data tracking
 ---
+
+---
+## 2026-02-21 02:35 - Exercise Effectiveness & Correlation Engine (Late Night Deep Work)
+
+### Completed: CE-001 through CE-004
+**New lib/correlationEngine.ts** (508 lines)
+- Joins workout_exercises × body_map_entries to compute before/after pain deltas per zone
+- Before window: day of + day before workout → After window: day+1 and day+2
+- Per-exercise, per-zone correlations with confidence levels (3=low, 5=medium, 8=high)
+- `computeExerciseZoneCorrelations(lookbackDays)` — full correlation matrix
+- `computeTopEffectiveExercises()` — ranked by best pain reduction
+- `computeTopHarmfulExercises()` — exercises that increase pain
+- `getZoneBestExercises(zoneId)` / `getZoneWorstExercises(zoneId)` — per-zone analysis
+- Neutral threshold: ±5% delta treated as neutral
+
+**New component: ExerciseEffectivenessCard.tsx** (247 lines)
+- Exercise card with: name, category badge, delta percentage, affected zone chips, confidence dots
+- Green tint for helpful, red for harmful, gray for neutral
+- Haptic feedback on press
+
+**New component: ZoneEffectivenessCard.tsx** (145 lines)
+- Per-zone card showing top 3 helpful + top 1 harmful exercise
+- Compact layout for horizontal scrolling
+
+**Updated analysis.tsx** (+262 lines)
+- New collapsible "Exercise Effectiveness" section at top of Analysis screen
+- Shows: top 5 effective, top 2 harmful, horizontal zone insight scroll
+- Loading state with "Analyzing exercise correlations..." spinner
+- Empty state: "Log more workouts and body map entries..."
+- ErrorBoundary wrapped, pull-to-refresh triggers recomputation
+
+**Updated insightsEngine.ts** (+74 lines)
+- New async `generateCorrelationInsights()` for home screen integration
+- Surfaces strong correlations (≥5 occurrences, ≥15% delta) as insights
+- Max 2 correlation insights per load
+
+**Updated index.tsx (home screen)**
+- Loads correlation insights in parallel with existing insight generators
+
+### Stats
+- 9 files changed, 1,409 insertions
+- Zero TypeScript errors
+- New PRD: prd-correlation-engine.json
+
+### Why This Matters
+This is the "intelligence" layer — turns passive tracking into active rehabilitation guidance.
+Instead of "I logged pain and exercises" → now "Hip flexor stretches reduce your lower back pain by 35%."
+Nick can see WHICH exercises actually help his scoliosis, backed by his own data.
+
+### Next Up
+- [ ] Body map heatmap visualization (aggregate SVG heat over time)
+- [ ] Entry animations (fade-in cards, zone pulse)
+- [ ] Streak calendar / activity heatmap (GitHub-style)
+- [ ] Progress report PDF export (share with physio)
