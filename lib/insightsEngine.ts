@@ -517,3 +517,77 @@ export function generateInsights(
 
   return all.slice(0, maxInsights);
 }
+
+// ─── Async Correlation Insights ───────────────────────────────────────────────
+
+/**
+ * Generate insights from exercise-pain correlations.
+ * This is async (hits Supabase) and should be called separately from
+ * the synchronous generateInsights().
+ *
+ * Returns max 2 insights to avoid flooding the home screen.
+ */
+export async function generateCorrelationInsights(
+  maxInsights: number = 2,
+): Promise<Insight[]> {
+  try {
+    const {
+      computeTopEffectiveExercises,
+      computeTopHarmfulExercises,
+    } = await import('./correlationEngine');
+
+    const [effective, harmful] = await Promise.all([
+      computeTopEffectiveExercises(60, 1),
+      computeTopHarmfulExercises(60, 1),
+    ]);
+
+    const insights: Insight[] = [];
+
+    // Highlight top effective exercise (if strong enough signal)
+    if (effective.length > 0) {
+      const best = effective[0];
+      if (best.occurrences >= 5 && Math.abs(best.avg_delta_pct) >= 15) {
+        const topZone = best.affected_zones[0];
+        insights.push({
+          id: `corr-help-${best.exercise_id}`,
+          category: 'recommendation',
+          priority: 2,
+          title: `${best.exercise_name} is working`,
+          body: topZone
+            ? `Reduces ${topZone.zone_name.toLowerCase()} pain by ~${Math.abs(topZone.delta_pct)}% the day after. Seen across ${best.occurrences} sessions.`
+            : `Reduces overall pain by ~${Math.abs(best.avg_delta_pct)}% the day after. Keep it up!`,
+          icon: 'flash',
+          accentColor: '#34d399',
+          route: '/analysis',
+          dismissible: true,
+        });
+      }
+    }
+
+    // Warn about harmful exercise (if strong enough signal)
+    if (harmful.length > 0) {
+      const worst = harmful[0];
+      if (worst.occurrences >= 5 && Math.abs(worst.avg_delta_pct) >= 15) {
+        const topZone = worst.affected_zones[0];
+        insights.push({
+          id: `corr-warn-${worst.exercise_id}`,
+          category: 'warning',
+          priority: 2,
+          title: `Watch: ${worst.exercise_name}`,
+          body: topZone
+            ? `${topZone.zone_name} pain tends to increase ~${Math.abs(topZone.delta_pct)}% after this exercise. Consider modifying form or reducing intensity.`
+            : `Overall pain tends to increase ~${Math.abs(worst.avg_delta_pct)}% after this exercise.`,
+          icon: 'alert-circle',
+          accentColor: '#f87171',
+          route: '/analysis',
+          dismissible: true,
+        });
+      }
+    }
+
+    return insights.slice(0, maxInsights);
+  } catch {
+    // Correlation engine is supplementary — don't crash
+    return [];
+  }
+}

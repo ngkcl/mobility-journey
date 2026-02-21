@@ -1094,3 +1094,28 @@ All 7 stories (GL-001 through GL-007) shipped and merged to main.
 - Zero TypeScript errors
 - UX polish: haptic feedback ✅, error boundaries ✅, skeleton loading ✅, smart insights ✅, body map ✅
 - Next: entry animations, workout exercise-level data, body map heatmap over time
+
+---
+## 2026-02-20 22:30 - Body Map Weekly Trends
+
+### Completed
+- Added `getTopPainZones()` — per-zone avg intensity + trend direction over last N days vs prior period
+- Added `getWeeklySummary()` — this week vs last week entry counts, avg intensity, overall trend
+- New types: `ZoneTrend`, `WeeklySummary`, `TrendDirection`
+- Weekly Trends section on body-map.tsx with:
+  - Summary card (entries this/last week, overall trend icon, most affected zone)
+  - Per-zone trend cards with intensity bars, direction arrows, change percentages
+  - Empty state when insufficient data
+- All loads in parallel with existing data (no added latency)
+- Zero TypeScript errors
+
+### Files Changed
+- lib/bodyMap.ts (177 lines added — trend types + 3 new functions)
+- app/(tabs)/body-map.tsx (248 lines added — UI + styles)
+- prd-body-map-trends.json (new PRD)
+
+### Next Up
+- [ ] Body map heatmap visualization (aggregate heat over time on the SVG body outline)
+- [ ] Entry animations (fade-in for cards, zone pulse on tap)
+- [ ] Workout exercise-level data tracking
+---

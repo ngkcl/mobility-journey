@@ -29,7 +29,7 @@ import {
   type WorkoutHistoryItem,
   type StreakStats,
 } from '../../lib/workoutAnalytics';
-import { generateInsights, type Insight } from '../../lib/insightsEngine';
+import { generateInsights, generateCorrelationInsights, type Insight } from '../../lib/insightsEngine';
 import { loadDismissedInsights, dismissInsight } from '../../lib/insightDismissals';
 import {
   colors,
@@ -140,7 +140,11 @@ export default function HomeScreen() {
         postureSessions,
         painImpact,
       });
-      setInsights(generated);
+
+      // Load async correlation insights in parallel
+      const correlationInsights = await generateCorrelationInsights(2).catch(() => []);
+
+      setInsights([...generated, ...correlationInsights]);
     } catch (e) {
       // Silent — insights are nice-to-have, not critical
       console.warn('Insight generation failed:', e);

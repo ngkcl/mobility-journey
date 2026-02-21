@@ -1,0 +1,94 @@
+{
+  "project": "mobility-app",
+  "branchName": "feat/correlation-engine",
+  "prdFileName": "prd-correlation-engine.json",
+  "description": "Exercise Effectiveness & Correlation Engine — analyzes which exercises actually reduce pain in specific body zones. Turns raw workout + body map data into actionable rehabilitation intelligence.",
+  "context": {
+    "purpose": "Nick tracks workouts and body map pain. But he doesn't know WHICH exercises are actually helping. This engine connects the dots: 'When you do hip flexor stretches, your lower back pain drops 35% the next day.' This makes the app a true intelligent rehabilitation companion.",
+    "existingData": "workouts table (date, type, exercises with sets/reps/weight), body_map_entries (zone, intensity 1-10, sensation, timestamp), metrics (pain_level, posture_score, symmetry_score), exercises (name, category, target_muscles). All in Supabase.",
+    "existingLibs": "lib/workoutAnalytics.ts (volume, streaks, asymmetry), lib/bodyMap.ts (zone CRUD, trends, weekly summary), lib/insightsEngine.ts (10 insight generators), lib/types.ts (all types defined)",
+    "keyInsight": "The correlation is: exercises performed on day N → body map changes on day N+1 and N+2. Need at least 3 occurrences of an exercise to calculate meaningful correlation. Display as exercise effectiveness cards ranked by pain reduction impact."
+  },
+  "userStories": [
+    {
+      "id": "CE-001",
+      "title": "Correlation engine data analysis",
+      "description": "Core analysis functions that compute exercise-to-pain correlations.",
+      "acceptanceCriteria": [
+        "Create lib/correlationEngine.ts",
+        "Type ExerciseCorrelation: { exercise_id, exercise_name, category, zone_id, zone_name, avg_pain_before, avg_pain_after, avg_delta, occurrences, confidence ('low'|'medium'|'high'), direction ('helps'|'hurts'|'neutral') }",
+        "Type OverallExerciseEffect: { exercise_id, exercise_name, category, avg_overall_pain_delta, affected_zones: {zone_id, zone_name, delta}[], occurrences, confidence }",
+        "Function computeExerciseZoneCorrelations(lookbackDays: number): Promise<ExerciseCorrelation[]>",
+        "Logic: For each exercise performed, find body_map_entries in the 24-48h window BEFORE the workout and 24-48h AFTER. Compare average intensity per zone. Delta = after - before (negative = improvement).",
+        "Filter: Only include correlations with >= 3 occurrences for 'low' confidence, >= 5 for 'medium', >= 8 for 'high'",
+        "Function computeTopEffectiveExercises(lookbackDays: number, limit: number): Promise<OverallExerciseEffect[]>",
+        "Logic: Aggregate zone correlations per exercise, rank by most negative avg delta (best pain reduction)",
+        "Function computeTopHarmfulExercises(lookbackDays: number, limit: number): Promise<OverallExerciseEffect[]>",
+        "Logic: Same but rank by most positive avg delta (exercises that seem to increase pain)",
+        "Function getZoneBestExercises(zoneId: string, lookbackDays: number): Promise<ExerciseCorrelation[]>",
+        "Logic: For a specific body zone, which exercises reduce its pain most?",
+        "Handle edge cases: no body map data returns empty, no workouts returns empty, insufficient data returns empty with 'low' confidence",
+        "All functions use getSupabase() for data access, consistent with existing patterns",
+        "Add comprehensive JSDoc comments explaining the correlation methodology",
+        "Typecheck passes: npx tsc --noEmit"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "CE-002",
+      "title": "Exercise effectiveness UI components",
+      "description": "Reusable components to display correlation findings.",
+      "acceptanceCriteria": [
+        "Create components/ExerciseEffectivenessCard.tsx",
+        "Card shows: exercise name, category badge (use CATEGORY_META colors from workouts.tsx pattern), effectiveness score (delta as percentage), affected zones list, confidence indicator (dots or stars), occurrences count",
+        "Green tint for pain-reducing exercises, red tint for pain-increasing, gray for neutral",
+        "Delta display: '↓ 35% pain reduction' (green) or '↑ 12% pain increase' (red)",
+        "Zone chips showing which body zones are affected with mini color indicators",
+        "Confidence: 1 dot (low), 2 dots (medium), 3 dots (high)",
+        "Create components/ZoneEffectivenessCard.tsx",
+        "Shows a specific body zone with its top 3 helpful and top 1 harmful exercise",
+        "Zone name as header, exercises listed with their delta percentages",
+        "Both components use existing theme (colors, typography, spacing, radii from lib/theme)",
+        "Both have haptic feedback on press (tapLight from lib/haptics)",
+        "Typecheck passes"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "CE-003",
+      "title": "Analysis screen enhancement",
+      "description": "Add Exercise Effectiveness section to the existing analysis tab.",
+      "acceptanceCriteria": [
+        "Update app/(tabs)/analysis.tsx — add new 'Exercise Effectiveness' section",
+        "Section header: 'Exercise Effectiveness' with brain/analytics icon",
+        "Subheader: 'Based on your last 60 days of workouts and body map data'",
+        "Show top 5 most effective exercises using ExerciseEffectivenessCard",
+        "Show top 2 exercises to watch (pain-increasing) if any, with warning styling",
+        "Show 'Zone Insights' subsection: for each active body map zone (zones with recent entries), show its best exercise using ZoneEffectivenessCard",
+        "Loading state: ScreenSkeleton while computing correlations",
+        "Empty state: 'Log more workouts and body map data to see exercise effectiveness. Need at least 3 sessions with body map entries.'",
+        "Pull to refresh triggers recomputation",
+        "ErrorBoundary wrapped",
+        "Typecheck passes"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "CE-004",
+      "title": "Integration with insights engine",
+      "description": "Surface correlation insights on the home screen.",
+      "acceptanceCriteria": [
+        "Add new insight generator in lib/insightsEngine.ts: exerciseEffectivenessInsight()",
+        "Insight fires when a strong correlation is found (>= 5 occurrences, delta > 20%)",
+        "Example insight: '💪 Hip flexor stretches reduce your lower back pain by 35%. Keep it up!'",
+        "Example warning: '⚠️ Heavy deadlifts seem to increase neck tension. Consider lighter weight or modified form.'",
+        "Category: 'recommendation' for helpful, 'warning' for harmful",
+        "Max 2 correlation insights at a time (don't flood the home screen)",
+        "Route links to analysis tab for full details",
+        "Add to the generateInsights() function alongside existing generators",
+        "Typecheck passes"
+      ],
+      "priority": 4
+    }
+  ]
+}
