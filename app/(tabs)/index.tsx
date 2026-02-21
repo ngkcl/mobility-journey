@@ -40,6 +40,7 @@ import {
   getGreeting as getThemeGreeting,
   getDailyTip,
 } from '@/lib/theme';
+import { ActivityHeatmap } from '../../components/ActivityHeatmap';
 import type { Workout, WorkoutTemplate, MetricEntry, PostureSession } from '../../lib/types';
 
 const DAILY_TIPS = [
@@ -216,6 +217,13 @@ export default function HomeScreen() {
 
         {/* Smart Insights */}
         <InsightList insights={visibleInsights} onDismiss={handleDismissInsight} />
+
+        {/* Activity Heatmap */}
+        {streakStats.workoutDates.length > 0 && (
+          <View style={{ marginBottom: spacing.lg }}>
+            <ActivityHeatmap workoutDates={streakStats.workoutDates} weeks={16} />
+          </View>
+        )}
 
         {/* Body Map Quick Access */}
         <Pressable
