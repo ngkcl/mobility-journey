@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import BodyMap from '../../components/BodyMap';
+import BodyMapHeatmap from '../../components/BodyMapHeatmap';
 import BodyMapZoneModal from '../../components/BodyMapZoneModal';
 import { tapLight } from '../../lib/haptics';
 import {
@@ -253,6 +254,11 @@ export default function BodyMapScreen() {
               <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
               <Text style={styles.legendText}>High</Text>
             </View>
+          </View>
+
+          {/* Aggregate Heatmap */}
+          <View style={styles.heatmapSection}>
+            <BodyMapHeatmap />
           </View>
 
           {/* Asymmetry Alerts */}
@@ -620,6 +626,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  heatmapSection: {
+    backgroundColor: colors.bgBase,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.xl,
   },
   legendItem: {

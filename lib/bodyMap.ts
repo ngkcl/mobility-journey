@@ -380,6 +380,95 @@ export async function getTopPainZones(
   return trends.slice(0, limit);
 }
 
+// ─── Aggregate Heatmap Data ──────────────────────────────────────────────────
+
+export type HeatmapZoneData = {
+  avgIntensity: number;
+  entryCount: number;
+  dominantSensation: SensationType;
+  maxIntensity: number;
+  trend: TrendDirection;
+};
+
+/**
+ * Get aggregate pain data across all zones for a given period.
+ * @param periodDays Number of days to look back, or null for all time
+ */
+export async function getAggregateHeatmapData(
+  periodDays: number | null,
+): Promise<Record<BodyZoneId, HeatmapZoneData>> {
+  const supabase = getSupabase();
+  const now = new Date();
+
+  let query = supabase
+    .from('body_map_entries')
+    .select('zone, intensity, sensation, recorded_at')
+    .order('recorded_at', { ascending: true });
+
+  if (periodDays !== null) {
+    const from = new Date(now);
+    from.setDate(from.getDate() - periodDays);
+    from.setHours(0, 0, 0, 0);
+    query = query.gte('recorded_at', from.toISOString());
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return {} as Record<BodyZoneId, HeatmapZoneData>;
+
+  const entries = data as { zone: string; intensity: number; sensation: string; recorded_at: string }[];
+  if (entries.length === 0) return {} as Record<BodyZoneId, HeatmapZoneData>;
+
+  // Group by zone
+  const groups: Record<string, typeof entries> = {};
+  for (const e of entries) {
+    if (!groups[e.zone]) groups[e.zone] = [];
+    groups[e.zone].push(e);
+  }
+
+  const result: Record<string, HeatmapZoneData> = {};
+
+  for (const [zone, zoneEntries] of Object.entries(groups)) {
+    const intensities = zoneEntries.map((e) => e.intensity);
+    const avg = intensities.reduce((s, v) => s + v, 0) / intensities.length;
+    const max = Math.max(...intensities);
+
+    // Dominant sensation
+    const sensationCounts: Record<string, number> = {};
+    for (const e of zoneEntries) {
+      sensationCounts[e.sensation] = (sensationCounts[e.sensation] || 0) + 1;
+    }
+    const dominantSensation = Object.entries(sensationCounts).sort(
+      (a, b) => b[1] - a[1],
+    )[0][0] as SensationType;
+
+    // Trend: compare first half vs second half of period
+    let trend: TrendDirection = 'stable';
+    if (zoneEntries.length >= 4) {
+      const mid = Math.floor(zoneEntries.length / 2);
+      const firstHalf = zoneEntries.slice(0, mid);
+      const secondHalf = zoneEntries.slice(mid);
+      const avgFirst =
+        firstHalf.reduce((s, e) => s + e.intensity, 0) / firstHalf.length;
+      const avgSecond =
+        secondHalf.reduce((s, e) => s + e.intensity, 0) / secondHalf.length;
+      const changePct =
+        avgFirst > 0 ? ((avgSecond - avgFirst) / avgFirst) * 100 : 0;
+      if (changePct < -10) trend = 'improving';
+      else if (changePct > 10) trend = 'worsening';
+    }
+
+    result[zone] = {
+      avgIntensity: Math.round(avg * 10) / 10,
+      entryCount: zoneEntries.length,
+      dominantSensation,
+      maxIntensity: max,
+      trend,
+    };
+  }
+
+  return result as Record<BodyZoneId, HeatmapZoneData>;
+}
+
 /** Get weekly summary comparing this week to last week */
 export async function getWeeklySummary(): Promise<WeeklySummary> {
   const now = new Date();
