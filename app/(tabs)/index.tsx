@@ -245,6 +245,26 @@ export default function HomeScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
+        {/* Progress Report Quick Access */}
+        <Pressable
+          onPress={() => { tapLight(); router.push('/progress-report' as any); }}
+          style={({ pressed }) => [
+            styles.bodyMapCard,
+            pressed && styles.cardPressed,
+          ]}
+        >
+          <View style={[styles.bodyMapIcon, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+            <Ionicons name="document-text-outline" size={22} color="#8b5cf6" />
+          </View>
+          <View style={styles.bodyMapContent}>
+            <Text style={styles.bodyMapTitle}>Progress Report</Text>
+            <Text style={styles.bodyMapSub}>
+              Generate PDF for your physio
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
         {/* Today's Workout Card */}
         <Pressable
           onPress={() => { tapLight(); router.push('/workouts'); }}

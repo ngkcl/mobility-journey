@@ -74,6 +74,13 @@ const QUICK_LINKS: QuickLink[] = [
     iconColor: colors.success,
     route: '/metrics',
   },
+  {
+    title: 'Progress Report',
+    subtitle: 'Generate PDF for your physio',
+    icon: 'document-text',
+    iconColor: '#14b8a6',
+    route: '/progress-report',
+  },
 ];
 
 // ── Helper ───────────────────────────────────────────────────────────────────

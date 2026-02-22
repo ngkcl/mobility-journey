@@ -1173,3 +1173,34 @@ Nick can see WHICH exercises actually help his scoliosis, backed by his own data
 - [ ] Entry animations (fade-in cards, zone pulse)
 - [ ] Streak calendar / activity heatmap (GitHub-style)
 - [ ] Progress report PDF export (share with physio)
+
+---
+
+## Session: Feb 21, 2026 (Evening) — Activity Heatmap
+
+### What was built
+**New component: ActivityHeatmap.tsx** (350 lines)
+- GitHub-style contribution calendar showing 16 weeks of workout history
+- 5 intensity levels: empty → light teal → medium → strong → full teal (4+ workouts/day)
+- Day-of-week labels (M, W, F), month labels along top
+- Responsive cell sizing (adapts to container width)
+- Tap any day for tooltip: "2 workouts on Feb 15" or "Rest day — Feb 16"
+- Today highlighted with teal border, future days dimmed
+- Legend bar (Less → More) + summary: "X days active · Y% consistency"
+- Haptic feedback on tap
+
+**Updated index.tsx (home screen)**
+- ActivityHeatmap renders below Smart Insights, above Body Map
+- Only shows when workout data exists (>0 workout dates)
+- Uses existing workoutDates from StreakStats — zero new API calls
+
+### Stats
+- 2 files changed, 358 insertions
+- Zero TypeScript errors
+- Commit: da9ea23
+
+### Next Up
+- [ ] Body map heatmap visualization (aggregate SVG heat over time)
+- [ ] Entry animations (fade-in cards, zone pulse)
+- [ ] Progress report PDF export (share with physio)
+- [ ] Explore adding heatmap to profile screen too
